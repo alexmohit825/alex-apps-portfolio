@@ -1,221 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>My Apps Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f7fb;
-      margin: 0;
-      padding: 40px 20px;
-      color: #1f2933;
-    }
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    h1 {
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      color: #6b7280;
-      margin-bottom: 24px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-    }
-    .app-card {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 16px 18px 18px;
-      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
-      border: 1px solid #e5e7eb;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 160px;
-    }
-    .app-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin: 0 0 4px;
-    }
-    .app-desc {
-      font-size: 14px;
-      color: #6b7280;
-      margin: 0 0 12px;
-    }
-    .launch-btn {
-      align-self: flex-start;
-      display: inline-block;
-      padding: 9px 18px;
-      background: #0078ff;
-      color: #ffffff;
-      font-weight: 600;
-      font-size: 14px;
-      border-radius: 999px;
-      text-decoration: none;
-      box-shadow: 0 0 10px rgba(0, 120, 255, 0.45);
-      transition: 0.18s ease-in-out;
-    }
-    .launch-btn:hover {
-      background: #005fcc;
-      box-shadow: 0 0 16px rgba(0, 120, 255, 0.7);
-      transform: translateY(-1px);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex's App Portfolio</title>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            padding: 0;
+            color: #1a1a1a;
+        }
+
+        header {
+            background: #0a74da;
+            color: white;
+            padding: 28px 20px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        /* Search Bar */
+        #searchBar {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        h2.section-title {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: #0a4fa3;
+            border-left: 5px solid #0a74da;
+            padding-left: 10px;
+        }
+
+        /* App Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+
+        /* App Card */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: 0.25s ease;
+            border: 1px solid #e5e5e5;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 20px;
+            color: #0a4fa3;
+        }
+
+        .card p {
+            font-size: 14px;
+            color: #444;
+            margin-bottom: 18px;
+        }
+
+        /* Launch Button */
+        .launch-btn {
+            display: inline-block;
+            padding: 10px 18px;
+            background: #0078ff;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 0 10px rgba(0,120,255,0.4);
+            transition: 0.2s ease-in-out;
+        }
+
+        .launch-btn:hover {
+            background: #005fcc;
+            box-shadow: 0 0 14px rgba(0,120,255,0.7);
+            transform: translateY(-2px);
+        }
+    </style>
+
+    <script>
+        function searchApps() {
+            const query = document.getElementById("searchBar").value.toLowerCase();
+            const cards = document.querySelectorAll(".card");
+
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(query) ? "block" : "none";
+            });
+        }
+    </script>
 </head>
 
 <body>
-  <div class="container">
-    <h1>My Apps</h1>
-    <p class="subtitle">Click <strong>Launch</strong> next to any app to open it in a new tab.</p>
 
+<header>Alex's App Portfolio</header>
+
+<div class="container">
+
+    <input id="searchBar" onkeyup="searchApps()" placeholder="Search apps...">
+
+    <!-- MEDICAL SECTION -->
+    <h2 class="section-title">Medical Apps</h2>
     <div class="grid">
 
-      <!-- 1. AI Spine Surgeon -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">AI Spine Surgeon</h2>
-          <p class="app-desc">AI-powered spine surgery decision support.</p>
+        <div class="card">
+            <h3>OpCoder Assist</h3>
+            <p>Operative report CPT coding assistant.</p>
+            <a class="launch-btn" href="opcoder-assist.html" target="_blank">Launch</a>
         </div>
-        <a href="ai-spine-surgeon.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 2. Clinical Note CPT Coder -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">Clinical Note CPT Coder</h2>
-          <p class="app-desc">Automatically extracts CPT codes from clinic notes.</p>
+        <div class="card">
+            <h3>Clinical Note CPT Coder</h3>
+            <p>Automated CPT extraction from clinic notes.</p>
+            <a class="launch-btn" href="clinical-note-cpt-coder.html" target="_blank">Launch</a>
         </div>
-        <a href="clinical-note-cpt-coder.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 3. Copyright Ops -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">Copyright Ops</h2>
-          <p class="app-desc">Copyright and IP automation workflow.</p>
+        <div class="card">
+            <h3>OpNote CPT Coder</h3>
+            <p>Structured operative note CPT coding.</p>
+            <a class="launch-btn" href="opnote-cpt-coder.html" target="_blank">Launch</a>
         </div>
-        <a href="copyright-ops.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 4. Lucid EV Battery Health -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">Lucid EV Battery Health</h2>
-          <p class="app-desc">Battery health estimator for Lucid EVs.</p>
+        <div class="card">
+            <h3>NecessityIQ</h3>
+            <p>Medical necessity automation and insurer‑specific letters.</p>
+            <a class="launch-btn" href="necessity-iq.html" target="_blank">Launch</a>
         </div>
-        <a href="lucid-ev-battery-health.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 5. NecessityIQ -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">NecessityIQ</h2>
-          <p class="app-desc">Medical necessity engine with insurer criteria.</p>
+        <div class="card">
+            <h3>Protocol One</h3>
+            <p>Coverage criteria engine + medical necessity generator.</p>
+            <a class="launch-btn" href="protocol-one.html" target="_blank">Launch</a>
         </div>
-        <a href="necessity-iq.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 6. Neurospine Wound Monitor -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">Neurospine Wound Monitor</h2>
-          <p class="app-desc">AI wound monitoring and infection detection.</p>
+        <div class="card">
+            <h3>SurgCode Pro</h3>
+            <p>Advanced CPT coding for surgical workflows.</p>
+            <a class="launch-btn" href="surgcode-pro.html" target="_blank">Launch</a>
         </div>
-        <a href="neurospine-wound-monitor.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 7. OpCoder Assist -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">OpCoder Assist</h2>
-          <p class="app-desc">Operative report CPT coding assistant.</p>
+        <div class="card">
+            <h3>SurgicalCare Platform</h3>
+            <p>End‑to‑end surgical workflow automation.</p>
+            <a class="launch-btn" href="surgicalcare-platform.html" target="_blank">Launch</a>
         </div>
-        <a href="opcoder-assist.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 8. OpNote CPT Coder -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">OpNote CPT Coder</h2>
-          <p class="app-desc">AI-powered operative note CPT extraction.</p>
+        <div class="card">
+            <h3>Pre‑Op Patient Education</h3>
+            <p>AI‑generated patient‑friendly surgical explanations.</p>
+            <a class="launch-btn" href="preop-patient-education.html" target="_blank">Launch</a>
         </div>
-        <a href="opnote-cpt-coder.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 9. Preop Patient Education -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">Preop Patient Education</h2>
-          <p class="app-desc">Automated preoperative patient education generator.</p>
+        <div class="card">
+            <h3>NeuroSpine Wound Monitor</h3>
+            <p>AI wound assessment and postoperative monitoring.</p>
+            <a class="launch-btn" href="neurospine-wound-monitor.html" target="_blank">Launch</a>
         </div>
-        <a href="preop-patient-education.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
 
-      <!-- 10. Protocol One -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">Protocol One</h2>
-          <p class="app-desc">Insurer policy lookup and medical necessity letters.</p>
+        <div class="card">
+            <h3>AI Spine Surgeon</h3>
+            <p>AI‑assisted spine surgery planning and decision support.</p>
+            <a class="launch-btn" href="ai-spine-surgeon.html" target="_blank">Launch</a>
         </div>
-        <a href="protocol-one.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
-
-      <!-- 11. S&P 500 Top 20 -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">S&P 500 Top 20</h2>
-          <p class="app-desc">Top 20 S&P stocks performance dashboard.</p>
-        </div>
-        <a href="sp500-top-20.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
-
-      <!-- 12. Stock Growth Predictor -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">Stock Growth Predictor</h2>
-          <p class="app-desc">AI-based stock growth forecasting tool.</p>
-        </div>
-        <a href="stock-growth-predictor.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
-
-      <!-- 13. SurgCode Pro -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">SurgCode Pro</h2>
-          <p class="app-desc">Advanced surgical coding automation.</p>
-        </div>
-        <a href="surgcode-pro.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
-
-      <!-- 14. SurgicalCare Platform -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">SurgicalCare Platform</h2>
-          <p class="app-desc">Comprehensive surgical care management suite.</p>
-        </div>
-        <a href="surgicalcare-platform.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
-
-      <!-- 15. TechStock Growth Predictor -->
-      <div class="app-card">
-        <div>
-          <h2 class="app-title">TechStock Growth Predictor</h2>
-          <p class="app-desc">AI predictions for high-growth tech stocks.</p>
-        </div>
-        <a href="techstock-growth-predictor.html" target="_blank" class="launch-btn">Launch</a>
-      </div>
-
-      <!-- 16. Copyright Ops (already included above, but keeping count accurate) -->
 
     </div>
-  </div>
+
+    <!-- FINANCE SECTION -->
+    <h2 class="section-title">Finance Apps</h2>
+    <div class="grid">
+
+        <div class="card">
+            <h3>Stock Growth Predictor</h3>
+            <p>Machine‑learning stock performance forecasting.</p>
+            <a class="launch-btn" href="stock-growth-predictor.html" target="_blank">Launch</a>
+        </div>
+
+        <div class="card">
+            <h3>TechStock Growth Predictor</h3>
+            <p>AI‑powered tech sector growth modeling.</p>
+            <a class="launch-btn" href="techstock-growth-predictor.html" target="_blank">Launch</a>
+        </div>
+
+        <div class="card">
+            <h3>S&P 500 Top 20</h3>
+            <p>Real‑time analysis of top S&P 500 performers.</p>
+            <a class="launch-btn" href="sp500-top-20.html" target="_blank">Launch</a>
+        </div>
+
+    </div>
+
+    <!-- LEGAL SECTION -->
+    <h2 class="section-title">Legal Apps</h2>
+    <div class="grid">
+
+        <div class="card">
+            <h3>Copyright Ops</h3>
+            <p>Copyright claim automation and legal workflow tools.</p>
+            <a class="launch-btn" href="copyright-ops.html" target="_blank">Launch</a>
+        </div>
+
+    </div>
+
+    <!-- TECH SECTION -->
+    <h2 class="section-title">Tech & EV Apps</h2>
+    <div class="grid">
+
+        <div class="card">
+            <h3>Lucid EV Battery Health</h3>
+            <p>Battery health prediction for Lucid EV vehicles.</p>
+            <a class="launch-btn" href="lucid-ev-battery-health.html" target="_blank">Launch</a>
+        </div>
+
+    </div>
+
+</div>
+
 </body>
 </html>
