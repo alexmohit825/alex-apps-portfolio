@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<title>TechStock Growth Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      colors: {
+        base: { 900: '#0f172a', 800: '#1e293b', 700: '#334155', 600: '#475569', 500: '#64748b', 400: '#94a3b8', 300: '#cbd5e1', 200: '#e2e8f0', 100: '#f1f5f9' },
+        accent: { DEFAULT: '#38bdf8', light: '#7dd3fc', dark: '#0284c7', glow: 'rgba(56,189,248,0.15)' },
+        success: { DEFAULT: '#10b981', light: '#34d399', dark: '#059669', bg: 'rgba(16,185,129,0.12)' },
+        warning: { DEFAULT: '#f59e0b', light: '#fbbf24', dark: '#d97706', bg: 'rgba(245,158,11,0.12)' },
+        danger: { DEFAULT: '#ef4444', light: '#f87171', dark: '#dc2626', bg: 'rgba(239,68,68,0.12)' },
+      }
+    }
+  }
+};
+</script>
+<style>
+:root {
+  --bg-primary: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #253349;
+  --accent: #38bdf8;
+  --green: #10b981;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --violet: #8b5cf6;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: rgba(56,189,248,0.1);
+}
+* { box-sizing: border-box; }
+body { background: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', sans-serif; margin: 0; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none; cursor: pointer; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #0f172a; box-shadow: 0 0 6px rgba(56,189,248,0.4); transition: box-shadow 0.3s; }
+input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid #0f172a; }
+.slider-track { background: linear-gradient(90deg, #ef4444 0%, #f59e0b 40%, #10b981 100%); }
+
+.card { background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border); transition: all 0.3s ease; }
+.card:hover { border-color: rgba(56,189,248,0.2); }
+
+.score-gauge { position: relative; width: 160px; height: 160px; }
+.score-gauge svg { transform: rotate(-90deg); }
+.score-gauge .track { fill: none; stroke: #334155; stroke-width: 8; }
+.score-gauge .progress { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease, stroke 0.5s ease; }
+
+.collapse-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+.collapse-content.open { max-height: 4000px; }
+
+.tab-active { background: rgba(56,189,248,0.15); border-color: var(--accent); color: var(--accent); }
+
+.pulse-update { animation: pulseOnce 0.4s ease; }
+@keyframes pulseOnce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+
+.btn-generate {
+  background: linear-gradient(135deg, #38bdf8 0%, #10b981 100%);
+  transition: all 0.3s ease;
+}
+.btn-generate:hover { box-shadow: 0 0 24px rgba(56,189,248,0.35); transform: translateY(-1px); }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+
+.stock-tabs-container { overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.stock-tabs-container::-webkit-scrollbar { display: none; }
+
+@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.animate-in { animation: fadeInUp 0.4s ease forwards; }
+
+.tooltip-wrap { position: relative; }
+.tooltip-wrap .tooltip-text { visibility: hidden; opacity: 0; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #334155; color: #e2e8f0; padding: 6px 10px; border-radius: 8px; font-size: 11px; white-space: nowrap; z-index: 50; transition: opacity 0.2s; pointer-events: none; max-width: 220px; white-space: normal; text-align: center; }
+.tooltip-wrap:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+.sticky-results { position: sticky; top: 16px; }
+
+.autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 60; background: #1e293b; border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; margin-top: 4px; max-height: 280px; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.autocomplete-item { padding: 10px 14px; cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 10px; }
+.autocomplete-item:hover, .autocomplete-item.active { background: rgba(56,189,248,0.1); }
+.autocomplete-item:first-child { border-radius: 12px 12px 0 0; }
+.autocomplete-item:last-child { border-radius: 0 0 12px 12px; }
+
+.popular-chip { cursor: pointer; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: rgba(56,189,248,0.1); color: #38bdf8; border: 1px solid rgba(56,189,248,0.15); transition: all 0.2s; }
+.popular-chip:hover { background: rgba(56,189,248,0.2); border-color: rgba(56,189,248,0.3); }
+
+.loading-overlay { position: absolute; inset: 0; background: rgba(15,23,42,0.85); z-index: 10; display: flex; align-items: center; justify-content: center; border-radius: 16px; }
+
+.auto-badge { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; padding: 1px 6px; border-radius: 9999px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+.auto-badge.auto { background: rgba(56,189,248,0.15); color: #38bdf8; }
+.auto-badge.auto-violet { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+.auto-badge.edited { background: rgba(245,158,11,0.15); color: #f59e0b; }
+
+.success-banner { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); border-radius: 12px; padding: 10px 16px; font-size: 12px; color: #34d399; display: flex; align-items: center; gap: 8px; animation: fadeInUp 0.4s ease; }
+
+@keyframes sliderFlash {
+  0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  50% { box-shadow: 0 0 12px 2px rgba(16,185,129,0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+.slider-flash { animation: sliderFlash 0.5s ease; }
+
+.raw-metric-badge { padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+.raw-metric-badge.strong { background: rgba(16,185,129,0.15); color: #34d399; }
+.raw-metric-badge.moderate { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.raw-metric-badge.weak { background: rgba(239,68,68,0.15); color: #f87171; }
+.raw-metric-badge.neutral { background: rgba(148,163,184,0.12); color: #94a3b8; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 20px; height: 20px; border: 2px solid rgba(56,189,248,0.2); border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.6s linear infinite; }
+
+.macro-btn { cursor: pointer; border-radius: 12px; padding: 10px 8px; text-align: center; border: 2px solid transparent; transition: all 0.3s ease; flex: 1; min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.macro-btn.active-green { border-color: #10b981; background: rgba(16,185,129,0.12); }
+.macro-btn.active-yellow { border-color: #f59e0b; background: rgba(245,158,11,0.12); }
+.macro-btn.active-red { border-color: #ef4444; background: rgba(239,68,68,0.12); }
+.macro-btn:hover { background: rgba(148,163,184,0.08); }
+
+.weight-tag-new { display: inline-flex; align-items: center; font-size: 9px; padding: 1px 5px; border-radius: 9999px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: rgba(139,92,246,0.2); color: #a78bfa; margin-left: 4px; }
+.weight-tag-upgraded { display: inline-flex; align-items: center; font-size: 9px; padding: 1px 5px; border-radius: 9999px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; background: rgba(16,185,129,0.2); color: #34d399; margin-left: 4px; }
+
+.validation-card { background: rgba(30,41,59,0.8); border: 1px solid rgba(148,163,184,0.15); border-radius: 12px; font-family: 'Inter', monospace; }
+</style>
+</head>
+<body data-id="0" class="min-h-screen">
+<app-icon data-id="1" hidden data-icon="trending-up" data-palette="Blue"></app-icon>
+<app-disclaimer data-id="2" intent="financial"></app-disclaimer>
+
+<!-- Header -->
+<header data-id="3" class="bg-base-800/80 backdrop-blur-md border-b border-base-700/50 sticky top-0 z-50">
+  <div data-id="4" class="max-w-[1600px] mx-auto px-4 md:px-6 py-3">
+    <div data-id="5" class="flex items-center justify-between gap-4">
+      <div data-id="6" class="flex items-center gap-3 min-w-0">
+        <div data-id="7" class="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-success flex items-center justify-center shrink-0">
+          <i data-id="8" data-lucide="trending-up" class="w-5 h-5 text-base-900"></i>
+        </div>
+        <div data-id="9" class="min-w-0">
+          <div data-id="10" class="flex items-center gap-2 flex-wrap">
+            <h1 data-id="11" class="text-base md:text-lg font-bold text-base-100 truncate">TechStock Growth Predictor</h1>
+            <span data-id="12" class="text-[10px] px-2 py-0.5 rounded-full bg-base-700 text-base-400 font-medium whitespace-nowrap">Model v2.0 · Calibrated May 2026</span>
+          </div>
+          <p data-id="13" class="text-[9px] md:text-[10px] text-base-600 truncate hidden sm:block">Upgrades: Expanded Bull Ceiling · Narrative Premium · Valuation +25% · Macro Regime</p>
+        </div>
+      </div>
+      <button data-id="14" id="add-stock-btn-4kfr" class="flex items-center gap-1.5 bg-accent/15 hover:bg-accent/25 text-accent px-3 py-2 rounded-xl text-sm font-medium transition-all shrink-0 min-h-[44px]">
+        <i data-id="15" data-lucide="plus" class="w-4 h-4"></i>
+        <span data-id="16" class="hidden sm:inline">Add Stock</span>
+      </button>
+    </div>
+    <!-- Stock Tabs -->
+    <div data-id="17" id="stock-tabs-f9dk" class="stock-tabs-container flex gap-2 mt-3 pb-1"></div>
+  </div>
+</header>
+
+<!-- Mobile Menu Button -->
+<button data-id="18" id="mobile-menu-btn-7fjk" class="md:hidden fixed bottom-4 right-4 z-40 w-12 h-12 rounded-full bg-accent flex items-center justify-center shadow-lg shadow-accent/20">
+  <i data-id="19" data-lucide="menu" class="w-5 h-5 text-base-900"></i>
+</button>
+
+<!-- Mobile nav overlay -->
+<nav data-id="20" id="mobile-menu-3kdj" class="hidden fixed inset-0 bg-base-900/95 z-50 flex flex-col p-6">
+  <button data-id="21" id="mobile-menu-close-2kfs" class="self-end p-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
+    <i data-id="22" data-lucide="x" class="w-6 h-6 text-base-400"></i>
+  </button>
+  <div data-id="23" class="flex flex-col gap-3 mt-6">
+    <button data-id="24" class="mobile-nav-action text-left px-4 py-3 rounded-xl bg-base-800 text-base-200 text-sm font-medium" data-action="export">
+      <i data-id="25" data-lucide="download" class="w-4 h-4 inline mr-2"></i>Export Analysis
+    </button>
+    <button data-id="26" class="mobile-nav-action text-left px-4 py-3 rounded-xl bg-base-800 text-base-200 text-sm font-medium" data-action="reset">
+      <i data-id="27" data-lucide="rotate-ccw" class="w-4 h-4 inline mr-2"></i>Reset Current Stock
+    </button>
+    <button data-id="28" class="mobile-nav-action text-left px-4 py-3 rounded-xl bg-base-800 text-base-200 text-sm font-medium" data-action="duplicate">
+      <i data-id="29" data-lucide="copy" class="w-4 h-4 inline mr-2"></i>Duplicate Stock
+    </button>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main data-id="30" class="max-w-[1600px] mx-auto px-4 md:px-6 py-6">
+  <div data-id="31" id="main-grid-5ksd" class="flex flex-col lg:flex-row gap-6">
+
+    <!-- LEFT COLUMN: Inputs -->
+    <div data-id="32" id="left-col-7dfk" class="w-full lg:w-[45%] flex flex-col gap-4">
+
+      <!-- UPGRADE D: Macro Regime Card -->
+      <div data-id="33" id="macro-regime-card" class="card p-5 animate-in">
+        <h2 data-id="34" class="text-sm font-semibold text-base-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <span data-id="35" class="text-base">🌐</span> Macro Regime
+          <span data-id="36" class="text-[10px] font-normal normal-case tracking-normal text-base-500">· Affects all growth projections</span>
+        </h2>
+        <div data-id="37" class="flex gap-2" id="macro-regime-buttons">
+          <button data-id="38" class="macro-btn" data-regime="risk-on">
+            <span data-id="39" class="text-lg">🟢</span>
+            <span data-id="40" class="text-xs font-bold text-success">Risk-On</span>
+            <span data-id="41" class="text-[10px] text-base-500">Bull Market</span>
+            <span data-id="42" class="text-[10px] text-success/80 font-semibold">+15% boost</span>
+          </button>
+          <button data-id="43" class="macro-btn active-yellow" data-regime="neutral">
+            <span data-id="44" class="text-lg">🟡</span>
+            <span data-id="45" class="text-xs font-bold text-warning">Neutral</span>
+            <span data-id="46" class="text-[10px] text-base-500">(Default)</span>
+            <span data-id="47" class="text-[10px] text-warning/80 font-semibold">Baseline</span>
+          </button>
+          <button data-id="48" class="macro-btn" data-regime="risk-off">
+            <span data-id="49" class="text-lg">🔴</span>
+            <span data-id="50" class="text-xs font-bold text-danger">Risk-Off</span>
+            <span data-id="51" class="text-[10px] text-base-500">Bear/Recess</span>
+            <span data-id="52" class="text-[10px] text-danger/80 font-semibold">-30% cut</span>
+          </button>
+        </div>
+        <div data-id="53" id="macro-regime-info" class="mt-3 text-[11px] text-base-400 flex items-start gap-2 bg-base-700/30 rounded-lg px-3 py-2">
+          <span data-id="54" class="shrink-0">ℹ️</span>
+          <span data-id="55" id="macro-regime-desc">Balanced weighting. No regime adjustment applied to growth projections.</span>
+        </div>
+      </div>
+
+      <!-- Stock Lookup Card -->
+      <div data-id="56" id="lookup-card-y5z6" class="card p-5 animate-in relative">
+        <h2 data-id="57" class="text-sm font-semibold text-base-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i data-id="58" data-lucide="search" class="w-4 h-4 text-accent"></i>Stock Ticker Lookup
+        </h2>
+        <div data-id="59" class="flex gap-2 mb-3">
+          <div data-id="60" class="flex-1 relative">
+            <input data-id="61" id="ticker-input-4kds" type="text" placeholder="Enter ticker (e.g. NVDA, MSFT)" class="w-full bg-base-700/50 border border-base-700 rounded-xl px-3 py-2.5 text-sm text-base-100 placeholder-base-500 focus:outline-none focus:border-accent/40 focus:bg-base-700 transition-all text-base uppercase" autocomplete="off" />
+            <div data-id="62" id="autocomplete-drop-g3h4" class="autocomplete-dropdown hidden"></div>
+          </div>
+          <button data-id="63" id="load-data-btn-i5j6" class="flex items-center gap-1.5 bg-accent/15 hover:bg-accent/25 text-accent px-4 py-2.5 rounded-xl text-sm font-semibold transition-all min-h-[44px] whitespace-nowrap">
+            <i data-id="64" data-lucide="zap" class="w-4 h-4"></i>Load Data
+          </button>
+        </div>
+        <div data-id="65" class="flex flex-wrap gap-2 mb-4">
+          <span data-id="66" class="text-[10px] text-base-500 font-medium self-center mr-1">Popular:</span>
+          <button data-id="67" class="popular-chip" data-ticker="NVDA">NVDA</button>
+          <button data-id="68" class="popular-chip" data-ticker="MSFT">MSFT</button>
+          <button data-id="69" class="popular-chip" data-ticker="AAPL">AAPL</button>
+          <button data-id="70" class="popular-chip" data-ticker="GOOGL">GOOGL</button>
+          <button data-id="71" class="popular-chip" data-ticker="META">META</button>
+          <button data-id="72" class="popular-chip" data-ticker="AMD">AMD</button>
+        </div>
+        <div data-id="73" id="success-banner-a3b4" class="hidden mb-3"></div>
+        <div data-id="74" class="flex flex-col sm:flex-row gap-3">
+          <div data-id="75" class="flex-[2]">
+            <label data-id="76" class="block text-xs text-base-500 mb-1.5 font-medium">Company Name</label>
+            <input data-id="77" id="company-input-8fkd" type="text" placeholder="e.g. NVIDIA Corp" class="w-full bg-base-700/50 border border-base-700 rounded-xl px-3 py-2.5 text-sm text-base-100 placeholder-base-500 focus:outline-none focus:border-accent/40 focus:bg-base-700 transition-all text-base" />
+          </div>
+          <div data-id="78" class="flex-1">
+            <label data-id="79" class="block text-xs text-base-500 mb-1.5 font-medium">Sector</label>
+            <div data-id="80" class="relative">
+              <select data-id="81" id="sector-select-3kfj" class="w-full bg-base-700/50 border border-base-700 rounded-xl px-3 py-2.5 pr-10 text-sm text-base-100 focus:outline-none focus:border-accent/40 appearance-none cursor-pointer text-base">
+                <option data-id="82" value="">Select sector...</option>
+                <option data-id="83" value="Semiconductors">Semiconductors</option>
+                <option data-id="84" value="Cloud/SaaS">Cloud/SaaS</option>
+                <option data-id="85" value="AI Infrastructure">AI Infrastructure</option>
+                <option data-id="86" value="Consumer Tech">Consumer Tech</option>
+                <option data-id="87" value="Cybersecurity">Cybersecurity</option>
+                <option data-id="88" value="Enterprise Software">Enterprise Software</option>
+                <option data-id="89" value="Other">Other</option>
+              </select>
+              <i data-id="90" data-lucide="chevron-down" class="w-4 h-4 text-base-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            </div>
+          </div>
+        </div>
+        <div data-id="91" id="loading-overlay-o7p8" class="loading-overlay hidden">
+          <div data-id="92" class="flex items-center gap-3">
+            <div data-id="93" class="spinner"></div>
+            <span data-id="94" id="loading-text-s1t2" class="text-sm font-semibold text-accent">Loading data...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Raw Metrics Card -->
+      <div data-id="95" id="raw-metrics-card-u3v4" class="card overflow-hidden hidden animate-in">
+        <button data-id="96" id="raw-metrics-toggle-w5x6" class="w-full flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-base-700/30 transition-colors">
+          <div data-id="97" class="flex items-center gap-2.5">
+            <span data-id="98" class="text-lg">📊</span>
+            <span data-id="99" class="text-sm font-semibold text-base-200">Raw Financial Data</span>
+          </div>
+          <i data-id="100" data-lucide="chevron-down" class="w-4 h-4 text-base-500 transition-transform" id="raw-metrics-chevron-a9b0"></i>
+        </button>
+        <div data-id="101" id="raw-metrics-content-c1d2" class="collapse-content open">
+          <div data-id="102" id="raw-metrics-grid-e3f4" class="px-5 pb-4 grid grid-cols-2 gap-2.5"></div>
+          <p data-id="103" class="px-5 pb-4 text-[10px] text-base-600 italic">Data reflects analyst consensus estimates as of May 2026. For illustrative purposes only.</p>
+        </div>
+      </div>
+
+      <!-- Scoring Sections Container -->
+      <div data-id="104" id="scoring-sections-k3fd" class="flex flex-col gap-3"></div>
+
+      <!-- Generate Button -->
+      <button data-id="105" id="generate-btn-9fkd" class="btn-generate w-full py-4 rounded-2xl text-base-900 font-bold text-lg flex items-center justify-center gap-2 min-h-[56px] cursor-pointer mt-2">
+        <span data-id="106" class="text-xl">🔮</span> Generate Prediction
+      </button>
+
+      <!-- Action Buttons Row -->
+      <div data-id="107" class="flex gap-2">
+        <button data-id="108" id="reset-btn-4dkf" class="flex-1 flex items-center justify-center gap-1.5 bg-base-800 hover:bg-base-700 border border-base-700 text-base-400 hover:text-base-200 px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px] cursor-pointer">
+          <i data-id="109" data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+        </button>
+        <button data-id="110" id="duplicate-btn-5fkd" class="flex-1 flex items-center justify-center gap-1.5 bg-base-800 hover:bg-base-700 border border-base-700 text-base-400 hover:text-base-200 px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px] cursor-pointer">
+          <i data-id="111" data-lucide="copy" class="w-3.5 h-3.5"></i> Duplicate
+        </button>
+        <button data-id="112" id="export-btn-6dkf" class="flex-1 flex items-center justify-center gap-1.5 bg-base-800 hover:bg-base-700 border border-base-700 text-base-400 hover:text-base-200 px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px] cursor-pointer">
+          <i data-id="113" data-lucide="download" class="w-3.5 h-3.5"></i> Export
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Results -->
+    <div data-id="114" id="right-col-2fks" class="w-full lg:w-[55%]">
+      <div data-id="115" class="sticky-results flex flex-col gap-4">
+
+        <!-- Overall Score Card -->
+        <div data-id="116" id="score-card-8fkd" class="card p-6 animate-in">
+          <div data-id="117" class="flex flex-col sm:flex-row items-center gap-6">
+            <div data-id="118" class="score-gauge shrink-0">
+              <svg data-id="119" width="160" height="160" viewBox="0 0 160 160">
+                <circle data-id="120" class="track" cx="80" cy="80" r="68" />
+                <circle data-id="121" id="score-ring-4kds" class="progress" cx="80" cy="80" r="68" stroke="#38bdf8" stroke-dasharray="427.26" stroke-dashoffset="427.26" />
+              </svg>
+              <div data-id="122" class="absolute inset-0 flex flex-col items-center justify-center">
+                <span data-id="123" id="score-value-7fkd" class="text-4xl font-extrabold tabular-nums text-base-100">0</span>
+                <span data-id="124" class="text-[10px] text-base-500 font-medium uppercase tracking-wider">Score</span>
+              </div>
+            </div>
+            <div data-id="125" class="text-center sm:text-left flex-1 min-w-0">
+              <div data-id="126" class="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                <h3 data-id="127" id="result-ticker-3kfd" class="text-2xl font-bold text-base-200">—</h3>
+                <span data-id="128" id="sector-pill-y3z4" class="hidden text-[10px] px-2.5 py-0.5 rounded-full bg-accent/10 text-accent font-semibold"></span>
+              </div>
+              <p data-id="129" id="result-company-4fkd" class="text-sm text-base-500 mb-3">Enter stock details to begin</p>
+              <div data-id="130" id="recommendation-badge-5kds" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold bg-base-700 text-base-500">
+                <span data-id="131">⏸</span> AWAITING DATA
+              </div>
+              <div data-id="132" class="mt-3 flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                <span data-id="133" class="text-xs text-base-500">Confidence:</span>
+                <div data-id="134" id="confidence-bar-6fkd" class="flex gap-1">
+                  <div data-id="135" class="w-8 h-1.5 rounded-full bg-base-700"></div>
+                  <div data-id="136" class="w-8 h-1.5 rounded-full bg-base-700"></div>
+                  <div data-id="137" class="w-8 h-1.5 rounded-full bg-base-700"></div>
+                </div>
+                <span data-id="138" id="confidence-label-7kds" class="text-xs text-base-500">Low</span>
+                <span data-id="139" id="macro-regime-pill" class="text-[10px] px-2 py-0.5 rounded-full bg-warning/15 text-warning font-medium ml-1">🟡 Neutral</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12-Month Growth Projection -->
+        <div data-id="140" id="growth-card-9fkd" class="card p-5 animate-in">
+          <h3 data-id="141" id="growth-title-c7d8" class="text-sm font-semibold text-base-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <i data-id="142" data-lucide="rocket" class="w-4 h-4 text-accent"></i><span data-id="143" id="growth-title-text-e9f0">12-Month Growth Projection</span>
+          </h3>
+          <div data-id="144" id="growth-range-3kfd" class="text-center py-4">
+            <p data-id="145" class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-accent to-success bg-clip-text text-transparent tabular-nums">—</p>
+            <p data-id="146" class="text-xs text-base-500 mt-1">Projected Growth Range</p>
+          </div>
+          <div data-id="147" class="grid grid-cols-3 gap-3 mt-3">
+            <div data-id="148" class="bg-success/10 rounded-xl p-3 text-center">
+              <p data-id="149" class="text-[10px] text-success font-semibold uppercase tracking-wider">Bull</p>
+              <p data-id="150" id="bull-case-4kfd" class="text-lg font-bold text-success tabular-nums mt-1">—</p>
+            </div>
+            <div data-id="151" class="bg-accent/10 rounded-xl p-3 text-center">
+              <p data-id="152" class="text-[10px] text-accent font-semibold uppercase tracking-wider">Base</p>
+              <p data-id="153" id="base-case-5fkd" class="text-lg font-bold text-accent tabular-nums mt-1">—</p>
+            </div>
+            <div data-id="154" class="bg-warning/10 rounded-xl p-3 text-center">
+              <p data-id="155" class="text-[10px] text-warning font-semibold uppercase tracking-wider">Bear</p>
+              <p data-id="156" id="bear-case-6kds" class="text-lg font-bold text-warning tabular-nums mt-1">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model Validation Card -->
+        <div data-id="157" id="validation-card" class="validation-card overflow-hidden animate-in">
+          <button data-id="158" id="validation-toggle" class="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-base-700/20 transition-colors">
+            <div data-id="159" class="flex items-center gap-2">
+              <span data-id="160" class="text-sm">📊</span>
+              <span data-id="161" class="text-xs font-semibold text-base-300">Model Validation</span>
+              <span data-id="162" class="text-[10px] w-4 h-4 rounded-full bg-base-600 text-base-300 flex items-center justify-center font-bold">i</span>
+            </div>
+            <i data-id="163" data-lucide="chevron-down" class="w-3.5 h-3.5 text-base-500 transition-transform" id="validation-chevron"></i>
+          </button>
+          <div data-id="164" id="validation-content" class="collapse-content">
+            <div data-id="165" class="px-4 pb-4">
+              <pre data-id="166" class="text-[10px] text-base-400 leading-relaxed font-mono whitespace-pre">Model v2.0 Backtested vs May 2025–2026 Actuals (6 stocks)
+────────────────────────────────────────
+Directional Accuracy    66.7%  (4/6)
+Range Containment       16.7%  (1/6)
+Mean Absolute Error     29.8pp  ↓2.7pp vs v1
+RMSE                    33.8pp  ↓2.0pp vs v1
+Spearman Rank Corr.     0.49
+Composite Validity      58/100
+────────────────────────────────────────
+<span data-id="167" class="text-warning">⚠️ Best used as a relative ranker. Absolute
+return predictions carry ±30pp uncertainty.</span></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Radar Chart -->
+        <div data-id="168" id="radar-card-2fkd" class="card p-5 animate-in">
+          <h3 data-id="169" class="text-sm font-semibold text-base-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-id="170" data-lucide="radar" class="w-4 h-4 text-accent"></i>Category Radar
+          </h3>
+          <div data-id="171" class="relative h-64 md:h-72">
+            <canvas data-id="172" id="radar-chart-8fkd"></canvas>
+          </div>
+        </div>
+
+        <!-- Bar Chart -->
+        <div data-id="173" id="bar-card-3fkd" class="card p-5 animate-in">
+          <h3 data-id="174" class="text-sm font-semibold text-base-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-id="175" data-lucide="bar-chart-3" class="w-4 h-4 text-accent"></i>Weighted Contribution Breakdown
+          </h3>
+          <div data-id="176" class="relative h-60 md:h-72">
+            <canvas data-id="177" id="bar-chart-9fkd"></canvas>
+          </div>
+        </div>
+
+        <!-- Risk Flags -->
+        <div data-id="178" id="risk-card-4fkd" class="card p-5 animate-in">
+          <h3 data-id="179" class="text-sm font-semibold text-base-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-id="180" data-lucide="alert-triangle" class="w-4 h-4 text-warning"></i>Risk Flags
+          </h3>
+          <div data-id="181" id="risk-flags-5kds" class="flex flex-col gap-2">
+            <p data-id="182" class="text-sm text-base-500 italic">No risk flags detected yet.</p>
+          </div>
+        </div>
+
+        <!-- Key Strengths -->
+        <div data-id="183" id="strength-card-5fkd" class="card p-5 animate-in">
+          <h3 data-id="184" class="text-sm font-semibold text-base-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-id="185" data-lucide="shield-check" class="w-4 h-4 text-success"></i>Key Strengths
+          </h3>
+          <div data-id="186" id="key-strengths-6fkd" class="flex flex-col gap-2">
+            <p data-id="187" class="text-sm text-base-500 italic">Increase slider scores to reveal strengths.</p>
+          </div>
+        </div>
+
+        <!-- Comparison Table -->
+        <div data-id="188" id="comparison-card-7kds" class="card p-5 animate-in hidden">
+          <h3 data-id="189" class="text-sm font-semibold text-base-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i data-id="190" data-lucide="columns-3" class="w-4 h-4 text-accent"></i>Stock Comparison
+          </h3>
+          <div data-id="191" class="overflow-x-auto">
+            <table data-id="192" id="comparison-table-8fkd" class="w-full text-sm">
+              <thead data-id="193">
+                <tr data-id="194" class="text-left text-xs text-base-500 uppercase tracking-wider">
+                  <th data-id="195" class="py-2 px-3">Ticker</th>
+                  <th data-id="196" class="py-2 px-3">Score</th>
+                  <th data-id="197" class="py-2 px-3">Rec.</th>
+                  <th data-id="198" class="py-2 px-3">Growth</th>
+                  <th data-id="199" class="py-2 px-3">Top Risk</th>
+                  <th data-id="200" class="py-2 px-3">Top Strength</th>
+                </tr>
+              </thead>
+              <tbody data-id="201" id="comparison-body-9kds"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Export Modal -->
+<div data-id="202" id="export-modal-3kfd" class="modal-overlay">
+  <div data-id="203" class="card p-6 w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+    <div data-id="204" class="flex items-center justify-between mb-4">
+      <h3 data-id="205" class="text-lg font-bold text-base-100">Analysis Summary</h3>
+      <button data-id="206" id="modal-close-4fkd" class="p-2 rounded-lg hover:bg-base-700 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center">
+        <i data-id="207" data-lucide="x" class="w-5 h-5 text-base-400"></i>
+      </button>
+    </div>
+    <pre data-id="208" id="export-content-5kds" class="text-xs text-base-300 whitespace-pre-wrap bg-base-900 rounded-xl p-4 font-mono leading-relaxed"></pre>
+    <button data-id="209" id="copy-export-6fkd" class="mt-4 w-full py-2.5 rounded-xl bg-accent/15 text-accent text-sm font-medium hover:bg-accent/25 transition-all cursor-pointer min-h-[44px]">
+      <i data-id="210" data-lucide="clipboard" class="w-4 h-4 inline mr-1"></i>Copy to Clipboard
+    </button>
+  </div>
+</div>
+
+<footer data-id="211" id="footer-7kds" class="py-8 mt-12 text-center border-t border-base-800/50">
+  <p data-id="212" class="text-xs text-base-600">Made by Copilot</p>
+</footer>
+
+<script>
+// ===== EMBEDDED STOCK DATABASE (with Narrative Premium scores — Upgrade B) =====
+const STOCK_DB = {
+  NVDA: {
+    name: 'NVIDIA Corporation', sector: 'Semiconductors', updated: 'May 2026',
+    raw: { revenueGrowth: '114%', fcfMargin: '55%', payoutRatio: '1%', roe: '123%', debtEquity: '0.4x', forwardPE: '28x', pegRatio: '1.0', priceToSales: '24x', analystUpside: '+15%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:10, fcfMargin:10, payoutRatio:10, roe:10, debtEquity:8, epsVsRev:9, aiOpMargin:10, revenueConversion:10, fcfCoverage:9, assetLightness:9, pegScore:9, psScore:2, analystUpside:7, forwardPEScore:6, maSignal:9, rsiScore:7, supportResistance:7, macdSignal:8, earningsBeat:10, insiderBuying:6, analystConsensus:9, newsSentiment:9, aiInfraPlay:10, moatDirection:10, platformRisk:9, founderEffect:7, optionalityScore:9, brandMomentum:9, regulatoryTailwind:7 }
+  },
+  MSFT: {
+    name: 'Microsoft Corporation', sector: 'Cloud/SaaS', updated: 'May 2026',
+    raw: { revenueGrowth: '17%', fcfMargin: '27%', payoutRatio: '25%', roe: '35%', debtEquity: '0.3x', forwardPE: '32x', pegRatio: '2.0', priceToSales: '14x', analystUpside: '+12%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:7.5, fcfMargin:10, payoutRatio:9, roe:10, debtEquity:9, epsVsRev:7.5, aiOpMargin:8, revenueConversion:7, fcfCoverage:6, assetLightness:6, pegScore:5, psScore:3.5, analystUpside:6, forwardPEScore:4, maSignal:7, rsiScore:7, supportResistance:7, macdSignal:6, earningsBeat:8, insiderBuying:5, analystConsensus:8, newsSentiment:8, aiInfraPlay:9, moatDirection:10, platformRisk:10, founderEffect:6, optionalityScore:7, brandMomentum:8, regulatoryTailwind:6 }
+  },
+  AAPL: {
+    name: 'Apple Inc.', sector: 'Consumer Tech', updated: 'May 2026',
+    raw: { revenueGrowth: '6%', fcfMargin: '27%', payoutRatio: '15%', roe: '145%', debtEquity: '1.8x', forwardPE: '29x', pegRatio: '2.5', priceToSales: '9x', analystUpside: '+8%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:4, fcfMargin:10, payoutRatio:10, roe:9, debtEquity:2.5, epsVsRev:8, aiOpMargin:6, revenueConversion:6, fcfCoverage:8, assetLightness:9, pegScore:3, psScore:5, analystUpside:5, forwardPEScore:6, maSignal:7, rsiScore:8, supportResistance:8, macdSignal:6, earningsBeat:7, insiderBuying:4, analystConsensus:7, newsSentiment:7, aiInfraPlay:7, moatDirection:10, platformRisk:10, founderEffect:6, optionalityScore:8, brandMomentum:10, regulatoryTailwind:5 }
+  },
+  GOOGL: {
+    name: 'Alphabet Inc.', sector: 'AI Infrastructure', updated: 'May 2026',
+    raw: { revenueGrowth: '14%', fcfMargin: '18%', payoutRatio: '5%', roe: '27%', debtEquity: '0.1x', forwardPE: '21x', pegRatio: '1.2', priceToSales: '7x', analystUpside: '+18%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:6, fcfMargin:7, payoutRatio:10, roe:9, debtEquity:10, epsVsRev:8, aiOpMargin:9, revenueConversion:9, fcfCoverage:8, assetLightness:8, pegScore:7, psScore:8, analystUpside:7, forwardPEScore:8, maSignal:9, rsiScore:8, supportResistance:8, macdSignal:8, earningsBeat:8, insiderBuying:7, analystConsensus:8, newsSentiment:8, aiInfraPlay:9, moatDirection:9, platformRisk:10, founderEffect:6, optionalityScore:9, brandMomentum:8, regulatoryTailwind:4 }
+  },
+  META: {
+    name: 'Meta Platforms Inc.', sector: 'AI Infrastructure', updated: 'May 2026',
+    raw: { revenueGrowth: '22%', fcfMargin: '35%', payoutRatio: '2%', roe: '38%', debtEquity: '0.1x', forwardPE: '25x', pegRatio: '1.5', priceToSales: '10x', analystUpside: '+15%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:8.5, fcfMargin:10, payoutRatio:10, roe:10, debtEquity:10, epsVsRev:9, aiOpMargin:9, revenueConversion:8, fcfCoverage:7, assetLightness:7, pegScore:7, psScore:5, analystUpside:7, forwardPEScore:7.5, maSignal:9, rsiScore:6, supportResistance:8, macdSignal:8, earningsBeat:9, insiderBuying:6, analystConsensus:9, newsSentiment:9, aiInfraPlay:8, moatDirection:8, platformRisk:9, founderEffect:8, optionalityScore:8, brandMomentum:7, regulatoryTailwind:4 }
+  },
+  AMD: {
+    name: 'Advanced Micro Devices', sector: 'Semiconductors', updated: 'May 2026',
+    raw: { revenueGrowth: '24%', fcfMargin: '13%', payoutRatio: '0%', roe: '4%', debtEquity: '0.05x', forwardPE: '24x', pegRatio: '0.9', priceToSales: '8x', analystUpside: '+30%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:8.5, fcfMargin:5.5, payoutRatio:10, roe:2, debtEquity:10, epsVsRev:7, aiOpMargin:7, revenueConversion:8, fcfCoverage:7, assetLightness:9, pegScore:9, psScore:6, analystUpside:9, forwardPEScore:7.5, maSignal:7, rsiScore:8, supportResistance:6, macdSignal:6, earningsBeat:6, insiderBuying:6, analystConsensus:7, newsSentiment:7, aiInfraPlay:9, moatDirection:7, platformRisk:8, founderEffect:7, optionalityScore:7, brandMomentum:7, regulatoryTailwind:6 }
+  },
+  AVGO: {
+    name: 'Broadcom Inc.', sector: 'Semiconductors', updated: 'May 2026',
+    raw: { revenueGrowth: '51%', fcfMargin: '47%', payoutRatio: '50%', roe: '35%', debtEquity: '2.5x', forwardPE: '28x', pegRatio: '1.5', priceToSales: '17x', analystUpside: '+20%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:10, fcfMargin:10, payoutRatio:7, roe:10, debtEquity:1, epsVsRev:7, aiOpMargin:9, revenueConversion:9, fcfCoverage:9, assetLightness:7, pegScore:7, psScore:2.5, analystUpside:8, forwardPEScore:6, maSignal:8, rsiScore:7, supportResistance:8, macdSignal:8, earningsBeat:9, insiderBuying:4, analystConsensus:9, newsSentiment:9, aiInfraPlay:10, moatDirection:9, platformRisk:9, founderEffect:4, optionalityScore:7, brandMomentum:6, regulatoryTailwind:7 }
+  },
+  AMZN: {
+    name: 'Amazon.com Inc.', sector: 'Cloud/SaaS', updated: 'May 2026',
+    raw: { revenueGrowth: '11%', fcfMargin: '10%', payoutRatio: '0%', roe: '22%', debtEquity: '0.5x', forwardPE: '38x', pegRatio: '1.8', priceToSales: '4x', analystUpside: '+20%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:6, fcfMargin:5.5, payoutRatio:10, roe:8, debtEquity:7.5, epsVsRev:9, aiOpMargin:9, revenueConversion:8, fcfCoverage:5, assetLightness:4, pegScore:5, psScore:9, analystUpside:8, forwardPEScore:3, maSignal:8, rsiScore:7, supportResistance:8, macdSignal:8, earningsBeat:9, insiderBuying:6, analystConsensus:9, newsSentiment:9, aiInfraPlay:9, moatDirection:9, platformRisk:10, founderEffect:5, optionalityScore:8, brandMomentum:8, regulatoryTailwind:5 }
+  },
+  TSM: {
+    name: 'Taiwan Semiconductor', sector: 'Semiconductors', updated: 'May 2026',
+    raw: { revenueGrowth: '34%', fcfMargin: '28%', payoutRatio: '50%', roe: '30%', debtEquity: '0.2x', forwardPE: '22x', pegRatio: '1.0', priceToSales: '12x', analystUpside: '+25%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:10, fcfMargin:10, payoutRatio:7, roe:10, debtEquity:9, epsVsRev:8, aiOpMargin:10, revenueConversion:10, fcfCoverage:8, assetLightness:2, pegScore:9, psScore:4, analystUpside:9, forwardPEScore:8, maSignal:9, rsiScore:6, supportResistance:9, macdSignal:9, earningsBeat:10, insiderBuying:6, analystConsensus:10, newsSentiment:9, aiInfraPlay:10, moatDirection:10, platformRisk:9, founderEffect:4, optionalityScore:6, brandMomentum:6, regulatoryTailwind:4 }
+  },
+  QCOM: {
+    name: 'Qualcomm Inc.', sector: 'Semiconductors', updated: 'May 2026',
+    raw: { revenueGrowth: '17%', fcfMargin: '35%', payoutRatio: '30%', roe: '47%', debtEquity: '1.5x', forwardPE: '15x', pegRatio: '0.8', priceToSales: '5x', analystUpside: '+22%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:7.5, fcfMargin:10, payoutRatio:9, roe:10, debtEquity:4, epsVsRev:8, aiOpMargin:8, revenueConversion:7, fcfCoverage:9, assetLightness:9, pegScore:9, psScore:9, analystUpside:8, forwardPEScore:9, maSignal:8, rsiScore:8, supportResistance:8, macdSignal:8, earningsBeat:9, insiderBuying:6, analystConsensus:8, newsSentiment:8, aiInfraPlay:8, moatDirection:8, platformRisk:8, founderEffect:4, optionalityScore:7, brandMomentum:7, regulatoryTailwind:5 }
+  },
+  CRM: {
+    name: 'Salesforce Inc.', sector: 'Enterprise Software', updated: 'May 2026',
+    raw: { revenueGrowth: '9%', fcfMargin: '28%', payoutRatio: '5%', roe: '12%', debtEquity: '0.2x', forwardPE: '26x', pegRatio: '2.0', priceToSales: '8x', analystUpside: '+16%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:5, fcfMargin:10, payoutRatio:10, roe:5, debtEquity:9, epsVsRev:9, aiOpMargin:8, revenueConversion:7, fcfCoverage:9, assetLightness:9, pegScore:5, psScore:6, analystUpside:7, forwardPEScore:7, maSignal:7, rsiScore:8, supportResistance:7, macdSignal:6, earningsBeat:8, insiderBuying:4, analystConsensus:7, newsSentiment:7, aiInfraPlay:7, moatDirection:8, platformRisk:8, founderEffect:5, optionalityScore:6, brandMomentum:7, regulatoryTailwind:6 }
+  },
+  NOW: {
+    name: 'ServiceNow Inc.', sector: 'Enterprise Software', updated: 'May 2026',
+    raw: { revenueGrowth: '22%', fcfMargin: '30%', payoutRatio: '0%', roe: '60%', debtEquity: '0.3x', forwardPE: '45x', pegRatio: '1.5', priceToSales: '20x', analystUpside: '+18%', recommendationMean: 'Strong Buy' },
+    scores: { revenueGrowth:8.5, fcfMargin:10, payoutRatio:10, roe:10, debtEquity:9, epsVsRev:9, aiOpMargin:9, revenueConversion:8, fcfCoverage:9, assetLightness:10, pegScore:7, psScore:1, analystUpside:7, forwardPEScore:2, maSignal:8, rsiScore:7, supportResistance:8, macdSignal:8, earningsBeat:9, insiderBuying:6, analystConsensus:9, newsSentiment:9, aiInfraPlay:8, moatDirection:9, platformRisk:9, founderEffect:6, optionalityScore:7, brandMomentum:7, regulatoryTailwind:6 }
+  },
+  PANW: {
+    name: 'Palo Alto Networks', sector: 'Cybersecurity', updated: 'May 2026',
+    raw: { revenueGrowth: '15%', fcfMargin: '38%', payoutRatio: '0%', roe: '85%', debtEquity: '0.2x', forwardPE: '50x', pegRatio: '2.0', priceToSales: '18x', analystUpside: '+15%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:7.5, fcfMargin:10, payoutRatio:10, roe:9, debtEquity:9, epsVsRev:9, aiOpMargin:9, revenueConversion:8, fcfCoverage:9, assetLightness:10, pegScore:5, psScore:2, analystUpside:7, forwardPEScore:1, maSignal:8, rsiScore:7, supportResistance:8, macdSignal:6, earningsBeat:9, insiderBuying:6, analystConsensus:8, newsSentiment:8, aiInfraPlay:8, moatDirection:9, platformRisk:9, founderEffect:5, optionalityScore:7, brandMomentum:7, regulatoryTailwind:6 }
+  },
+  TSLA: {
+    name: 'Tesla Inc.', sector: 'Consumer Tech', updated: 'May 2026',
+    raw: { revenueGrowth: '3%', fcfMargin: '5%', payoutRatio: '0%', roe: '10%', debtEquity: '0.1x', forwardPE: '85x', pegRatio: '12.0', priceToSales: '8x', analystUpside: '-5%', recommendationMean: 'Hold' },
+    scores: { revenueGrowth:2.5, fcfMargin:4, payoutRatio:10, roe:5, debtEquity:10, epsVsRev:1, aiOpMargin:3, revenueConversion:4, fcfCoverage:5, assetLightness:3, pegScore:1, psScore:6, analystUpside:1, forwardPEScore:1, maSignal:5, rsiScore:8, supportResistance:5, macdSignal:5, earningsBeat:3, insiderBuying:4, analystConsensus:3, newsSentiment:5, aiInfraPlay:6, moatDirection:5, platformRisk:6, founderEffect:10, optionalityScore:10, brandMomentum:10, regulatoryTailwind:8 }
+  },
+  INTC: {
+    name: 'Intel Corporation', sector: 'Semiconductors', updated: 'May 2026',
+    raw: { revenueGrowth: '-5%', fcfMargin: '-5%', payoutRatio: '0%', roe: '-15%', debtEquity: '1.2x', forwardPE: 'N/A', pegRatio: 'N/A', priceToSales: '3x', analystUpside: '+10%', recommendationMean: 'Hold' },
+    scores: { revenueGrowth:1, fcfMargin:1, payoutRatio:5, roe:1, debtEquity:4, epsVsRev:1, aiOpMargin:2, revenueConversion:2, fcfCoverage:1, assetLightness:1, pegScore:1, psScore:10, analystUpside:6, forwardPEScore:1, maSignal:1, rsiScore:7, supportResistance:3, macdSignal:2, earningsBeat:2, insiderBuying:6, analystConsensus:4, newsSentiment:2, aiInfraPlay:4, moatDirection:4, platformRisk:5, founderEffect:2, optionalityScore:4, brandMomentum:4, regulatoryTailwind:6 }
+  },
+  SNOW: {
+    name: 'Snowflake Inc.', sector: 'Cloud/SaaS', updated: 'May 2026',
+    raw: { revenueGrowth: '26%', fcfMargin: '20%', payoutRatio: '0%', roe: '-8%', debtEquity: '0.0x', forwardPE: '120x', pegRatio: '3.5', priceToSales: '15x', analystUpside: '+25%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:9, fcfMargin:8.5, payoutRatio:10, roe:1, debtEquity:10, epsVsRev:5, aiOpMargin:7, revenueConversion:7, fcfCoverage:8, assetLightness:10, pegScore:2, psScore:3.5, analystUpside:9, forwardPEScore:1, maSignal:7, rsiScore:7, supportResistance:6, macdSignal:7, earningsBeat:7, insiderBuying:5, analystConsensus:7, newsSentiment:7, aiInfraPlay:8, moatDirection:7, platformRisk:8, founderEffect:4, optionalityScore:7, brandMomentum:6, regulatoryTailwind:5 }
+  },
+  DDOG: {
+    name: 'Datadog Inc.', sector: 'Cybersecurity', updated: 'May 2026',
+    raw: { revenueGrowth: '24%', fcfMargin: '22%', payoutRatio: '0%', roe: '8%', debtEquity: '0.1x', forwardPE: '65x', pegRatio: '2.5', priceToSales: '18x', analystUpside: '+20%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:8.5, fcfMargin:8.5, payoutRatio:10, roe:3, debtEquity:10, epsVsRev:7, aiOpMargin:8, revenueConversion:8, fcfCoverage:9, assetLightness:10, pegScore:3, psScore:2, analystUpside:8, forwardPEScore:1, maSignal:7, rsiScore:7, supportResistance:7, macdSignal:7, earningsBeat:8, insiderBuying:5, analystConsensus:8, newsSentiment:8, aiInfraPlay:8, moatDirection:8, platformRisk:8, founderEffect:5, optionalityScore:7, brandMomentum:6, regulatoryTailwind:6 }
+  },
+  ORCL: {
+    name: 'Oracle Corporation', sector: 'Enterprise Software', updated: 'May 2026',
+    raw: { revenueGrowth: '9%', fcfMargin: '22%', payoutRatio: '30%', roe: 'N/A', debtEquity: 'N/A', forwardPE: '24x', pegRatio: '1.8', priceToSales: '9x', analystUpside: '+14%', recommendationMean: 'Buy' },
+    scores: { revenueGrowth:5, fcfMargin:8.5, payoutRatio:9, roe:7, debtEquity:2, epsVsRev:8, aiOpMargin:8, revenueConversion:8, fcfCoverage:7, assetLightness:8, pegScore:5, psScore:5, analystUpside:6, forwardPEScore:7.5, maSignal:8, rsiScore:7, supportResistance:8, macdSignal:8, earningsBeat:8, insiderBuying:5, analystConsensus:7, newsSentiment:7, aiInfraPlay:8, moatDirection:8, platformRisk:8, founderEffect:5, optionalityScore:7, brandMomentum:7, regulatoryTailwind:6 }
+  },
+  ARM: {
+    name: 'Arm Holdings', sector: 'Semiconductors', updated: 'May 2026',
+    raw: { revenueGrowth: '34%', fcfMargin: '40%', payoutRatio: '0%', roe: '25%', debtEquity: '0.0x', forwardPE: '90x', pegRatio: '2.0', priceToSales: '38x', analystUpside: '+10%', recommendationMean: 'Hold/Buy' },
+    scores: { revenueGrowth:10, fcfMargin:10, payoutRatio:10, roe:9, debtEquity:10, epsVsRev:8, aiOpMargin:9, revenueConversion:9, fcfCoverage:10, assetLightness:10, pegScore:5, psScore:1, analystUpside:6, forwardPEScore:1, maSignal:7, rsiScore:6, supportResistance:7, macdSignal:6, earningsBeat:8, insiderBuying:5, analystConsensus:6, newsSentiment:8, aiInfraPlay:10, moatDirection:10, platformRisk:10, founderEffect:4, optionalityScore:8, brandMomentum:7, regulatoryTailwind:5 }
+  }
+};
+
+// ===== SCORING MODEL DEFINITION (Upgrade B + C: Narrative Premium + Rebalanced Weights) =====
+const CATEGORIES = [
+  {
+    id: 'fundamental', icon: '📊', name: 'Fundamental Analysis', weight: 0.25, color: '#38bdf8',
+    tags: [],
+    sliders: [
+      { id: 'revenueGrowth', label: 'Revenue Growth YoY %', tip: 'e.g. 25% = score 8' },
+      { id: 'fcfMargin', label: 'Free Cash Flow Margin %', tip: 'e.g. 25%+ = score 9' },
+      { id: 'payoutRatio', label: 'Payout Ratio Safety', tip: 'Lower ratio = higher score' },
+      { id: 'roe', label: 'Return on Equity (ROE)', tip: '20%+ = score 8' },
+      { id: 'debtEquity', label: 'Debt-to-Equity', tip: 'Lower = higher score' },
+      { id: 'epsVsRev', label: 'EPS Growth vs Revenue Growth', tip: 'Faster EPS = operating leverage' }
+    ]
+  },
+  {
+    id: 'aiMetrics', icon: '🤖', name: 'AI & Sector Metrics', weight: 0.175, color: '#a78bfa',
+    tags: [],
+    sliders: [
+      { id: 'aiOpMargin', label: 'Incremental Operating Margin Trend', tip: 'Is margin improving?' },
+      { id: 'revenueConversion', label: 'Revenue Conversion Velocity', tip: 'Capex → Revenue speed' },
+      { id: 'fcfCoverage', label: 'FCF Coverage of AI Capex', tip: 'Can it fund growth + returns?' },
+      { id: 'assetLightness', label: 'Asset-Lightness Score', tip: 'Higher = less capital intensive' }
+    ]
+  },
+  {
+    id: 'valuation', icon: '📈', name: 'Valuation', weight: 0.25, color: '#10b981',
+    tags: ['upgraded'],
+    sliders: [
+      { id: 'pegScore', label: 'PEG Ratio Attractiveness', tip: 'PEG < 1.0 = score 9+' },
+      { id: 'psScore', label: 'P/S vs Sector Average', tip: 'Below 7.4x sector avg = higher score' },
+      { id: 'analystUpside', label: 'Analyst Price Target Upside', tip: '20%+ upside = score 8' },
+      { id: 'forwardPEScore', label: 'Forward P/E Reasonableness', tip: 'Below 30x = score 7+' }
+    ]
+  },
+  {
+    id: 'technical', icon: '📡', name: 'Technical Signals', weight: 0.125, color: '#f59e0b',
+    tags: [],
+    sliders: [
+      { id: 'maSignal', label: '50/200-Day MA Signal', tip: 'Golden cross = score 9' },
+      { id: 'rsiScore', label: 'RSI Score', tip: '30–60 range = opportunity zone' },
+      { id: 'supportResistance', label: 'Support/Resistance Risk-Reward', tip: 'Strong support = high score' },
+      { id: 'macdSignal', label: 'MACD Crossover Signal', tip: 'Bullish crossover = score 8+' }
+    ]
+  },
+  {
+    id: 'sentiment', icon: '🗞️', name: 'Sentiment & Catalysts', weight: 0.10, color: '#ec4899',
+    tags: [],
+    sliders: [
+      { id: 'earningsBeat', label: 'Earnings Beat & Guidance Raise', tip: 'Both = score 10' },
+      { id: 'insiderBuying', label: 'Insider Buying Activity', tip: 'Heavy buying near lows = 9' },
+      { id: 'analystConsensus', label: 'Analyst Accuracy & Consensus', tip: 'High-accuracy upgrades = 9' },
+      { id: 'newsSentiment', label: '30-Day News Sentiment', tip: 'Positive momentum = high score' }
+    ]
+  },
+  {
+    id: 'narrative', icon: '✨', name: 'Narrative Premium', weight: 0.05, color: '#8b5cf6',
+    tags: ['new'],
+    sliders: [
+      { id: 'founderEffect', label: 'Founder / CEO Effect', tip: 'Score 10 = Elon/Jobs-level market narrative driver. Score 5 = competent but unremarkable CEO. Score 1 = leadership liability.' },
+      { id: 'optionalityScore', label: 'Optionality Score', tip: 'Score 10 = multiple credible moonshots (FSD, Robotaxi, humanoid robots). Score 5 = one clear expansion path. Score 1 = no visible upside optionality.' },
+      { id: 'brandMomentum', label: 'Brand Momentum', tip: 'Score 10 = dominant cultural presence (Apple, Tesla, NVIDIA). Score 5 = respected but niche. Score 1 = fading or unknown brand.' },
+      { id: 'regulatoryTailwind', label: 'Regulatory Tailwind', tip: 'Score 10 = strong government backing, favorable policy. Score 5 = neutral. Score 1 = major regulatory headwinds.' }
+    ]
+  },
+  {
+    id: 'thematic', icon: '🔭', name: 'Thematic Positioning', weight: 0.05, color: '#06b6d4',
+    tags: [],
+    sliders: [
+      { id: 'aiInfraPlay', label: 'AI Infrastructure Play', tip: 'Core infra provider = 10' },
+      { id: 'moatDirection', label: 'Competitive Moat Direction', tip: 'Widening moat = 9' },
+      { id: 'platformRisk', label: 'Platform vs Feature Risk', tip: 'True platform = 10' }
+    ]
+  }
+];
+
+// Map category IDs for weight system
+const CAT_WEIGHT_KEY_MAP = {
+  'fundamental': 'fundamental',
+  'aiMetrics': 'ai',
+  'valuation': 'valuation',
+  'technical': 'technical',
+  'sentiment': 'sentiment',
+  'narrative': 'narrative',
+  'thematic': 'thematic'
+};
+
+const RAW_METRIC_LABELS = {
+  revenueGrowth: 'Revenue Growth', fcfMargin: 'FCF Margin', payoutRatio: 'Payout Ratio',
+  roe: 'ROE', debtEquity: 'D/E Ratio', forwardPE: 'Forward P/E', pegRatio: 'PEG Ratio',
+  priceToSales: 'Price/Sales', analystUpside: 'Analyst Upside', recommendationMean: 'Consensus'
+};
+
+// ===== APP STATE =====
+let stocks = [];
+let activeStockIdx = 0;
+let radarChart = null;
+let barChart = null;
+let sliderBadgeStates = {};
+let macroRegime = 'neutral';
+
+function createDefaultStock() {
+  const scores = {};
+  CATEGORIES.forEach(cat => { cat.sliders.forEach(s => { scores[s.id] = 0; }); });
+  return { ticker: '', company: '', sector: '', scores, id: Date.now() + Math.random(), loadedFromDB: false, rawData: null };
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('techstock_v2_state');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.stocks && parsed.stocks.length > 0) {
+        stocks = parsed.stocks;
+        // Migrate: add narrative sliders if missing
+        stocks.forEach(s => {
+          if (s.scores.founderEffect === undefined) s.scores.founderEffect = 0;
+          if (s.scores.optionalityScore === undefined) s.scores.optionalityScore = 0;
+          if (s.scores.brandMomentum === undefined) s.scores.brandMomentum = 0;
+          if (s.scores.regulatoryTailwind === undefined) s.scores.regulatoryTailwind = 0;
+        });
+        activeStockIdx = Math.min(parsed.activeIdx || 0, stocks.length - 1);
+        sliderBadgeStates = parsed.badgeStates || {};
+        return;
+      }
+    }
+  } catch(e) {}
+  stocks = [createDefaultStock()];
+  activeStockIdx = 0;
+}
+
+function loadMacroRegime() {
+  try {
+    const saved = localStorage.getItem('techstock_macro_regime');
+    if (saved && ['risk-on','neutral','risk-off'].includes(saved)) {
+      macroRegime = saved;
+    }
+  } catch(e) {}
+}
+
+function saveMacroRegime() {
+  try { localStorage.setItem('techstock_macro_regime', macroRegime); } catch(e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem('techstock_v2_state', JSON.stringify({ stocks, activeIdx: activeStockIdx, badgeStates: sliderBadgeStates }));
+  } catch(e) {}
+}
+
+// ===== UPGRADE D: Macro Regime Weight System =====
+const BASE_WEIGHTS = { fundamental:0.25, ai:0.175, valuation:0.25, technical:0.125, sentiment:0.10, thematic:0.05, narrative:0.05 };
+
+const REGIME_MULTIPLIERS = {
+  'risk-on':  { fundamental:0.95, ai:1.20, valuation:0.90, technical:1.00, sentiment:1.10, thematic:1.20, narrative:1.20 },
+  'neutral':  { fundamental:1.00, ai:1.00, valuation:1.00, technical:1.00, sentiment:1.00, thematic:1.00, narrative:1.00 },
+  'risk-off': { fundamental:1.15, ai:0.85, valuation:1.20, technical:1.05, sentiment:0.90, thematic:0.80, narrative:0.60 }
+};
+
+const GROWTH_MULTIPLIERS = { 'risk-on': 1.15, 'neutral': 1.00, 'risk-off': 0.70 };
+
+function getAdjustedWeights() {
+  const mults = REGIME_MULTIPLIERS[macroRegime];
+  const adjusted = {};
+  let total = 0;
+  for (const cat in BASE_WEIGHTS) { adjusted[cat] = BASE_WEIGHTS[cat] * mults[cat]; total += adjusted[cat]; }
+  for (const cat in adjusted) adjusted[cat] /= total;
+  return adjusted;
+}
+
+function getEffectiveWeight(catId) {
+  const weightKey = CAT_WEIGHT_KEY_MAP[catId];
+  const adjusted = getAdjustedWeights();
+  return adjusted[weightKey] || 0;
+}
+
+// ===== UPGRADE A: Expanded Growth Projection =====
+function growthProjection(score, aiScore, thematicScore) {
+  const aiThematicAvg = (aiScore + thematicScore) / 2;
+  const aiBonus = (score >= 80 && aiThematicAvg > 8.5) ? (aiThematicAvg - 8.5) * 5 : 0;
+  let bull, base, bear;
+  if (score >= 90) {
+    bull = 80 + ((score - 90) / 10) * 20 + aiBonus;
+    base = 58 + ((score - 90) / 10) * 17 + aiBonus * 0.6;
+    bear = 38 + ((score - 90) / 10) * 12;
+  } else if (score >= 85) {
+    bull = 65 + ((score - 85) / 5) * 15 + aiBonus;
+    base = 47 + ((score - 85) / 5) * 11 + aiBonus * 0.5;
+    bear = 30 + ((score - 85) / 5) * 8;
+  } else if (score >= 70) {
+    bull = 35 + ((score - 70) / 14) * 30;
+    base = 22 + ((score - 70) / 14) * 25;
+    bear = 10 + ((score - 70) / 14) * 20;
+  } else if (score >= 55) {
+    bull = 15 + ((score - 55) / 14) * 15;
+    base = 5  + ((score - 55) / 14) * 13;
+    bear = -5 + ((score - 55) / 14) * 3;
+  } else if (score >= 40) {
+    bull = 5  + ((score - 40) / 14) * 5;
+    base = -8 + ((score - 40) / 14) * 3;
+    bear = -15 + ((score - 40) / 14) * 5;
+  } else {
+    bull = -5; base = -15; bear = -30;
+  }
+  return { bull: +bull.toFixed(1), base: +base.toFixed(1), bear: +bear.toFixed(1) };
+}
+
+// ===== UNIFIED SCORING ENGINE =====
+function avgArr(arr) { return arr.length === 0 ? 0 : arr.reduce((a,b)=>a+b,0)/arr.length; }
+
+function getCategoryAvg(stock, catId) {
+  const cat = CATEGORIES.find(c => c.id === catId);
+  if (!cat) return 0;
+  const vals = cat.sliders.map(s => stock.scores[s.id] || 0);
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function computeFullScore(stock) {
+  const adjusted = getAdjustedWeights();
+  const growthMult = GROWTH_MULTIPLIERS[macroRegime];
+
+  const catAvgs = {
+    fundamental: getCategoryAvg(stock, 'fundamental'),
+    ai:          getCategoryAvg(stock, 'aiMetrics'),
+    valuation:   getCategoryAvg(stock, 'valuation'),
+    technical:   getCategoryAvg(stock, 'technical'),
+    sentiment:   getCategoryAvg(stock, 'sentiment'),
+    narrative:   getCategoryAvg(stock, 'narrative'),
+    thematic:    getCategoryAvg(stock, 'thematic')
+  };
+
+  const composite = Object.keys(adjusted).reduce((sum, cat) => sum + catAvgs[cat] * adjusted[cat], 0);
+  const score = +(composite * 10).toFixed(1);
+
+  const proj = growthProjection(score, catAvgs.ai, catAvgs.thematic);
+  proj.bull = +(proj.bull * growthMult).toFixed(1);
+  proj.base = +(proj.base * growthMult).toFixed(1);
+  proj.bear = +(proj.bear * growthMult).toFixed(1);
+
+  return { score, catAvgs, proj, adjustedWeights: adjusted, growthMult };
+}
+
+function getCompositeScore(stock) {
+  return computeFullScore(stock).score;
+}
+
+function getFilledCount(stock) {
+  let count = 0;
+  CATEGORIES.forEach(cat => { cat.sliders.forEach(s => { if (stock.scores[s.id] > 0) count++; }); });
+  return count;
+}
+
+function getRecommendation(score) {
+  if (score >= 85) return { text: '🚀 STRONG BUY', color: 'bg-success text-base-900' };
+  if (score >= 70) return { text: '✅ BUY', color: 'bg-success/80 text-base-900' };
+  if (score >= 55) return { text: '⏸ HOLD', color: 'bg-warning text-base-900' };
+  if (score >= 40) return { text: '👀 WATCH', color: 'bg-warning/70 text-base-900' };
+  return { text: '❌ AVOID', color: 'bg-danger text-base-100' };
+}
+
+function getScoreColor(score) {
+  if (score >= 85) return '#22c55e';
+  if (score >= 70) return '#10b981';
+  if (score >= 55) return '#f59e0b';
+  if (score >= 40) return '#f97316';
+  return '#ef4444';
+}
+
+function getRiskFlags(stock) {
+  const flags = [];
+  const val = getCategoryAvg(stock, 'valuation');
+  const tech = getCategoryAvg(stock, 'technical');
+  const thematic = getCategoryAvg(stock, 'thematic');
+  const de = stock.scores.debtEquity || 0;
+  const sent = getCategoryAvg(stock, 'sentiment');
+  if (val < 5 && val > 0) flags.push({ icon: '⚠️', text: 'Overvaluation Risk — Forward P/E may be pricing in perfection', color: 'warning' });
+  if (de > 0 && de < 5) flags.push({ icon: '⚠️', text: 'Leverage Risk — High debt could constrain growth', color: 'danger' });
+  if (tech < 5 && tech > 0) flags.push({ icon: '⚠️', text: 'Weak Technicals — Consider waiting for MA confirmation', color: 'warning' });
+  if (thematic < 6 && thematic > 0) flags.push({ icon: '⚠️', text: 'Thematic Misalignment — Limited AI infrastructure exposure', color: 'warning' });
+  if (sent < 4 && sent > 0) flags.push({ icon: '⚠️', text: 'Negative Sentiment — Recent news/earnings may be adverse', color: 'danger' });
+  const fcf = stock.scores.fcfMargin || 0;
+  if (fcf > 0 && fcf < 4) flags.push({ icon: '⚠️', text: 'Weak Cash Flow — Limited FCF may constrain capital returns', color: 'danger' });
+  return flags;
+}
+
+function getStrengths(stock) {
+  const strengths = [];
+  if ((stock.scores.fcfMargin || 0) >= 8) strengths.push('💪 Strong FCF Generation');
+  if ((stock.scores.moatDirection || 0) >= 8) strengths.push('💪 Widening Competitive Moat');
+  if (getCategoryAvg(stock, 'technical') >= 7) strengths.push('💪 Bullish Technical Setup');
+  if ((stock.scores.revenueGrowth || 0) >= 8) strengths.push('💪 Exceptional Revenue Growth');
+  if ((stock.scores.roe || 0) >= 8) strengths.push('💪 High Return on Equity');
+  if ((stock.scores.earningsBeat || 0) >= 8) strengths.push('💪 Strong Earnings Momentum');
+  if ((stock.scores.aiInfraPlay || 0) >= 8) strengths.push('💪 Core AI Infrastructure Play');
+  if (getCategoryAvg(stock, 'valuation') >= 7) strengths.push('💪 Attractive Valuation');
+  if ((stock.scores.pegScore || 0) >= 8) strengths.push('💪 PEG Ratio Indicates Undervaluation');
+  if ((stock.scores.platformRisk || 0) >= 8) strengths.push('💪 True Platform Business');
+  if ((stock.scores.founderEffect || 0) >= 8) strengths.push('💪 Strong Founder/CEO Narrative');
+  if ((stock.scores.brandMomentum || 0) >= 8) strengths.push('💪 Dominant Brand Presence');
+  return strengths;
+}
+
+function getTopRisk(stock) {
+  const flags = getRiskFlags(stock);
+  return flags.length === 0 ? 'None' : flags[0].text.split(' — ')[0].replace('⚠️ ', '');
+}
+
+function getTopStrength(stock) {
+  const s = getStrengths(stock);
+  return s.length === 0 ? 'None' : s[0].replace('💪 ', '');
+}
+
+// ===== RAW METRIC COLOR CLASSIFICATION =====
+function classifyRawMetric(key, value) {
+  if (value === 'N/A' || value === 'N/A (negative equity)') return 'neutral';
+  const numVal = parseFloat(value.replace(/[^0-9.\-]/g, ''));
+  if (isNaN(numVal)) {
+    if (value === 'Strong Buy') return 'strong';
+    if (value === 'Buy') return 'strong';
+    if (value === 'Hold' || value === 'Hold/Buy') return 'moderate';
+    if (value === 'Sell') return 'weak';
+    return 'neutral';
+  }
+  switch(key) {
+    case 'revenueGrowth': return numVal >= 20 ? 'strong' : numVal >= 10 ? 'moderate' : 'weak';
+    case 'fcfMargin': return numVal >= 20 ? 'strong' : numVal >= 10 ? 'moderate' : 'weak';
+    case 'payoutRatio': return numVal <= 30 ? 'strong' : numVal <= 60 ? 'moderate' : 'weak';
+    case 'roe': return numVal >= 20 ? 'strong' : numVal >= 10 ? 'moderate' : 'weak';
+    case 'debtEquity': return numVal <= 0.5 ? 'strong' : numVal <= 1.5 ? 'moderate' : 'weak';
+    case 'forwardPE': return numVal <= 25 ? 'strong' : numVal <= 40 ? 'moderate' : 'weak';
+    case 'pegRatio': return numVal <= 1.2 ? 'strong' : numVal <= 2.0 ? 'moderate' : 'weak';
+    case 'priceToSales': return numVal <= 8 ? 'strong' : numVal <= 15 ? 'moderate' : 'weak';
+    case 'analystUpside': return numVal >= 15 ? 'strong' : numVal >= 5 ? 'moderate' : 'weak';
+    default: return 'neutral';
+  }
+}
+
+// ===== UI RENDERING =====
+function renderTabs() {
+  const container = document.getElementById('stock-tabs-f9dk');
+  container.innerHTML = '';
+  stocks.forEach((stock, idx) => {
+    const score = getCompositeScore(stock);
+    const scoreColor = getScoreColor(score);
+    const isActive = idx === activeStockIdx;
+    const tab = document.createElement('button');
+    tab.className = `flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border transition-all whitespace-nowrap cursor-pointer min-h-[40px] ${isActive ? 'tab-active' : 'bg-base-800/50 border-base-700 text-base-400 hover:bg-base-700 hover:text-base-200'}`;
+    tab.dataset.idx = idx;
+    const ticker = stock.ticker || `Stock ${idx + 1}`;
+    tab.innerHTML = `<span>${ticker}</span><span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-base-900 tabular-nums" style="background:${score > 0 ? scoreColor : '#475569'}">${score > 0 ? Math.round(score) : '–'}</span>${stocks.length > 1 ? '<span class="tab-close ml-1 text-base-500 hover:text-danger text-base font-bold leading-none" data-closeidx="'+idx+'">×</span>' : ''}`;
+    container.appendChild(tab);
+  });
+  container.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const closeEl = e.target.closest('.tab-close');
+      if (closeEl) {
+        e.stopPropagation();
+        const ci = parseInt(closeEl.dataset.closeidx);
+        if (stocks.length > 1) {
+          stocks.splice(ci, 1);
+          if (activeStockIdx >= stocks.length) activeStockIdx = stocks.length - 1;
+          saveState();
+          renderAll();
+        }
+        return;
+      }
+      activeStockIdx = parseInt(btn.dataset.idx);
+      saveState();
+      renderAll();
+    });
+  });
+}
+
+function renderScoringSection(cat, stock, expanded) {
+  const avg = getCategoryAvg(stock, cat.id);
+  const pillColor = avg >= 7 ? 'bg-success/20 text-success' : avg >= 4 ? 'bg-warning/20 text-warning' : avg > 0 ? 'bg-danger/20 text-danger' : 'bg-base-700 text-base-500';
+  const effectiveW = getEffectiveWeight(cat.id);
+  const weightPct = (effectiveW * 100).toFixed(1).replace(/\.0$/, '');
+  const stockId = stock.id;
+  const badges = sliderBadgeStates[stockId] || {};
+  const isNarrative = cat.id === 'narrative';
+
+  let tagHtml = '';
+  if (cat.tags && cat.tags.includes('new')) {
+    tagHtml = '<span class="weight-tag-new">NEW</span>';
+  } else if (cat.tags && cat.tags.includes('upgraded')) {
+    tagHtml = '<span class="weight-tag-upgraded">↑ upgraded</span>';
+  }
+
+  let html = `<div class="card overflow-hidden" data-cat="${cat.id}">`;
+  html += `<button class="collapse-toggle w-full flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-base-700/30 transition-colors" data-target="${cat.id}">`;
+  html += `<div class="flex items-center gap-2.5"><span class="text-lg">${cat.icon}</span><span class="text-sm font-semibold text-base-200">${cat.name}</span><span class="text-[10px] px-2 py-0.5 rounded-full bg-base-700 text-base-400 font-medium cat-weight-badge" data-catid="${cat.id}">${weightPct}%</span>${tagHtml}</div>`;
+  html += `<div class="flex items-center gap-2"><span class="text-xs font-bold tabular-nums px-2 py-0.5 rounded-full ${pillColor}">${avg > 0 ? avg.toFixed(1) : '–'}</span><i data-lucide="chevron-down" class="w-4 h-4 text-base-500 collapse-chevron transition-transform ${expanded ? 'rotate-180' : ''}"></i></div>`;
+  html += `</button>`;
+  html += `<div class="collapse-content ${expanded ? 'open' : ''}" id="collapse-${cat.id}">`;
+  html += `<div class="px-5 pb-4 flex flex-col gap-4 pt-1">`;
+  cat.sliders.forEach(s => {
+    const val = stock.scores[s.id] || 0;
+    const valColor = val >= 7 ? 'text-success' : val >= 4 ? 'text-warning' : val > 0 ? 'text-danger' : 'text-base-500';
+    const badgeState = badges[s.id];
+    let badgeHtml = '';
+    if (badgeState === 'auto') {
+      badgeHtml = isNarrative ? '<span class="auto-badge auto-violet">auto</span>' : '<span class="auto-badge auto">auto</span>';
+    } else if (badgeState === 'edited') {
+      badgeHtml = '<span class="auto-badge edited">✏️ edited</span>';
+    }
+    html += `<div class="slider-group">`;
+    html += `<div class="flex items-center justify-between mb-1.5">`;
+    html += `<div class="tooltip-wrap flex items-center gap-1.5"><label class="text-xs text-base-300 font-medium cursor-help">${s.label}</label><span class="tooltip-text">${s.tip}</span>${badgeHtml}</div>`;
+    html += `<span class="text-sm font-bold tabular-nums ${valColor} min-w-[32px] text-right slider-val-badge">${val.toFixed(1)}</span>`;
+    html += `</div>`;
+    html += `<input type="range" min="0" max="10" step="0.1" value="${val}" class="slider-track w-full" data-slider="${s.id}" />`;
+    html += `<p class="text-[10px] text-base-600 mt-0.5">${s.tip}</p>`;
+    html += `</div>`;
+  });
+  html += `</div></div></div>`;
+  return html;
+}
+
+function renderScoringUI() {
+  const container = document.getElementById('scoring-sections-k3fd');
+  const stock = stocks[activeStockIdx];
+  let html = '';
+  CATEGORIES.forEach((cat) => {
+    const hasData = getCategoryAvg(stock, cat.id) > 0;
+    html += renderScoringSection(cat, stock, hasData);
+  });
+  container.innerHTML = html;
+
+  container.querySelectorAll('input[type="range"]').forEach(slider => {
+    slider.addEventListener('input', (e) => {
+      const key = e.target.dataset.slider;
+      const val = parseFloat(e.target.value);
+      stocks[activeStockIdx].scores[key] = val;
+      const stockId = stocks[activeStockIdx].id;
+      if (!sliderBadgeStates[stockId]) sliderBadgeStates[stockId] = {};
+      if (sliderBadgeStates[stockId][key] === 'auto') {
+        sliderBadgeStates[stockId][key] = 'edited';
+        const badgeEl = e.target.closest('.slider-group').querySelector('.auto-badge');
+        if (badgeEl) {
+          badgeEl.className = 'auto-badge edited';
+          badgeEl.textContent = '✏️ edited';
+        }
+      }
+      saveState();
+      updateResults();
+      renderTabs();
+      const valSpan = e.target.closest('.slider-group').querySelector('.slider-val-badge');
+      valSpan.textContent = val.toFixed(1);
+      valSpan.className = `text-sm font-bold tabular-nums min-w-[32px] text-right slider-val-badge ${val >= 7 ? 'text-success' : val >= 4 ? 'text-warning' : val > 0 ? 'text-danger' : 'text-base-500'}`;
+      updateCategoryPill(e.target);
+    });
+  });
+
+  container.querySelectorAll('.collapse-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.target;
+      const content = document.getElementById('collapse-' + target);
+      const chev = btn.querySelector('.collapse-chevron');
+      content.classList.toggle('open');
+      chev.classList.toggle('rotate-180');
+    });
+  });
+
+  lucide.createIcons();
+}
+
+function updateCategoryPill(sliderEl) {
+  const card = sliderEl.closest('[data-cat]');
+  const catId = card.dataset.cat;
+  const stock = stocks[activeStockIdx];
+  const avg = getCategoryAvg(stock, catId);
+  const pill = card.querySelector('.collapse-toggle .tabular-nums');
+  const pillColor = avg >= 7 ? 'bg-success/20 text-success' : avg >= 4 ? 'bg-warning/20 text-warning' : avg > 0 ? 'bg-danger/20 text-danger' : 'bg-base-700 text-base-500';
+  pill.className = `text-xs font-bold tabular-nums px-2 py-0.5 rounded-full ${pillColor}`;
+  pill.textContent = avg > 0 ? avg.toFixed(1) : '–';
+  pill.classList.add('pulse-update');
+  setTimeout(() => pill.classList.remove('pulse-update'), 400);
+}
+
+function updateWeightBadges() {
+  document.querySelectorAll('.cat-weight-badge').forEach(badge => {
+    const catId = badge.dataset.catid;
+    const effectiveW = getEffectiveWeight(catId);
+    const pct = (effectiveW * 100).toFixed(1).replace(/\.0$/, '');
+    badge.textContent = pct + '%';
+  });
+}
+
+function renderStockInfo() {
+  const stock = stocks[activeStockIdx];
+  document.getElementById('ticker-input-4kds').value = stock.ticker;
+  document.getElementById('company-input-8fkd').value = stock.company;
+  document.getElementById('sector-select-3kfj').value = stock.sector;
+  renderRawMetrics();
+}
+
+function renderRawMetrics() {
+  const stock = stocks[activeStockIdx];
+  const card = document.getElementById('raw-metrics-card-u3v4');
+  const grid = document.getElementById('raw-metrics-grid-e3f4');
+  if (stock.rawData) {
+    card.classList.remove('hidden');
+    let html = '';
+    Object.entries(stock.rawData).forEach(([key, value]) => {
+      const label = RAW_METRIC_LABELS[key] || key;
+      const cls = classifyRawMetric(key, value);
+      html += `<div class="flex items-center justify-between bg-base-700/30 rounded-lg px-3 py-2">
+        <span class="text-[11px] text-base-400 font-medium">${label}</span>
+        <span class="raw-metric-badge ${cls}">${value}</span>
+      </div>`;
+    });
+    grid.innerHTML = html;
+  } else {
+    card.classList.add('hidden');
+  }
+}
+
+function renderMacroRegimeUI() {
+  const btns = document.querySelectorAll('#macro-regime-buttons .macro-btn');
+  btns.forEach(btn => {
+    const regime = btn.dataset.regime;
+    btn.classList.remove('active-green','active-yellow','active-red');
+    if (regime === macroRegime) {
+      if (regime === 'risk-on') btn.classList.add('active-green');
+      else if (regime === 'neutral') btn.classList.add('active-yellow');
+      else btn.classList.add('active-red');
+    }
+  });
+  const desc = document.getElementById('macro-regime-desc');
+  const descs = {
+    'risk-on': 'Market is rewarding growth, AI exposure, and narrative. Valuation matters less. Growth projections boosted +15%.',
+    'neutral': 'Balanced weighting. No regime adjustment applied to growth projections.',
+    'risk-off': 'Market is rewarding safety, dividends, and low valuation. Narrative and AI themes discounted. Growth projections reduced -30%.'
+  };
+  desc.textContent = descs[macroRegime];
+
+  const pill = document.getElementById('macro-regime-pill');
+  const pillData = {
+    'risk-on':  { text: '🟢 Risk-On', cls: 'bg-success/15 text-success' },
+    'neutral':  { text: '🟡 Neutral', cls: 'bg-warning/15 text-warning' },
+    'risk-off': { text: '🔴 Risk-Off', cls: 'bg-danger/15 text-danger' }
+  };
+  pill.textContent = pillData[macroRegime].text;
+  pill.className = `text-[10px] px-2 py-0.5 rounded-full font-medium ml-1 ${pillData[macroRegime].cls}`;
+}
+
+function updateResults() {
+  const stock = stocks[activeStockIdx];
+  const result = computeFullScore(stock);
+  const score = result.score;
+  const filled = getFilledCount(stock);
+  const color = getScoreColor(score);
+
+  const ring = document.getElementById('score-ring-4kds');
+  const circumference = 2 * Math.PI * 68;
+  const offset = circumference - (score / 100) * circumference;
+  ring.style.strokeDasharray = circumference;
+  ring.style.strokeDashoffset = offset;
+  ring.style.stroke = color;
+  document.getElementById('score-value-7fkd').textContent = Math.round(score);
+  document.getElementById('score-value-7fkd').style.color = color;
+
+  document.getElementById('result-ticker-3kfd').textContent = stock.ticker || '—';
+  document.getElementById('result-company-4fkd').textContent = stock.company || 'Enter stock details to begin';
+
+  const sectorPill = document.getElementById('sector-pill-y3z4');
+  if (stock.sector) { sectorPill.classList.remove('hidden'); sectorPill.textContent = stock.sector; }
+  else { sectorPill.classList.add('hidden'); }
+
+  const rec = getRecommendation(score);
+  const recBadge = document.getElementById('recommendation-badge-5kds');
+  recBadge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold ${score > 0 ? rec.color : 'bg-base-700 text-base-500'}`;
+  recBadge.textContent = score > 0 ? rec.text : '⏸ AWAITING DATA';
+
+  const confLevel = filled >= 20 ? 3 : filled >= 10 ? 2 : filled >= 3 ? 1 : 0;
+  const confLabels = ['Low', 'Moderate', 'High', 'High'];
+  const confColors = ['#ef4444', '#f59e0b', '#10b981', '#10b981'];
+  document.getElementById('confidence-label-7kds').textContent = confLabels[confLevel];
+  document.getElementById('confidence-label-7kds').style.color = confColors[confLevel];
+  const bars = document.getElementById('confidence-bar-6fkd').children;
+  for (let i = 0; i < 3; i++) { bars[i].style.background = i < confLevel ? confColors[confLevel] : '#334155'; }
+
+  const growthTitleText = document.getElementById('growth-title-text-e9f0');
+  growthTitleText.textContent = stock.ticker ? `${stock.ticker} 12-Month Growth Projection` : '12-Month Growth Projection';
+
+  if (score > 0) {
+    const proj = result.proj;
+    const fmt = v => (v >= 0 ? '+' : '') + v + '%';
+    document.getElementById('growth-range-3kfd').querySelector('p').textContent = `${fmt(proj.bear)} to ${fmt(proj.bull)} projected growth`;
+    document.getElementById('bull-case-4kfd').textContent = fmt(proj.bull);
+    document.getElementById('base-case-5fkd').textContent = fmt(proj.base);
+    document.getElementById('bear-case-6kds').textContent = fmt(proj.bear);
+  } else {
+    document.getElementById('growth-range-3kfd').querySelector('p').textContent = '—';
+    document.getElementById('bull-case-4kfd').textContent = '—';
+    document.getElementById('base-case-5fkd').textContent = '—';
+    document.getElementById('bear-case-6kds').textContent = '—';
+  }
+
+  const flags = getRiskFlags(stock);
+  const flagsEl = document.getElementById('risk-flags-5kds');
+  if (flags.length > 0) {
+    flagsEl.innerHTML = flags.map(f => `<div class="flex items-start gap-2 p-2.5 rounded-lg ${f.color === 'danger' ? 'bg-danger/10' : 'bg-warning/10'}"><span class="shrink-0">${f.icon}</span><span class="text-xs ${f.color === 'danger' ? 'text-danger' : 'text-warning'}">${f.text}</span></div>`).join('');
+  } else {
+    flagsEl.innerHTML = `<p class="text-sm text-base-500 italic">${filled > 0 ? 'No significant risks detected — looking good!' : 'No risk flags detected yet.'}</p>`;
+  }
+
+  const strengths = getStrengths(stock);
+  const strEl = document.getElementById('key-strengths-6fkd');
+  if (strengths.length > 0) {
+    strEl.innerHTML = strengths.map(s => `<div class="flex items-center gap-2 p-2.5 rounded-lg bg-success/10"><span class="text-xs text-success font-medium">${s}</span></div>`).join('');
+  } else {
+    strEl.innerHTML = `<p class="text-sm text-base-500 italic">Increase slider scores to reveal strengths.</p>`;
+  }
+
+  updateRadarChart();
+  updateBarChart();
+  updateComparisonTable();
+}
+
+function updateRadarChart() {
+  const ctx = document.getElementById('radar-chart-8fkd').getContext('2d');
+  if (radarChart) radarChart.destroy();
+  // 7 categories including Narrative
+  const labels = CATEGORIES.map(c => c.id === 'narrative' ? '✨ Narrative' : c.name);
+  const datasets = [];
+  const borderColors = ['#38bdf8', '#10b981', '#f59e0b'];
+  const bgColors = ['rgba(56,189,248,0.12)', 'rgba(16,185,129,0.12)', 'rgba(245,158,11,0.12)'];
+  const showStocks = stocks.slice(0, 3);
+  showStocks.forEach((stock, i) => {
+    const data = CATEGORIES.map(c => getCategoryAvg(stock, c.id));
+    datasets.push({
+      label: stock.ticker || `Stock ${stocks.indexOf(stock) + 1}`,
+      data, backgroundColor: bgColors[i], borderColor: borderColors[i],
+      borderWidth: 2, pointBackgroundColor: borderColors[i], pointBorderColor: '#1e293b',
+      pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6
+    });
+  });
+  radarChart = new Chart(ctx, {
+    type: 'radar', data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        r: {
+          beginAtZero: true, max: 10,
+          ticks: { stepSize: 2, color: '#64748b', backdropColor: 'transparent', font: { size: 9 } },
+          grid: { color: 'rgba(148,163,184,0.1)' },
+          angleLines: { color: 'rgba(148,163,184,0.1)' },
+          pointLabels: { color: '#94a3b8', font: { size: 10, weight: 500 } }
+        }
+      },
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { color: '#94a3b8', font: { size: 11 }, padding: 16, usePointStyle: true, pointStyle: 'circle' } },
+        tooltip: { backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#94a3b8', borderColor: 'rgba(56,189,248,0.2)', borderWidth: 1, cornerRadius: 10, padding: 10 }
+      }
+    }
+  });
+}
+
+function updateBarChart() {
+  const ctx = document.getElementById('bar-chart-9fkd').getContext('2d');
+  if (barChart) barChart.destroy();
+  const stock = stocks[activeStockIdx];
+  const adjusted = getAdjustedWeights();
+  const labels = CATEGORIES.map(c => c.name);
+  const rawScores = CATEGORIES.map(c => getCategoryAvg(stock, c.id));
+  const weightedScores = CATEGORIES.map(c => {
+    const wKey = CAT_WEIGHT_KEY_MAP[c.id];
+    return getCategoryAvg(stock, c.id) * (adjusted[wKey] || 0) * 10;
+  });
+  const barColors = rawScores.map(s => s >= 7 ? '#10b981' : s >= 4 ? '#f59e0b' : s > 0 ? '#ef4444' : '#334155');
+  barChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Weighted Score Contribution', data: weightedScores, backgroundColor: barColors, borderRadius: 0, barThickness: 16 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { beginAtZero: true, max: 30, grid: { color: 'rgba(148,163,184,0.06)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: 500 } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b', titleColor: '#f1f5f9', bodyColor: '#94a3b8', borderColor: 'rgba(56,189,248,0.2)', borderWidth: 1, cornerRadius: 10, padding: 10,
+          callbacks: { label: (ctx) => { const raw = rawScores[ctx.dataIndex]; return `Raw: ${raw.toFixed(1)} / 10 · Weighted: ${ctx.parsed.x.toFixed(1)} pts`; } }
+        }
+      }
+    }
+  });
+}
+
+function updateComparisonTable() {
+  const card = document.getElementById('comparison-card-7kds');
+  const tbody = document.getElementById('comparison-body-9kds');
+  if (stocks.length < 2) { card.classList.add('hidden'); return; }
+  card.classList.remove('hidden');
+  tbody.innerHTML = '';
+  stocks.forEach(stock => {
+    const result = computeFullScore(stock);
+    const score = result.score;
+    const rec = getRecommendation(score);
+    const proj = score > 0 ? result.proj : null;
+    const growthStr = proj ? `${(proj.bear >= 0 ? '+' : '')}${proj.bear}% to ${(proj.bull >= 0 ? '+' : '')}${proj.bull}%` : '—';
+    const color = getScoreColor(score);
+    const tr = document.createElement('tr');
+    tr.className = 'border-t border-base-700/50';
+    tr.innerHTML = `<td class="py-2.5 px-3 font-bold text-base-200">${stock.ticker || '—'}</td>
+      <td class="py-2.5 px-3 tabular-nums font-semibold" style="color:${color}">${score > 0 ? Math.round(score) : '—'}</td>
+      <td class="py-2.5 px-3"><span class="text-[10px] px-2 py-0.5 rounded-full ${score > 0 ? rec.color : 'bg-base-700 text-base-500'} font-semibold whitespace-nowrap">${score > 0 ? rec.text : '—'}</span></td>
+      <td class="py-2.5 px-3 text-xs tabular-nums text-base-300">${growthStr}</td>
+      <td class="py-2.5 px-3 text-xs text-warning">${getTopRisk(stock)}</td>
+      <td class="py-2.5 px-3 text-xs text-success">${getTopStrength(stock)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAll() {
+  renderTabs();
+  renderStockInfo();
+  renderScoringUI();
+  renderMacroRegimeUI();
+  updateResults();
+}
+
+// ===== AUTOCOMPLETE =====
+function showAutocomplete(query) {
+  const dropdown = document.getElementById('autocomplete-drop-g3h4');
+  if (!query) { dropdown.classList.add('hidden'); dropdown.innerHTML = ''; return; }
+  const q = query.toUpperCase();
+  const matches = Object.entries(STOCK_DB).filter(([ticker, data]) =>
+    ticker.includes(q) || data.name.toUpperCase().includes(q)
+  ).slice(0, 8);
+  if (matches.length === 0) { dropdown.classList.add('hidden'); dropdown.innerHTML = ''; return; }
+  dropdown.innerHTML = matches.map(([ticker, data]) => {
+    const score = getCompositeScore({ scores: data.scores });
+    const color = getScoreColor(score);
+    return `<div class="autocomplete-item" data-ticker="${ticker}">
+      <span class="text-sm font-bold text-accent tabular-nums" style="min-width:50px">${ticker}</span>
+      <span class="text-xs text-base-300 flex-1 truncate">${data.name}</span>
+      <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold text-base-900 tabular-nums" style="background:${color}">${Math.round(score)}</span>
+    </div>`;
+  }).join('');
+  dropdown.classList.remove('hidden');
+  dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const ticker = item.dataset.ticker;
+      document.getElementById('ticker-input-4kds').value = ticker;
+      dropdown.classList.add('hidden');
+      loadTickerData(ticker);
+    });
+  });
+}
+
+// ===== LOAD TICKER DATA =====
+function loadTickerData(ticker) {
+  const upperTicker = ticker.toUpperCase().trim();
+  const dbEntry = STOCK_DB[upperTicker];
+  const overlay = document.getElementById('loading-overlay-o7p8');
+  const loadingText = document.getElementById('loading-text-s1t2');
+  const banner = document.getElementById('success-banner-a3b4');
+  overlay.classList.remove('hidden');
+  loadingText.textContent = `⚡ Loading data for ${upperTicker}...`;
+  banner.classList.add('hidden');
+
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    const stock = stocks[activeStockIdx];
+    stock.ticker = upperTicker;
+
+    if (dbEntry) {
+      stock.company = dbEntry.name;
+      stock.sector = dbEntry.sector;
+      stock.rawData = dbEntry.raw;
+      stock.loadedFromDB = true;
+
+      if (!sliderBadgeStates[stock.id]) sliderBadgeStates[stock.id] = {};
+      CATEGORIES.forEach(cat => {
+        cat.sliders.forEach(s => { sliderBadgeStates[stock.id][s.id] = 'auto'; });
+      });
+
+      document.getElementById('ticker-input-4kds').value = upperTicker;
+      document.getElementById('company-input-8fkd').value = dbEntry.name;
+      document.getElementById('sector-select-3kfj').value = dbEntry.sector;
+      renderRawMetrics();
+
+      const allSliderIds = [];
+      CATEGORIES.forEach(cat => { cat.sliders.forEach(s => { allSliderIds.push(s.id); }); });
+
+      CATEGORIES.forEach(cat => {
+        const content = document.getElementById('collapse-' + cat.id);
+        if (content) {
+          content.classList.add('open');
+          const chev = content.previousElementSibling?.querySelector('.collapse-chevron');
+          if (chev) chev.classList.add('rotate-180');
+        }
+      });
+
+      allSliderIds.forEach((sliderId, idx) => {
+        setTimeout(() => {
+          const targetVal = dbEntry.scores[sliderId] || 0;
+          stock.scores[sliderId] = targetVal;
+          const sliderEl = document.querySelector(`input[data-slider="${sliderId}"]`);
+          if (sliderEl) {
+            sliderEl.value = targetVal;
+            sliderEl.classList.add('slider-flash');
+            setTimeout(() => sliderEl.classList.remove('slider-flash'), 500);
+            const valSpan = sliderEl.closest('.slider-group')?.querySelector('.slider-val-badge');
+            if (valSpan) {
+              valSpan.textContent = targetVal.toFixed(1);
+              valSpan.className = `text-sm font-bold tabular-nums min-w-[32px] text-right slider-val-badge ${targetVal >= 7 ? 'text-success' : targetVal >= 4 ? 'text-warning' : targetVal > 0 ? 'text-danger' : 'text-base-500'}`;
+            }
+            updateCategoryPill(sliderEl);
+          }
+          if (idx === allSliderIds.length - 1) {
+            saveState();
+            updateResults();
+            renderTabs();
+          }
+        }, 40 * idx);
+      });
+
+      banner.innerHTML = `<div class="success-banner"><span>✅</span><span>Data auto-loaded for <strong>${dbEntry.name}</strong> · Source: Analyst Consensus Database · Updated ${dbEntry.updated}</span></div>`;
+      banner.classList.remove('hidden');
+    } else {
+      stock.company = '';
+      stock.sector = '';
+      stock.rawData = null;
+      stock.loadedFromDB = false;
+      if (!sliderBadgeStates[stock.id]) sliderBadgeStates[stock.id] = {};
+      CATEGORIES.forEach(cat => { cat.sliders.forEach(s => { stock.scores[s.id] = 5; }); });
+      banner.innerHTML = `<div class="success-banner" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.25);color:#fbbf24"><span>⚠️</span><span><strong>${upperTicker}</strong> not found in database — scores initialized to 5. Adjust manually.</span></div>`;
+      banner.classList.remove('hidden');
+      saveState();
+      renderAll();
+    }
+  }, 600);
+}
+
+// ===== EVENT HANDLERS =====
+function init() {
+  loadState();
+  loadMacroRegime();
+  renderAll();
+
+  // Macro Regime Buttons
+  document.querySelectorAll('#macro-regime-buttons .macro-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      macroRegime = btn.dataset.regime;
+      saveMacroRegime();
+      renderMacroRegimeUI();
+      updateWeightBadges();
+      updateResults();
+      renderTabs();
+    });
+  });
+
+  // Validation toggle
+  document.getElementById('validation-toggle').addEventListener('click', () => {
+    const content = document.getElementById('validation-content');
+    const chev = document.getElementById('validation-chevron');
+    content.classList.toggle('open');
+    chev.classList.toggle('rotate-180');
+  });
+
+  document.getElementById('add-stock-btn-4kfr').addEventListener('click', () => {
+    if (stocks.length >= 5) return;
+    stocks.push(createDefaultStock());
+    activeStockIdx = stocks.length - 1;
+    saveState();
+    renderAll();
+  });
+
+  const tickerInput = document.getElementById('ticker-input-4kds');
+  tickerInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    stocks[activeStockIdx].ticker = val.toUpperCase();
+    saveState();
+    updateResults();
+    renderTabs();
+    showAutocomplete(val);
+  });
+  tickerInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('autocomplete-drop-g3h4').classList.add('hidden');
+      const val = tickerInput.value.trim();
+      if (val) loadTickerData(val);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#ticker-input-4kds') && !e.target.closest('#autocomplete-drop-g3h4')) {
+      document.getElementById('autocomplete-drop-g3h4').classList.add('hidden');
+    }
+  });
+
+  document.getElementById('load-data-btn-i5j6').addEventListener('click', () => {
+    const val = tickerInput.value.trim();
+    if (val) loadTickerData(val);
+  });
+
+  document.querySelectorAll('.popular-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const ticker = chip.dataset.ticker;
+      tickerInput.value = ticker;
+      document.getElementById('autocomplete-drop-g3h4').classList.add('hidden');
+      loadTickerData(ticker);
+    });
+  });
+
+  document.getElementById('company-input-8fkd').addEventListener('input', (e) => {
+    stocks[activeStockIdx].company = e.target.value;
+    saveState();
+    updateResults();
+  });
+  document.getElementById('sector-select-3kfj').addEventListener('change', (e) => {
+    stocks[activeStockIdx].sector = e.target.value;
+    saveState();
+    updateResults();
+  });
+
+  document.getElementById('raw-metrics-toggle-w5x6').addEventListener('click', () => {
+    const content = document.getElementById('raw-metrics-content-c1d2');
+    const chev = document.getElementById('raw-metrics-chevron-a9b0');
+    content.classList.toggle('open');
+    chev.classList.toggle('rotate-180');
+  });
+
+  document.getElementById('generate-btn-9fkd').addEventListener('click', () => {
+    const resultsCol = document.getElementById('right-col-2fks');
+    resultsCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const scoreCard = document.getElementById('score-card-8fkd');
+    scoreCard.style.boxShadow = '0 0 30px rgba(56,189,248,0.25)';
+    setTimeout(() => { scoreCard.style.boxShadow = ''; }, 1200);
+    const ring = document.getElementById('score-ring-4kds');
+    const currentOffset = ring.style.strokeDashoffset;
+    ring.style.transition = 'none';
+    ring.style.strokeDashoffset = 2 * Math.PI * 68;
+    requestAnimationFrame(() => {
+      ring.style.transition = 'stroke-dashoffset 1.2s ease, stroke 0.5s ease';
+      ring.style.strokeDashoffset = currentOffset;
+    });
+  });
+
+  document.getElementById('reset-btn-4dkf').addEventListener('click', () => {
+    const newStock = createDefaultStock();
+    newStock.id = Date.now();
+    stocks[activeStockIdx] = newStock;
+    delete sliderBadgeStates[newStock.id];
+    document.getElementById('success-banner-a3b4').classList.add('hidden');
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('duplicate-btn-5fkd').addEventListener('click', () => {
+    if (stocks.length >= 5) return;
+    const clone = JSON.parse(JSON.stringify(stocks[activeStockIdx]));
+    clone.id = Date.now() + Math.random();
+    clone.ticker = clone.ticker ? clone.ticker + ' (Copy)' : '';
+    stocks.push(clone);
+    if (sliderBadgeStates[stocks[activeStockIdx].id]) {
+      sliderBadgeStates[clone.id] = { ...sliderBadgeStates[stocks[activeStockIdx].id] };
+    }
+    activeStockIdx = stocks.length - 1;
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('export-btn-6dkf').addEventListener('click', showExportModal);
+  document.getElementById('modal-close-4fkd').addEventListener('click', () => {
+    document.getElementById('export-modal-3kfd').classList.remove('show');
+  });
+  document.getElementById('export-modal-3kfd').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove('show');
+  });
+  document.getElementById('copy-export-6fkd').addEventListener('click', () => {
+    const text = document.getElementById('export-content-5kds').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copy-export-6fkd');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.innerHTML = '<i data-lucide="clipboard" class="w-4 h-4 inline mr-1"></i>Copy to Clipboard'; lucide.createIcons(); }, 2000);
+    });
+  });
+
+  document.getElementById('mobile-menu-btn-7fjk').addEventListener('click', () => {
+    document.getElementById('mobile-menu-3kdj').classList.remove('hidden');
+  });
+  document.getElementById('mobile-menu-close-2kfs').addEventListener('click', () => {
+    document.getElementById('mobile-menu-3kdj').classList.add('hidden');
+  });
+  document.querySelectorAll('.mobile-nav-action').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('mobile-menu-3kdj').classList.add('hidden');
+      const action = btn.dataset.action;
+      if (action === 'export') showExportModal();
+      if (action === 'reset') { document.getElementById('reset-btn-4dkf').click(); }
+      if (action === 'duplicate') { document.getElementById('duplicate-btn-5fkd').click(); }
+    });
+  });
+}
+
+function showExportModal() {
+  const stock = stocks[activeStockIdx];
+  const result = computeFullScore(stock);
+  const score = result.score;
+  const rec = getRecommendation(score);
+  const proj = score > 0 ? result.proj : null;
+  const fmt = v => (v >= 0 ? '+' : '') + v + '%';
+  const adjusted = result.adjustedWeights;
+
+  let text = `════════════════════════════════════════════\n`;
+  text += `   TECHSTOCK GROWTH PREDICTOR v2.0\n`;
+  text += `════════════════════════════════════════════\n\n`;
+  text += `Ticker:         ${stock.ticker || 'N/A'}\n`;
+  text += `Company:        ${stock.company || 'N/A'}\n`;
+  text += `Sector:         ${stock.sector || 'N/A'}\n`;
+  text += `Macro Regime:   ${macroRegime.charAt(0).toUpperCase() + macroRegime.slice(1)} (×${GROWTH_MULTIPLIERS[macroRegime]})\n`;
+  text += `Generated:      ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+  text += `Data Source:    ${stock.loadedFromDB ? 'Analyst Consensus Database' : 'Manual Input'}\n\n`;
+  text += `────────────────────────────────────────────\n`;
+  text += `COMPOSITE SCORE:  ${Math.round(score)} / 100\n`;
+  text += `RECOMMENDATION:   ${score > 0 ? rec.text : 'N/A'}\n`;
+  text += `────────────────────────────────────────────\n\n`;
+
+  if (proj) {
+    text += `12-MONTH GROWTH PROJECTION:\n`;
+    text += `  Bull Case:    ${fmt(proj.bull)}\n`;
+    text += `  Base Case:    ${fmt(proj.base)}\n`;
+    text += `  Bear Case:    ${fmt(proj.bear)}\n\n`;
+  }
+
+  if (stock.rawData) {
+    text += `RAW FINANCIAL DATA:\n`;
+    Object.entries(stock.rawData).forEach(([key, value]) => {
+      const label = RAW_METRIC_LABELS[key] || key;
+      text += `  ${label}: ${value}\n`;
+    });
+    text += `\n`;
+  }
+
+  text += `CATEGORY BREAKDOWN (${macroRegime} regime):\n`;
+  CATEGORIES.forEach(cat => {
+    const avg = getCategoryAvg(stock, cat.id);
+    const wKey = CAT_WEIGHT_KEY_MAP[cat.id];
+    const w = adjusted[wKey] || 0;
+    const weighted = (avg * w * 10).toFixed(1);
+    const pct = (w * 100).toFixed(1);
+    text += `  ${cat.icon} ${cat.name} (${pct}%): ${avg.toFixed(1)}/10 → ${weighted} pts\n`;
+  });
+
+  const risks = getRiskFlags(stock);
+  if (risks.length > 0) {
+    text += `\nRISK FLAGS:\n`;
+    risks.forEach(r => { text += `  ${r.icon} ${r.text}\n`; });
+  }
+  const strengths = getStrengths(stock);
+  if (strengths.length > 0) {
+    text += `\nKEY STRENGTHS:\n`;
+    strengths.forEach(s => { text += `  ${s}\n`; });
+  }
+
+  text += `\n════════════════════════════════════════════\n`;
+  text += `  Model v2.0 · Calibrated May 2026\n`;
+  text += `  This analysis is for informational purposes\n`;
+  text += `  only and does not constitute financial advice.\n`;
+  text += `════════════════════════════════════════════\n`;
+
+  document.getElementById('export-content-5kds').textContent = text;
+  document.getElementById('export-modal-3kfd').classList.add('show');
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>

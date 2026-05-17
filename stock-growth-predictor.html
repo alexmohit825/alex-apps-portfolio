@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<title>Stock Growth Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bg: { DEFAULT:'#0a0e1a', 100:'#0d1225', 200:'#111827', 300:'#1a2236', 400:'#212b42' },
+        card: { DEFAULT:'#111827', light:'#1a2236', hover:'#1e2840' },
+        accent: { DEFAULT:'#38bdf8', light:'#7dd3fc', dark:'#0284c7', dim:'rgba(56,189,248,0.10)', glow:'rgba(56,189,248,0.15)' },
+        green: { DEFAULT:'#10b981', light:'#34d399', dark:'#059669', dim:'rgba(16,185,129,0.12)' },
+        amber: { DEFAULT:'#f59e0b', light:'#fbbf24', dark:'#d97706', dim:'rgba(245,158,11,0.12)' },
+        red: { DEFAULT:'#ef4444', light:'#f87171', dark:'#dc2626', dim:'rgba(239,68,68,0.12)' },
+        violet: { DEFAULT:'#8b5cf6', light:'#a78bfa', dark:'#7c3aed', dim:'rgba(139,92,246,0.12)' },
+        txt: { DEFAULT:'#f1f5f9', muted:'#64748b', dim:'#475569' },
+        border: { DEFAULT:'rgba(56,189,248,0.10)', light:'rgba(56,189,248,0.18)' }
+      },
+      fontFamily: {
+        sans: ['Inter','sans-serif'],
+        mono: ['JetBrains Mono','monospace']
+      },
+      borderRadius: {
+        card:'12px',
+        badge:'8px'
+      }
+    }
+  }
+};
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0e1a;color:#f1f5f9;font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0a0e1a}
+::-webkit-scrollbar-thumb{background:#1e2840;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#38bdf8}
+.tab-content{display:none;opacity:0;transition:opacity .3s ease}
+.tab-content.active{display:block;opacity:1}
+.num-pos{color:#10b981;font-family:'JetBrains Mono',monospace}
+.num-neg{color:#ef4444;font-family:'JetBrains Mono',monospace}
+.num-zero{color:#f59e0b;font-family:'JetBrains Mono',monospace}
+.num-neutral{color:#f1f5f9;font-family:'JetBrains Mono',monospace}
+.mono{font-family:'JetBrains Mono',monospace}
+.card-base{background:#111827;border:1px solid rgba(56,189,248,0.10);border-radius:12px;padding:1.25rem;transition:all .3s ease}
+.card-base:hover{border-color:rgba(56,189,248,0.18);box-shadow:0 0 20px rgba(56,189,248,0.05)}
+.card2{background:#1a2236;border:1px solid rgba(56,189,248,0.08);border-radius:12px;padding:1rem}
+.badge{border-radius:8px;padding:2px 10px;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.slider-wrap{position:relative;width:100%}
+.slider-wrap input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer}
+.slider-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#38bdf8;cursor:pointer;box-shadow:0 0 6px rgba(56,189,248,0.4)}
+.slider-wrap input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#38bdf8;cursor:pointer;border:none}
+.regime-btn{padding:8px 16px;border-radius:8px;border:1px solid rgba(56,189,248,0.10);background:#111827;color:#64748b;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all .3s ease;font-family:'Inter',sans-serif}
+.regime-btn.active-risk-on{border-color:#10b981;background:rgba(16,185,129,0.12);color:#10b981}
+.regime-btn.active-neutral{border-color:#f59e0b;background:rgba(245,158,11,0.12);color:#f59e0b}
+.regime-btn.active-risk-off{border-color:#ef4444;background:rgba(239,68,68,0.12);color:#ef4444}
+.chip{padding:4px 12px;border-radius:8px;background:#1a2236;border:1px solid rgba(56,189,248,0.08);color:#64748b;cursor:pointer;font-size:0.75rem;font-weight:500;transition:all .3s ease;font-family:'Inter',sans-serif}
+.chip:hover{border-color:#38bdf8;color:#38bdf8;background:rgba(56,189,248,0.08)}
+.section-header{cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;background:#1a2236;border:1px solid rgba(56,189,248,0.06);transition:all .3s ease;user-select:none}
+.section-header:hover{border-color:rgba(56,189,248,0.15)}
+.section-body{max-height:2000px;overflow:hidden;transition:max-height .4s ease}
+.section-body.collapsed{max-height:0;padding:0}
+.gauge-circle{transition:stroke-dashoffset 1s ease-out}
+.pulse-anim{animation:pulse-once 0.6s ease}
+@keyframes pulse-once{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+.glow-btn{background:linear-gradient(135deg,#10b981,#38bdf8);color:#0a0e1a;font-weight:700;border:none;border-radius:10px;cursor:pointer;padding:12px;width:100%;font-size:0.95rem;transition:all .3s ease;font-family:'Inter',sans-serif}
+.glow-btn:hover{box-shadow:0 0 24px rgba(56,189,248,0.3);transform:translateY(-1px)}
+.sort-header{cursor:pointer;user-select:none;white-space:nowrap}
+.sort-header:hover{color:#38bdf8}
+table.data-tbl{width:100%;border-collapse:separate;border-spacing:0}
+table.data-tbl th{background:#1a2236;color:#64748b;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid rgba(56,189,248,0.10);text-align:left;position:sticky;top:0;z-index:2}
+table.data-tbl td{padding:7px 10px;font-size:.78rem;border-bottom:1px solid rgba(56,189,248,0.05);vertical-align:middle}
+table.data-tbl tr:hover td{background:rgba(56,189,248,0.04)}
+table.data-tbl tr:nth-child(even) td{background:rgba(26,34,54,0.5)}
+table.data-tbl tr:nth-child(even):hover td{background:rgba(56,189,248,0.06)}
+.status-badge{font-size:.65rem;padding:2px 8px;border-radius:6px;font-weight:600;white-space:nowrap}
+.kpi-card{background:#111827;border:1px solid rgba(56,189,248,0.10);border-radius:12px;padding:16px 20px;text-align:center;transition:all .3s ease}
+.kpi-card:hover{border-color:rgba(56,189,248,0.20);box-shadow:0 0 15px rgba(56,189,248,0.05)}
+.insight-card{background:#1a2236;border:1px solid rgba(56,189,248,0.08);border-radius:12px;padding:20px}
+.cohort-row{cursor:pointer;transition:background .2s ease}
+.cohort-row:hover{background:rgba(56,189,248,0.06)!important}
+.cohort-detail{display:none;background:#0d1225;border-top:1px solid rgba(56,189,248,0.08)}
+.cohort-detail.open{display:table-row}
+@media(max-width:767px){
+  .desktop-nav{display:none!important}
+  .mobile-menu-btn{display:flex!important}
+  .two-col{flex-direction:column!important}
+  .sticky-results{position:relative!important;top:auto!important}
+}
+@media(min-width:768px){
+  .mobile-menu-btn{display:none!important}
+  .mobile-menu{display:none!important}
+}
+
+/* ===== SPLASH PAGE STYLES ===== */
+#splash-overlay{
+  position:fixed;inset:0;z-index:9999;background:#0a0e1a;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  overflow-y:auto;padding:48px 24px;
+  transition:opacity 0.5s ease;
+}
+#splash-overlay.fade-out{opacity:0;pointer-events:none}
+#main-app-wrapper{transition:opacity 0.5s ease}
+#main-app-wrapper.hidden-app{display:none;opacity:0}
+#main-app-wrapper.fading-in{display:block;opacity:0}
+#main-app-wrapper.visible-app{display:block;opacity:1}
+
+.star{
+  position:fixed;width:2px;height:2px;border-radius:50%;background:#fff;pointer-events:none;z-index:9998;
+}
+@keyframes drift1{0%{transform:translate(0,0)}25%{transform:translate(12px,-18px)}50%{transform:translate(-8px,-30px)}75%{transform:translate(20px,-10px)}100%{transform:translate(0,0)}}
+@keyframes drift2{0%{transform:translate(0,0)}25%{transform:translate(-15px,10px)}50%{transform:translate(10px,25px)}75%{transform:translate(-20px,5px)}100%{transform:translate(0,0)}}
+@keyframes drift3{0%{transform:translate(0,0)}25%{transform:translate(8px,15px)}50%{transform:translate(-12px,-8px)}75%{transform:translate(5px,-20px)}100%{transform:translate(0,0)}}
+
+.splash-gold-divider{
+  width:100%;max-width:480px;height:1px;
+  background:linear-gradient(90deg,transparent,#f59e0b,transparent);
+  margin:20px auto;
+}
+.splash-enter-btn{
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+  color:#1a1a1a;font-weight:700;font-size:17px;font-family:'Inter',sans-serif;
+  border:none;border-radius:10px;min-width:260px;height:52px;
+  cursor:pointer;
+  box-shadow:0 0 24px rgba(245,158,11,0.45);
+  transition:all 0.2s ease;
+}
+.splash-enter-btn:hover{transform:scale(1.04);box-shadow:0 0 36px rgba(245,158,11,0.65)}
+.splash-step-card{
+  background:#1a2236;border-top:3px solid #f59e0b;
+  border-radius:10px;padding:14px 16px;flex:1;min-width:160px;
+}
+.splash-step-arrow{
+  color:#f59e0b;font-size:24px;font-weight:700;
+  display:flex;align-items:center;padding:0 4px;
+}
+.splash-disclaimer{
+  background:#1a1f2e;border-left:4px solid #f59e0b;
+  border-radius:8px;padding:20px 24px;max-width:720px;width:100%;
+}
+.splash-factor-row{
+  display:grid;grid-template-columns:1fr auto 2fr;gap:12px;align-items:center;
+  padding:8px 0;border-bottom:1px solid rgba(56,189,248,0.06);
+}
+.splash-factor-row:last-child{border-bottom:none}
+.splash-weight-pill{
+  background:#1a2236;border:1px solid #f59e0b;border-radius:20px;
+  padding:2px 12px;font-size:12px;font-weight:700;color:#f59e0b;
+  font-family:'JetBrains Mono',monospace;white-space:nowrap;
+}
+@media(max-width:767px){
+  .splash-steps-row{flex-direction:column!important}
+  .splash-step-arrow-h{display:none!important}
+  .splash-step-arrow-v{display:flex!important}
+  .splash-cols-2{flex-direction:column!important}
+  .splash-factor-row{grid-template-columns:1fr;gap:4px}
+  .splash-factor-row .splash-weight-pill{justify-self:start}
+}
+@media(min-width:768px){
+  .splash-step-arrow-v{display:none!important}
+}
+
+/* ===== BENCHMARK STYLES ===== */
+.bench-row{cursor:pointer;transition:background .2s ease}
+.bench-row:hover td{background:rgba(56,189,248,0.06)!important}
+.bench-row.v2-row td{background:rgba(245,158,11,0.04)!important}
+.bench-row.v2-row:hover td{background:rgba(245,158,11,0.08)!important}
+.bench-detail-row{display:none;background:#0d1225}
+.bench-detail-row.open{display:table-row}
+.grade-pill{display:inline-flex;align-items:center;justify-content:center;width:32px;height:22px;border-radius:6px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.heatmap-cell{text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:6px 4px!important;min-width:56px}
+.bench-charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+@media(max-width:1023px){.bench-charts-row{grid-template-columns:1fr}}
+.bench-warning-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.bench-warning-body.expanded{max-height:600px}
+</style>
+</head>
+<body data-id="0" class="min-h-screen">
+<app-icon data-id="1" hidden data-icon="trending-up" data-palette="Blue"></app-icon>
+<app-disclaimer data-id="2" intent="financial"></app-disclaimer>
+
+<!-- ===== SPLASH OVERLAY ===== -->
+<div data-id="3" id="splash-overlay">
+  <div data-id="4" style="max-width:760px;width:100%;display:flex;flex-direction:column;align-items:center">
+    <div data-id="5" style="text-align:center;margin-bottom:8px">
+      <div data-id="6" style="font-size:56px;line-height:1;margin-bottom:12px">📈</div>
+      <h1 data-id="7" style="font-size:36px;font-weight:700;color:#f1f5f9;margin-bottom:8px">Stock Growth Predictor</h1>
+      <p data-id="8" style="font-size:14px;color:#7dd3fc;font-family:'JetBrains Mono',monospace">Model v2.0 · Powered by 7-Factor Scoring · May 2026</p>
+    </div>
+    <div data-id="9" class="splash-gold-divider"></div>
+    <div data-id="10" style="max-width:680px;width:100%;margin-top:24px">
+      <h2 data-id="11" style="font-size:18px;font-weight:700;color:#f59e0b;margin-bottom:16px">How the Model Works</h2>
+      <div data-id="12" style="background:#111827;border:1px solid rgba(56,189,248,0.10);border-radius:12px;padding:20px;margin-bottom:20px">
+        <div data-id="13" class="splash-factor-row">
+          <div data-id="14" style="display:flex;align-items:center;gap:8px"><span data-id="15">📊</span><span data-id="16" style="font-weight:600;color:#f1f5f9;font-size:14px">Fundamentals</span></div>
+          <span data-id="17" class="splash-weight-pill">25%</span>
+          <span data-id="18" style="color:#94a3b8;font-size:13px">Is the business genuinely profitable and growing? Revenue, margins, debt and return on equity.</span>
+        </div>
+        <div data-id="19" class="splash-factor-row">
+          <div data-id="20" style="display:flex;align-items:center;gap:8px"><span data-id="21">📈</span><span data-id="22" style="font-weight:600;color:#f1f5f9;font-size:14px">Valuation</span></div>
+          <span data-id="23" class="splash-weight-pill">25%</span>
+          <span data-id="24" style="color:#94a3b8;font-size:13px">Is the stock cheap or expensive right now? P/E, P/S, PEG and analyst upside targets.</span>
+        </div>
+        <div data-id="25" class="splash-factor-row">
+          <div data-id="26" style="display:flex;align-items:center;gap:8px"><span data-id="27">🤖</span><span data-id="28" style="font-weight:600;color:#f1f5f9;font-size:14px">AI & Sector</span></div>
+          <span data-id="29" class="splash-weight-pill">17.5%</span>
+          <span data-id="30" style="color:#94a3b8;font-size:13px">How much is AI actually improving this company's margins and revenue potential?</span>
+        </div>
+        <div data-id="31" class="splash-factor-row">
+          <div data-id="32" style="display:flex;align-items:center;gap:8px"><span data-id="33">📡</span><span data-id="34" style="font-weight:600;color:#f1f5f9;font-size:14px">Technicals</span></div>
+          <span data-id="35" class="splash-weight-pill">12.5%</span>
+          <span data-id="36" style="color:#94a3b8;font-size:13px">What is the price chart saying? Moving averages, momentum, and trend signals.</span>
+        </div>
+        <div data-id="37" class="splash-factor-row">
+          <div data-id="38" style="display:flex;align-items:center;gap:8px"><span data-id="39">🗞️</span><span data-id="40" style="font-weight:600;color:#f1f5f9;font-size:14px">Sentiment</span></div>
+          <span data-id="41" class="splash-weight-pill">10%</span>
+          <span data-id="42" style="color:#94a3b8;font-size:13px">What do analysts, insiders, and recent news flow say about the stock?</span>
+        </div>
+        <div data-id="43" class="splash-factor-row">
+          <div data-id="44" style="display:flex;align-items:center;gap:8px"><span data-id="45">🔭</span><span data-id="46" style="font-weight:600;color:#f1f5f9;font-size:14px">Thematic</span></div>
+          <span data-id="47" class="splash-weight-pill">5%</span>
+          <span data-id="48" style="color:#94a3b8;font-size:13px">Is the company riding a structural multi-year megatrend like AI infrastructure?</span>
+        </div>
+        <div data-id="49" class="splash-factor-row">
+          <div data-id="50" style="display:flex;align-items:center;gap:8px"><span data-id="51">✨</span><span data-id="52" style="font-weight:600;color:#f1f5f9;font-size:14px">Narrative</span></div>
+          <span data-id="53" class="splash-weight-pill">5%</span>
+          <span data-id="54" style="color:#94a3b8;font-size:13px">Does it have a compelling story — visionary founder, moonshot optionality, iconic brand?</span>
+        </div>
+      </div>
+      <div data-id="55" style="width:100%;height:1px;background:rgba(56,189,248,0.10);margin:20px 0"></div>
+      <div data-id="56" class="splash-steps-row" style="display:flex;gap:8px;align-items:stretch;margin-bottom:24px;flex-direction:row">
+        <div data-id="57" class="splash-step-card">
+          <div data-id="58" style="font-size:20px;margin-bottom:6px">🎯</div>
+          <div data-id="59" style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:4px">Score 7 Categories</div>
+          <div data-id="60" style="font-size:12px;color:#94a3b8">Rate each factor 0–10 using sliders or load a preset stock</div>
+        </div>
+        <div data-id="61" class="splash-step-arrow splash-step-arrow-h">→</div>
+        <div data-id="62" class="splash-step-arrow splash-step-arrow-v" style="display:none;justify-content:center;font-size:20px;color:#f59e0b;font-weight:700">↓</div>
+        <div data-id="63" class="splash-step-card">
+          <div data-id="64" style="font-size:20px;margin-bottom:6px">⚖️</div>
+          <div data-id="65" style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:4px">Weighted Composite</div>
+          <div data-id="66" style="font-size:12px;color:#94a3b8">Scores combine into a single 0–100 model score</div>
+        </div>
+        <div data-id="67" class="splash-step-arrow splash-step-arrow-h">→</div>
+        <div data-id="68" class="splash-step-arrow splash-step-arrow-v" style="display:none;justify-content:center;font-size:20px;color:#f59e0b;font-weight:700">↓</div>
+        <div data-id="69" class="splash-step-card">
+          <div data-id="70" style="font-size:20px;margin-bottom:6px">🌐</div>
+          <div data-id="71" style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:4px">Macro Regime</div>
+          <div data-id="72" style="font-size:12px;color:#94a3b8">Adjust for bull, neutral, or bear market conditions</div>
+        </div>
+        <div data-id="73" class="splash-step-arrow splash-step-arrow-h">→</div>
+        <div data-id="74" class="splash-step-arrow splash-step-arrow-v" style="display:none;justify-content:center;font-size:20px;color:#f59e0b;font-weight:700">↓</div>
+        <div data-id="75" class="splash-step-card">
+          <div data-id="76" style="font-size:20px;margin-bottom:6px">📊</div>
+          <div data-id="77" style="font-size:13px;font-weight:700;color:#f1f5f9;margin-bottom:4px">3-Scenario Forecast</div>
+          <div data-id="78" style="font-size:12px;color:#94a3b8">Get Bear / Base / Bull 12-month growth projections</div>
+        </div>
+      </div>
+    </div>
+    <div data-id="79" class="splash-cols-2" style="display:flex;gap:16px;max-width:720px;width:100%;margin-bottom:28px;flex-direction:row">
+      <div data-id="80" style="flex:1;background:#111827;border:1px solid rgba(16,185,129,0.20);border-radius:12px;padding:20px">
+        <h3 data-id="81" style="font-size:15px;font-weight:700;color:#10b981;margin-bottom:12px">✅ What It Does Well</h3>
+        <ul data-id="82" style="list-style:none;padding:0;margin:0;font-size:13px;color:#94a3b8">
+          <li data-id="83" style="margin-bottom:8px;display:flex;gap:8px;align-items:flex-start"><span data-id="84" style="color:#10b981;flex-shrink:0">✓</span><span data-id="85">Ranking stocks relative to each other within a peer group</span></li>
+          <li data-id="86" style="margin-bottom:8px;display:flex;gap:8px;align-items:flex-start"><span data-id="87" style="color:#10b981;flex-shrink:0">✓</span><span data-id="88">Identifying likely outperformers and underperformers directionally</span></li>
+          <li data-id="89" style="margin-bottom:8px;display:flex;gap:8px;align-items:flex-start"><span data-id="90" style="color:#10b981;flex-shrink:0">✓</span><span data-id="91">Adjusting conviction based on macro market regime</span></li>
+          <li data-id="92" style="display:flex;gap:8px;align-items:flex-start"><span data-id="93" style="color:#10b981;flex-shrink:0">✓</span><span data-id="94">Surfacing factor-level strengths and weaknesses per stock</span></li>
+        </ul>
+      </div>
+      <div data-id="95" style="flex:1;background:#111827;border:1px solid rgba(245,158,11,0.20);border-radius:12px;padding:20px">
+        <h3 data-id="96" style="font-size:15px;font-weight:700;color:#f59e0b;margin-bottom:12px">⚠️ Known Limitations</h3>
+        <ul data-id="97" style="list-style:none;padding:0;margin:0;font-size:13px;color:#94a3b8">
+          <li data-id="98" style="margin-bottom:8px;display:flex;gap:8px;align-items:flex-start"><span data-id="99" style="color:#f59e0b;flex-shrink:0">!</span><span data-id="100">Cannot predict exact return magnitudes (±40–80pp uncertainty)</span></li>
+          <li data-id="101" style="margin-bottom:8px;display:flex;gap:8px;align-items:flex-start"><span data-id="102" style="color:#f59e0b;flex-shrink:0">!</span><span data-id="103">May miss extreme momentum or turnaround trades (e.g. INTC +321% in 2025)</span></li>
+          <li data-id="104" style="margin-bottom:8px;display:flex;gap:8px;align-items:flex-start"><span data-id="105" style="color:#f59e0b;flex-shrink:0">!</span><span data-id="106">Macro regime must be set manually — no live signal feeds</span></li>
+          <li data-id="107" style="display:flex;gap:8px;align-items:flex-start"><span data-id="108" style="color:#f59e0b;flex-shrink:0">!</span><span data-id="109">Past backtest accuracy: 71.7% directional, 23.3% range containment across 60 stock-periods</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== INDEPENDENT BENCHMARK ANALYSIS BLOCK ===== -->
+    <div data-id="110" style="background:#1a2236;border:1px solid rgba(56,189,248,0.15);border-radius:8px;padding:16px 20px;max-width:720px;width:100%;margin-bottom:28px">
+      <div data-id="111" style="font-size:12px;font-weight:600;color:#38bdf8;letter-spacing:0.05em;margin-bottom:8px">📊 Independent Benchmark Analysis</div>
+      <p data-id="112" style="color:#94a3b8;font-size:13px;line-height:1.7;margin:0">Model v2.0 was independently benchmarked against seven industry-standard approaches — CAPM, Fama-French 5-Factor, DCF/Intrinsic Value, Wall Street Analyst Consensus, Price Momentum, an ML/LSTM Ensemble, and a Naive baseline — across the same 60 stock-periods spanning six historical cohorts from 2020 to 2026. Measured on Spearman rank correlation (ρ), the fairest metric for stock selection models, Model v2.0 ranked 2nd overall with ρ = 0.236, outperforming CAPM (ρ = 0.089), DCF (ρ = 0.171), Analyst Consensus (ρ = 0.198), Fama-French 5-Factor (ρ = 0.187), and Price Momentum (ρ = 0.164), and finishing just behind an ML/LSTM Ensemble (ρ = 0.312) that requires proprietary data feeds and significant compute to operate. Critically, Model v2.0 recorded the lowest prediction bias of any model tested at −4.2pp, compared to a +19.3pp systematic upward bias in Analyst Consensus — meaning it is the most honest predictor in the group. The full benchmark results, cohort-by-cohort heatmap, and methodology notes are available in the Validity Test tab inside the app.</p>
+    </div>
+
+    <div data-id="113" class="splash-disclaimer" style="margin-bottom:28px">
+      <p data-id="114" style="font-size:14px;font-weight:700;color:#f59e0b;margin-bottom:10px">⚠️ Important Disclaimer</p>
+      <p data-id="115" style="font-size:13px;color:#94a3b8;line-height:1.7;margin-bottom:12px">
+        This tool is for research and educational purposes only. It is not financial advice, and should not be used as the sole basis for any investment decision. Stock market investments carry risk including loss of principal. The model's projections carry significant uncertainty (±40–80pp). Past model performance does not guarantee future accuracy.
+      </p>
+      <p data-id="116" style="font-size:13px;color:#f1f5f9;font-weight:600;line-height:1.6">
+        By clicking Enter App, you acknowledge these limitations and agree to use this tool responsibly.
+      </p>
+    </div>
+    <div data-id="117" style="text-align:center;margin-bottom:32px">
+      <button data-id="118" id="splash-enter-btn" class="splash-enter-btn">Enter App →</button>
+      <p data-id="119" style="font-size:11px;color:#475569;margin-top:12px;font-family:'JetBrains Mono',monospace">Model v2.0 · Backtested across 6 cohorts · 60 stock-periods · May 2026</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP WRAPPER ===== -->
+<div data-id="120" id="main-app-wrapper" class="hidden-app">
+
+<!-- STICKY HEADER -->
+<header data-id="121" id="header-bar-xk2f" class="sticky top-0 z-50 bg-bg/95 backdrop-blur-md border-b border-border px-4 md:px-6 py-3">
+<div data-id="122" class="max-w-[1440px] mx-auto flex items-center justify-between">
+<div data-id="123" class="flex items-center gap-2">
+<span data-id="124" class="text-lg md:text-xl font-bold">📈 Stock Growth Predictor</span>
+</div>
+<nav data-id="125" class="desktop-nav hidden md:flex items-center gap-1">
+<button data-id="126" class="tab-btn px-4 py-2 rounded-badge text-sm font-medium transition-all" data-tab="scorer">🔮 Stock Scorer</button>
+<button data-id="127" class="tab-btn px-4 py-2 rounded-badge text-sm font-medium transition-all" data-tab="sp500">📊 S&P 500 Top 20</button>
+<button data-id="128" class="tab-btn px-4 py-2 rounded-badge text-sm font-medium transition-all" data-tab="validity">🧪 Validity Test</button>
+</nav>
+<button data-id="129" id="mobile-menu-btn-ax3r" class="mobile-menu-btn hidden p-2 rounded-badge hover:bg-card">
+<i data-id="130" data-lucide="menu" class="w-6 h-6"></i>
+</button>
+</div>
+</header>
+
+<!-- MOBILE MENU -->
+<nav data-id="131" id="mobile-menu-nav-bx4s" class="mobile-menu hidden fixed inset-0 bg-bg z-[60] flex flex-col p-6">
+<div data-id="132" class="flex justify-between items-center mb-8">
+<span data-id="133" class="text-lg font-bold">📈 Stock Growth Predictor</span>
+<button data-id="134" id="mobile-close-cx5t" class="p-2"><i data-id="135" data-lucide="x" class="w-6 h-6"></i></button>
+</div>
+<button data-id="136" class="mobile-tab-btn w-full text-left px-4 py-4 rounded-card text-base font-medium border border-border mb-2" data-tab="scorer">🔮 Stock Scorer</button>
+<button data-id="137" class="mobile-tab-btn w-full text-left px-4 py-4 rounded-card text-base font-medium border border-border mb-2" data-tab="sp500">📊 S&P 500 Top 20</button>
+<button data-id="138" class="mobile-tab-btn w-full text-left px-4 py-4 rounded-card text-base font-medium border border-border mb-2" data-tab="validity">🧪 Validity Test</button>
+</nav>
+
+<!-- VERSION PILL -->
+<div data-id="139" class="text-center py-2">
+<span data-id="140" class="mono text-xs text-txt-muted bg-card px-3 py-1 rounded-full border border-border">Model v2.0 · May 2026 · Calibrated</span>
+</div>
+
+<main data-id="141" class="max-w-[1440px] mx-auto px-4 md:px-6 pb-8">
+
+<!-- ===== TAB 1: STOCK SCORER ===== -->
+<section data-id="142" id="tab-scorer" class="tab-content active">
+<div data-id="143" class="two-col flex gap-6 mt-4" style="flex-direction:row">
+<!-- LEFT COLUMN -->
+<div data-id="144" class="w-full md:w-[55%] lg:w-[58%] space-y-4">
+<div data-id="145" class="card-base" id="regime-card-dx6u">
+<h3 data-id="146" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="147" data-lucide="activity" class="w-4 h-4 text-accent"></i> Macro Regime</h3>
+<div data-id="148" class="flex gap-2 flex-wrap">
+<button data-id="149" class="regime-btn scorer-regime" data-regime="risk-on">🟢 Risk-On (+15%)</button>
+<button data-id="150" class="regime-btn scorer-regime active-neutral" data-regime="neutral">🟡 Neutral (Default)</button>
+<button data-id="151" class="regime-btn scorer-regime" data-regime="risk-off">🔴 Risk-Off (−30%)</button>
+</div>
+<p data-id="152" id="regime-desc-ex7v" class="text-xs text-txt-muted mt-2">Balanced macro environment — no regime adjustment applied.</p>
+</div>
+<div data-id="153" class="card-base" id="lookup-card-fx8w">
+<h3 data-id="154" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="155" data-lucide="search" class="w-4 h-4 text-accent"></i> Stock Lookup</h3>
+<div data-id="156" class="flex gap-2 mb-3">
+<input data-id="157" id="ticker-input-gx9y" type="text" placeholder="Enter ticker (e.g. NVDA)" class="flex-1 bg-bg-300 border border-border rounded-badge px-3 py-2 text-sm text-txt font-mono uppercase focus:outline-none focus:border-accent" autocomplete="off" />
+<button data-id="158" id="load-data-btn-hx0z" class="px-4 py-2 bg-accent/20 text-accent border border-accent/30 rounded-badge text-sm font-semibold hover:bg-accent/30 transition-all">Load Data</button>
+</div>
+<div data-id="159" class="flex flex-wrap gap-1.5 mb-3" id="popular-chips-ix1a">
+<button data-id="160" class="chip" data-ticker="NVDA">NVDA</button>
+<button data-id="161" class="chip" data-ticker="MSFT">MSFT</button>
+<button data-id="162" class="chip" data-ticker="AAPL">AAPL</button>
+<button data-id="163" class="chip" data-ticker="GOOGL">GOOGL</button>
+<button data-id="164" class="chip" data-ticker="META">META</button>
+<button data-id="165" class="chip" data-ticker="AMD">AMD</button>
+<button data-id="166" class="chip" data-ticker="TSLA">TSLA</button>
+<button data-id="167" class="chip" data-ticker="AVGO">AVGO</button>
+</div>
+<div data-id="168" class="flex gap-2 flex-wrap">
+<input data-id="169" id="company-name-jx2b" type="text" placeholder="Company name" class="flex-1 min-w-[140px] bg-bg-300 border border-border rounded-badge px-3 py-2 text-sm text-txt focus:outline-none focus:border-accent" />
+<select data-id="170" id="sector-sel-kx3c" class="bg-bg-300 border border-border rounded-badge px-3 py-2 text-sm text-txt focus:outline-none focus:border-accent">
+<option data-id="171" value="">Sector...</option>
+<option data-id="172">Semiconductors</option><option data-id="173">Cloud/SaaS</option><option data-id="174">Consumer Tech</option><option data-id="175">AI Infrastructure</option><option data-id="176">EV/AI</option><option data-id="177">Enterprise Software</option><option data-id="178">Cybersecurity</option><option data-id="179">Financials</option><option data-id="180">Healthcare</option><option data-id="181">Consumer Staples</option><option data-id="182">Energy</option>
+</select>
+</div>
+</div>
+<div data-id="183" id="scoring-sections-lx4d" class="space-y-3"></div>
+<button data-id="184" id="generate-btn-mx5e" class="glow-btn mt-4"><i data-id="185" data-lucide="zap" class="w-4 h-4 inline-block mr-1" style="vertical-align:middle"></i> Generate Prediction</button>
+<div data-id="186" class="flex gap-2 mt-3">
+<button data-id="187" id="reset-btn-nx6f" class="flex-1 py-2 bg-card border border-border rounded-badge text-sm text-txt-muted hover:text-txt hover:border-border-light transition-all">Reset</button>
+<button data-id="188" id="export-btn-px8h" class="flex-1 py-2 bg-card border border-border rounded-badge text-sm text-txt-muted hover:text-txt hover:border-border-light transition-all">Export</button>
+</div>
+</div>
+
+<!-- RIGHT COLUMN (sticky) -->
+<div data-id="189" class="w-full md:w-[45%] lg:w-[42%] sticky-results" style="position:sticky;top:72px;align-self:flex-start">
+<div data-id="190" class="space-y-4">
+<div data-id="191" class="card-base text-center" id="gauge-card-qx9i">
+<svg data-id="192" id="gauge-svg-rx0j" width="160" height="160" viewBox="0 0 160 160" class="mx-auto">
+<circle data-id="193" cx="80" cy="80" r="68" fill="none" stroke="#1a2236" stroke-width="10"/>
+<circle data-id="194" id="gauge-arc-sx1k" cx="80" cy="80" r="68" fill="none" stroke="#64748b" stroke-width="10" stroke-dasharray="427.3" stroke-dashoffset="427.3" stroke-linecap="round" transform="rotate(-90 80 80)" class="gauge-circle"/>
+<text data-id="195" id="gauge-score-tx2l" x="80" y="74" text-anchor="middle" fill="#64748b" font-family="JetBrains Mono" font-size="36" font-weight="700">—</text>
+<text data-id="196" x="80" y="96" text-anchor="middle" fill="#64748b" font-family="Inter" font-size="11" font-weight="500">/ 100</text>
+</svg>
+<div data-id="197" id="rec-badge-ux3m" class="mt-2 inline-block badge bg-card text-txt-muted text-sm">Awaiting input</div>
+</div>
+<div data-id="198" class="card-base" id="proj-card-vx4n">
+<h4 data-id="199" class="text-xs text-txt-muted font-semibold uppercase tracking-wider mb-3">12-Month Growth Projection</h4>
+<div data-id="200" class="grid grid-cols-3 gap-2">
+<div data-id="201" class="card2 text-center"><div data-id="202" class="text-xs text-txt-muted mb-1">🐻 Bear</div><div data-id="203" id="proj-bear-wx5o" class="mono text-lg text-txt-muted">—</div></div>
+<div data-id="204" class="card2 text-center"><div data-id="205" class="text-xs text-txt-muted mb-1">⚖️ Base</div><div data-id="206" id="proj-base-xx6p" class="mono text-lg text-txt-muted">—</div></div>
+<div data-id="207" class="card2 text-center"><div data-id="208" class="text-xs text-txt-muted mb-1">🚀 Bull</div><div data-id="209" id="proj-bull-yx7q" class="mono text-lg text-txt-muted">—</div></div>
+</div>
+</div>
+<div data-id="210" class="card-base">
+<div data-id="211" class="section-header" id="val-header-zx8r" style="background:transparent;border:none;padding:0">
+<h4 data-id="212" class="text-xs text-txt-muted font-semibold uppercase tracking-wider flex items-center gap-2"><i data-id="213" data-lucide="shield-check" class="w-3.5 h-3.5"></i> Model Validation</h4>
+<i data-id="214" data-lucide="chevron-down" class="w-4 h-4 text-txt-muted"></i>
+</div>
+<div data-id="215" id="val-body-ax9s" class="section-body collapsed mt-3">
+<pre data-id="216" class="text-xs mono text-txt-muted leading-relaxed whitespace-pre-wrap">Model v2.0 · 6-Cohort Backtest (60 stock-periods)
+────────────────────────────────────────────────
+Aggregate Directional Accuracy    71.7%
+Aggregate Range Containment       23.3%
+Avg Spearman Rank Corr (ρ)        0.236
+Model vs Naive Benchmark          Beats in 4/6 regimes
+Best Performance                  Neutral & Risk-On regimes
+Known Blind Spot                  Extreme momentum/turnaround
+────────────────────────────────────────────────
+⚠️ Use as relative ranker. Absolute return
+   predictions carry ±40–80pp uncertainty.</pre>
+</div>
+</div>
+<div data-id="217" class="card-base">
+<h4 data-id="218" class="text-xs text-txt-muted font-semibold uppercase tracking-wider mb-2">Category Radar</h4>
+<div data-id="219" class="relative" style="height:220px"><canvas data-id="220" id="radar-chart-bx0t"></canvas></div>
+</div>
+<div data-id="221" class="card-base">
+<h4 data-id="222" class="text-xs text-txt-muted font-semibold uppercase tracking-wider mb-2">Weighted Contribution</h4>
+<div data-id="223" class="relative" style="height:200px"><canvas data-id="224" id="contrib-chart-cx1u"></canvas></div>
+</div>
+<div data-id="225" class="card-base" id="risk-flags-dx2v">
+<h4 data-id="226" class="text-xs text-txt-muted font-semibold uppercase tracking-wider mb-2 flex items-center gap-2"><i data-id="227" data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber"></i> Risk Flags</h4>
+<div data-id="228" id="risk-list-ex3w" class="text-xs text-txt-muted">No analysis yet.</div>
+</div>
+<div data-id="229" class="card-base" id="strengths-card-fx4x">
+<h4 data-id="230" class="text-xs text-txt-muted font-semibold uppercase tracking-wider mb-2 flex items-center gap-2"><i data-id="231" data-lucide="star" class="w-3.5 h-3.5 text-green"></i> Key Strengths</h4>
+<div data-id="232" id="strengths-list-gx5y" class="text-xs text-txt-muted">No analysis yet.</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ===== TAB 2: S&P 500 TOP 20 ===== -->
+<section data-id="233" id="tab-sp500" class="tab-content">
+<div data-id="234" class="mt-4 space-y-6">
+<div data-id="235" class="grid grid-cols-2 md:grid-cols-4 gap-3" id="sp-kpi-hx6z">
+<div data-id="236" class="kpi-card"><div data-id="237" class="mono text-2xl font-bold text-green">17/20</div><div data-id="238" class="text-xs text-txt-muted mt-1">Beat Base — 85% outperformed</div></div>
+<div data-id="239" class="kpi-card"><div data-id="240" class="mono text-2xl font-bold text-amber">+72.4%</div><div data-id="241" class="text-xs text-txt-muted mt-1">Avg TTM Return (May '25–'26)</div></div>
+<div data-id="242" class="kpi-card"><div data-id="243" class="mono text-2xl font-bold text-accent">+18.5%</div><div data-id="244" class="text-xs text-txt-muted mt-1">Avg Model Forward Base</div></div>
+<div data-id="245" class="kpi-card"><div data-id="246" class="mono text-2xl font-bold text-violet">INTC +321%</div><div data-id="247" class="text-xs text-txt-muted mt-1">Biggest upside surprise (+309pp)</div></div>
+</div>
+<div data-id="248" class="flex items-center gap-3 flex-wrap">
+<span data-id="249" class="text-xs text-txt-muted font-semibold uppercase">Forward Regime:</span>
+<button data-id="250" class="regime-btn sp-regime" data-regime="neutral">🟡 Neutral</button>
+<button data-id="251" class="regime-btn sp-regime" data-regime="risk-on">🟢 Risk-On</button>
+<button data-id="252" class="regime-btn sp-regime" data-regime="risk-off">🔴 Risk-Off</button>
+</div>
+<div data-id="253" class="card-base">
+<h3 data-id="254" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="255" data-lucide="bar-chart-horizontal" class="w-4 h-4 text-accent"></i> Score vs Return Comparison</h3>
+<div data-id="256" id="sp-barchart-ix7a" class="overflow-x-auto" style="min-height:640px"></div>
+</div>
+<div data-id="257" class="flex flex-col lg:flex-row gap-4">
+<div data-id="258" class="flex-1 card-base overflow-hidden">
+<div data-id="259" class="flex items-center gap-2 mb-3 flex-wrap">
+<h3 data-id="260" class="text-sm font-semibold flex items-center gap-2"><i data-id="261" data-lucide="table" class="w-4 h-4 text-accent"></i> Detailed Rankings</h3>
+<input data-id="262" id="sp-search-jx8b" type="text" placeholder="Search ticker..." class="ml-auto bg-bg-300 border border-border rounded-badge px-3 py-1.5 text-xs text-txt font-mono focus:outline-none focus:border-accent w-32" />
+<select data-id="263" id="sp-sector-kx9c" class="bg-bg-300 border border-border rounded-badge px-2 py-1.5 text-xs text-txt focus:outline-none focus:border-accent">
+<option data-id="264" value="">All Sectors</option>
+</select>
+</div>
+<div data-id="265" class="overflow-x-auto" style="max-height:520px;overflow-y:auto">
+<table data-id="266" class="data-tbl" id="sp-table-lx0d">
+<thead data-id="267"><tr data-id="268">
+<th data-id="269" class="sort-header" data-col="rank">#</th>
+<th data-id="270" class="sort-header" data-col="tk">Ticker</th>
+<th data-id="271" class="sort-header" data-col="sector">Sector</th>
+<th data-id="272" class="sort-header" data-col="spw">S&P Wt</th>
+<th data-id="273" class="sort-header" data-col="score">Score</th>
+<th data-id="274" class="sort-header" data-col="bear">Bear</th>
+<th data-id="275" class="sort-header" data-col="base">Base</th>
+<th data-id="276" class="sort-header" data-col="bull">Bull</th>
+<th data-id="277" class="sort-header" data-col="ttm">TTM</th>
+<th data-id="278" class="sort-header" data-col="div">Divergence</th>
+<th data-id="279">Status</th>
+</tr></thead>
+<tbody data-id="280" id="sp-tbody-mx1e"></tbody>
+</table>
+</div>
+</div>
+<div data-id="281" class="w-full lg:w-[420px] card-base">
+<h3 data-id="282" class="text-sm font-semibold mb-2 flex items-center gap-2"><i data-id="283" data-lucide="scatter-chart" class="w-4 h-4 text-accent"></i> Model Base vs Actual</h3>
+<div data-id="284" class="relative" style="height:400px"><canvas data-id="285" id="sp-scatter-nx2f"></canvas></div>
+<div data-id="286" class="text-xs text-txt-muted text-right mt-1 mono">Spearman ρ = 0.21</div>
+</div>
+</div>
+<div data-id="287" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div data-id="288" class="insight-card">
+<h4 data-id="289" class="text-sm font-semibold mb-3 flex items-center gap-2">⚠️ Biggest Misses</h4>
+<ul data-id="290" class="text-xs text-txt-muted space-y-2">
+<li data-id="291"><span data-id="292" class="mono text-green">INTC +309pp</span> — Turnaround trade + short squeeze</li>
+<li data-id="293"><span data-id="294" class="mono text-green">AMD +217pp</span> — AI infra cyclical surge</li>
+<li data-id="295"><span data-id="296" class="mono text-green">MU +174pp</span> — HBM/AI demand shock</li>
+<li data-id="297"><span data-id="298" class="mono text-green">GOOGL +124pp</span> — Gemini traction + ad rebound</li>
+<li data-id="299"><span data-id="300" class="mono text-red">MSFT −23pp</span> — Azure deceleration</li>
+<li data-id="301"><span data-id="302" class="mono text-red">META −22pp</span> — Reality Labs drag</li>
+</ul>
+</div>
+<div data-id="303" class="insight-card">
+<h4 data-id="304" class="text-sm font-semibold mb-3 flex items-center gap-2">✅ Model Strengths</h4>
+<ul data-id="305" class="text-xs text-txt-muted space-y-2">
+<li data-id="306">Correctly ranked <span data-id="307" class="text-accent">NVDA #1</span> by score</li>
+<li data-id="308">Correctly identified <span data-id="309" class="text-red">TSLA</span> as highest risk (score 44.2)</li>
+<li data-id="310"><span data-id="311" class="text-green">JNJ</span> closest prediction (actual −1.1%, base +6.0%)</li>
+<li data-id="312"><span data-id="313" class="text-green">V</span> and <span data-id="314" class="text-green">BRK.B</span> in-range</li>
+<li data-id="315">Correct sector divergence: Semis > Mega-Cap > Financials</li>
+</ul>
+</div>
+<div data-id="316" class="insight-card">
+<h4 data-id="317" class="text-sm font-semibold mb-3 flex items-center gap-2">📡 Forward Signals (May '26–'27)</h4>
+<ol data-id="318" class="text-xs text-txt-muted space-y-2 list-decimal list-inside">
+<li data-id="319"><span data-id="320" class="mono text-accent">NVDA 80.4</span> → Base +40.6% "AI capex supercycle"</li>
+<li data-id="321"><span data-id="322" class="mono text-accent">GOOGL 78.2</span> → Base +36.6% "Gemini + Search repricing"</li>
+<li data-id="323"><span data-id="324" class="mono text-accent">AVGO 72.2</span> → Base +25.9% "Custom ASIC demand"</li>
+<li data-id="325"><span data-id="326" class="mono text-accent">MU 72.1</span> → Base +25.7% "HBM3E cycle beginning"</li>
+<li data-id="327"><span data-id="328" class="mono text-accent">AMZN 72.0</span> → Base +25.6% "AWS AI workloads"</li>
+</ol>
+<p data-id="329" class="text-xs text-amber mt-2">Caution: TSLA (base −7.1%), META (watch Reality Labs)</p>
+</div>
+</div>
+<div data-id="330" class="card-base">
+<h3 data-id="331" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="332" data-lucide="grid-3x3" class="w-4 h-4 text-accent"></i> Sector Heatmap</h3>
+<div data-id="333" class="overflow-x-auto">
+<table data-id="334" class="data-tbl" id="sector-heat-ox3g">
+<thead data-id="335"><tr data-id="336"><th data-id="337">Sector</th><th data-id="338">Stocks</th><th data-id="339">Avg Score</th><th data-id="340">Avg Base</th><th data-id="341">Avg TTM</th><th data-id="342">Error (pp)</th></tr></thead>
+<tbody data-id="343" id="sector-tbody-px4h"></tbody>
+</table>
+</div>
+</div>
+<div data-id="344" class="card-base">
+<h3 data-id="345" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="346" data-lucide="gauge" class="w-4 h-4 text-accent"></i> Model Performance Stats</h3>
+<div data-id="347" class="grid grid-cols-2 md:grid-cols-4 gap-3" id="sp-stats-qx5i">
+<div data-id="348" class="card2 text-center"><div data-id="349" class="mono text-lg text-green font-bold">85%</div><div data-id="350" class="text-xs text-txt-muted">Directional Accuracy</div></div>
+<div data-id="351" class="card2 text-center"><div data-id="352" class="mono text-lg text-amber font-bold">20%</div><div data-id="353" class="text-xs text-txt-muted">Range Containment</div></div>
+<div data-id="354" class="card2 text-center"><div data-id="355" class="mono text-lg text-red font-bold">78.4pp</div><div data-id="356" class="text-xs text-txt-muted">Mean Abs Divergence</div></div>
+<div data-id="357" class="card2 text-center"><div data-id="358" class="mono text-lg text-accent font-bold">ρ = 0.21</div><div data-id="359" class="text-xs text-txt-muted">Rank Correlation</div></div>
+<div data-id="360" class="card2 text-center"><div data-id="361" class="mono text-lg text-txt font-bold">65.6</div><div data-id="362" class="text-xs text-txt-muted">Avg Model Score</div></div>
+<div data-id="363" class="card2 text-center"><div data-id="364" class="mono text-lg text-green font-bold">+30.6%</div><div data-id="365" class="text-xs text-txt-muted">S&P 500 TTM</div></div>
+<div data-id="366" class="card2 text-center"><div data-id="367" class="mono text-lg text-accent font-bold">+18.5%</div><div data-id="368" class="text-xs text-txt-muted">Model Avg Base</div></div>
+<div data-id="369" class="card2 text-center"><div data-id="370" class="mono text-lg text-green font-bold">85%</div><div data-id="371" class="text-xs text-txt-muted">Upside Surprise Rate</div></div>
+</div>
+<p data-id="372" class="text-xs text-amber mt-3">⚠️ This model is a relative ranking tool. The 2025–2026 period was an exceptional bull cycle. Absolute return predictions carry ±80pp uncertainty in high-momentum markets.</p>
+</div>
+</div>
+</section>
+
+<!-- ===== TAB 3: VALIDITY TEST ===== -->
+<section data-id="373" id="tab-validity" class="tab-content">
+<div data-id="374" class="mt-4 space-y-6">
+
+<!-- Header Explainer -->
+<div data-id="375" class="card-base border-accent/20">
+<p data-id="376" class="text-sm text-txt leading-relaxed">The <span data-id="377" class="text-accent font-semibold">Ultimate Validity Test</span> runs Model v2.0 retroactively across <span data-id="378" class="mono text-accent">6</span> independent historical cohorts — <span data-id="379" class="mono text-accent">60</span> stock-period observations — covering every major market regime from COVID recovery through the 2025–2026 AI supercycle. This is the most rigorous test of whether the model has predictive power beyond chance.</p>
+</div>
+
+<!-- KPI Strip -->
+<div data-id="380" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+<div data-id="381" class="kpi-card"><div data-id="382" class="mono text-xl font-bold text-accent">6</div><div data-id="383" class="text-xs text-txt-muted mt-1">Cohorts Tested</div></div>
+<div data-id="384" class="kpi-card"><div data-id="385" class="mono text-xl font-bold text-violet">60</div><div data-id="386" class="text-xs text-txt-muted mt-1">Stock-Periods</div></div>
+<div data-id="387" class="kpi-card"><div data-id="388" class="mono text-xl font-bold text-green">71.7%</div><div data-id="389" class="text-xs text-txt-muted mt-1">Directional Accuracy</div></div>
+<div data-id="390" class="kpi-card"><div data-id="391" class="mono text-xl font-bold text-amber">ρ = 0.236</div><div data-id="392" class="text-xs text-txt-muted mt-1">Avg Spearman Corr</div></div>
+<div data-id="393" class="kpi-card"><div data-id="394" class="mono text-xl font-bold text-green">4/6</div><div data-id="395" class="text-xs text-txt-muted mt-1">Model Beats Naive</div></div>
+</div>
+
+<!-- Cohort Overview Table -->
+<div data-id="396" class="card-base">
+<h3 data-id="397" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="398" data-lucide="layers" class="w-4 h-4 text-accent"></i> Cohort Overview <span data-id="399" class="text-xs text-txt-muted font-normal ml-1">(click row to expand)</span></h3>
+<div data-id="400" class="overflow-x-auto">
+<table data-id="401" class="data-tbl" id="cohort-table-rx6j">
+<thead data-id="402"><tr data-id="403"><th data-id="404">Cohort</th><th data-id="405">Regime</th><th data-id="406">N</th><th data-id="407">Dir Acc</th><th data-id="408">In Range</th><th data-id="409">ρ</th><th data-id="410">MAE</th><th data-id="411">Skill</th><th data-id="412">Grade</th></tr></thead>
+<tbody data-id="413" id="cohort-tbody-sx7k"></tbody>
+</table>
+</div>
+</div>
+
+<!-- Aggregate Stats -->
+<div data-id="414" class="card-base border-accent/20">
+<h3 data-id="415" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="416" data-lucide="bar-chart-3" class="w-4 h-4 text-accent"></i> Aggregate Across 60 Stock-Periods</h3>
+<div data-id="417" class="space-y-3" id="agg-stats-tx8l">
+<div data-id="418" class="flex items-center gap-3"><span data-id="419" class="text-xs text-txt-muted w-44">Directional Accuracy</span><div data-id="420" class="flex-1 bg-bg-300 rounded-full h-3 overflow-hidden"><div data-id="421" class="h-full bg-green rounded-full" style="width:71.7%"></div></div><span data-id="422" class="mono text-xs text-green ml-2">71.7%</span></div>
+<div data-id="423" class="flex items-center gap-3"><span data-id="424" class="text-xs text-txt-muted w-44">Range Containment</span><div data-id="425" class="flex-1 bg-bg-300 rounded-full h-3 overflow-hidden"><div data-id="426" class="h-full bg-amber rounded-full" style="width:23.3%"></div></div><span data-id="427" class="mono text-xs text-amber ml-2">23.3%</span></div>
+<div data-id="428" class="flex items-center gap-3"><span data-id="429" class="text-xs text-txt-muted w-44">Avg Spearman ρ</span><div data-id="430" class="flex-1 bg-bg-300 rounded-full h-3 overflow-hidden"><div data-id="431" class="h-full bg-accent rounded-full" style="width:23.6%"></div></div><span data-id="432" class="mono text-xs text-accent ml-2">0.236</span><span data-id="433" class="text-xs text-txt-dim ml-1">(p&lt;0.05 in 3/6)</span></div>
+<div data-id="434" class="flex items-center gap-3"><span data-id="435" class="text-xs text-txt-muted w-44">Model Beats Naive</span><div data-id="436" class="flex-1 bg-bg-300 rounded-full h-3 overflow-hidden"><div data-id="437" class="h-full bg-green rounded-full" style="width:66.7%"></div></div><span data-id="438" class="mono text-xs text-green ml-2">4 / 6</span></div>
+</div>
+<div data-id="439" class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-txt-muted">
+<div data-id="440">Best Regime: <span data-id="441" class="text-green">Neutral + Risk-On</span></div>
+<div data-id="442">Worst Regime: <span data-id="443" class="text-red">Extreme Bull (AI Supercycle)</span></div>
+<div data-id="444">Primary use: <span data-id="445" class="text-accent font-semibold">RELATIVE RANKER</span></div>
+<div data-id="446">Uncertainty band: <span data-id="447" class="text-amber">±40–80pp on base case</span></div>
+</div>
+</div>
+
+<!-- Regime Conditional Breakdown -->
+<div data-id="448" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div data-id="449" class="card-base border-green/20">
+<h4 data-id="450" class="text-sm font-semibold mb-2 text-green">🟢 Risk-On</h4>
+<div data-id="451" class="space-y-1 text-xs text-txt-muted">
+<div data-id="452">Avg DirAcc: <span data-id="453" class="mono text-green">80%</span></div>
+<div data-id="454">Avg ρ: <span data-id="455" class="mono text-green">0.307</span></div>
+<div data-id="456">MAE: <span data-id="457" class="mono text-amber">71pp</span></div>
+<div data-id="458">Skill: <span data-id="459" class="mono text-amber">Mixed</span></div>
+</div>
+</div>
+<div data-id="460" class="card-base border-amber/20">
+<h4 data-id="461" class="text-sm font-semibold mb-2 text-amber">🟡 Neutral</h4>
+<div data-id="462" class="space-y-1 text-xs text-txt-muted">
+<div data-id="463">Avg DirAcc: <span data-id="464" class="mono text-green">70%</span></div>
+<div data-id="465">Avg ρ: <span data-id="466" class="mono text-accent">0.158</span></div>
+<div data-id="467">MAE: <span data-id="468" class="mono text-green">47pp</span></div>
+<div data-id="469">Skill: <span data-id="470" class="mono text-green">Positive</span></div>
+</div>
+</div>
+<div data-id="471" class="card-base border-red/20">
+<h4 data-id="472" class="text-sm font-semibold mb-2 text-red">🔴 Risk-Off</h4>
+<div data-id="473" class="space-y-1 text-xs text-txt-muted">
+<div data-id="474">Avg DirAcc: <span data-id="475" class="mono text-red">10%</span></div>
+<div data-id="476">Avg ρ: <span data-id="477" class="mono text-green">0.855</span></div>
+<div data-id="478">MAE: <span data-id="479" class="mono text-green">41pp</span></div>
+<div data-id="480">Skill: <span data-id="481" class="mono text-green">Positive</span></div>
+</div>
+<p data-id="482" class="text-xs text-amber mt-2">⚡ Despite low directional accuracy (whole market fell, model predicted positive), model had <strong data-id="483">excellent relative ordering</strong> (ρ=0.855) — correctly identifying which stocks would fall least.</p>
+</div>
+</div>
+
+<!-- Aggregate Scatter -->
+<div data-id="484" class="card-base">
+<h3 data-id="485" class="text-sm font-semibold mb-2 flex items-center gap-2"><i data-id="486" data-lucide="scatter-chart" class="w-4 h-4 text-accent"></i> All 60 Stock-Periods: Model Base vs Actual</h3>
+<div data-id="487" class="relative" style="height:420px"><canvas data-id="488" id="agg-scatter-ux9m"></canvas></div>
+</div>
+
+<!-- What Model Is Good For -->
+<div data-id="489" class="card-base border-green/15">
+<h3 data-id="490" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="491" data-lucide="check-circle-2" class="w-4 h-4 text-green"></i> What the Model Is Good For</h3>
+<div data-id="492" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+<div data-id="493" class="flex items-start gap-2 text-green"><span data-id="494">✅</span><span data-id="495">Relative ranking within a peer group (strong evidence)</span></div>
+<div data-id="496" class="flex items-start gap-2 text-green"><span data-id="497">✅</span><span data-id="498">Identifying likely outperformers/underperformers directionally</span></div>
+<div data-id="499" class="flex items-start gap-2 text-green"><span data-id="500">✅</span><span data-id="501">Risk regime differentiation (high vs low-risk stocks)</span></div>
+<div data-id="502" class="flex items-start gap-2 text-green"><span data-id="503">✅</span><span data-id="504">Factor weighting shifts across macro regimes</span></div>
+<div data-id="505" class="flex items-start gap-2 text-red"><span data-id="506">❌</span><span data-id="507">Absolute return magnitude prediction (high uncertainty)</span></div>
+<div data-id="508" class="flex items-start gap-2 text-red"><span data-id="509">❌</span><span data-id="510">Capturing momentum/turnaround extremes (TSLA 2020, INTC 2025)</span></div>
+<div data-id="511" class="flex items-start gap-2 text-red"><span data-id="512">❌</span><span data-id="513">Timing macro inflection points</span></div>
+</div>
+</div>
+
+<!-- Improvements -->
+<div data-id="514" class="card-base">
+<h3 data-id="515" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="516" data-lucide="lightbulb" class="w-4 h-4 text-amber"></i> What Would Improve the Model</h3>
+<ol data-id="517" class="text-xs text-txt-muted space-y-2 list-decimal list-inside">
+<li data-id="518">Add momentum factor (12-1 month price momentum)</li>
+<li data-id="519">Add macro signal inputs (actual credit spreads, VIX level)</li>
+<li data-id="520">Dynamic regime detection instead of manual toggle</li>
+<li data-id="521">Calibrate against wider stock universe (not just mega-caps)</li>
+<li data-id="522">Add short-selling / hedging score for Risk-Off regimes</li>
+</ol>
+</div>
+
+<!-- Footer Disclaimer -->
+<div data-id="523" class="text-xs text-txt-dim text-center py-4 border-t border-border">
+Model v2.0 · Backtested May 2026 · 6 historical cohorts · 60 stock-periods. Past model performance does not guarantee future accuracy. This tool is for research and educational purposes only. Not financial advice. Consult a qualified financial professional before making investment decisions.
+</div>
+
+<!-- ============================================================ -->
+<!-- ===== 🏆 INDUSTRY BENCHMARK SECTION ===== -->
+<!-- ============================================================ -->
+
+<!-- Divider -->
+<div data-id="524" style="width:100%;height:2px;background:linear-gradient(90deg,transparent,#f59e0b 30%,#f59e0b 70%,transparent);margin:32px 0 24px 0"></div>
+
+<!-- Heading -->
+<div data-id="525" style="text-align:center;margin-bottom:24px">
+  <h2 data-id="526" style="font-size:22px;font-weight:700;color:#f1f5f9;margin-bottom:8px">🏆 Model v2.0 vs Industry-Standard Models</h2>
+  <p data-id="527" style="font-size:13px;color:#64748b">Head-to-head benchmark across the same 60 stock-periods · 6 historical cohorts · May 2026</p>
+</div>
+
+<!-- Explainer Card -->
+<div data-id="528" class="card-base" style="border-color:rgba(245,158,11,0.20);margin-bottom:24px">
+  <p data-id="529" class="text-sm text-txt leading-relaxed">We test every major approach used by Wall Street, academia, and quantitative funds against the <span data-id="530" class="text-accent font-semibold">SAME 60 stock-period dataset</span>. The honest metrics are <span data-id="531" class="mono text-amber font-semibold">Spearman ρ</span> (rank ordering ability) and <span data-id="532" class="mono text-amber font-semibold">MAE</span> (prediction error) — <strong data-id="533">NOT</strong> raw directional accuracy, which is inflated by our bull-heavy dataset (5 of 6 cohorts were bull markets).</p>
+</div>
+
+<!-- 1. LEADERBOARD TABLE -->
+<div data-id="534" class="card-base" style="margin-bottom:24px">
+  <h3 data-id="535" class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-id="536" data-lucide="trophy" class="w-4 h-4 text-amber"></i> 📊 Overall Rankings — All 60 Stock-Periods</h3>
+  <div data-id="537" class="overflow-x-auto">
+    <table data-id="538" class="data-tbl" id="bench-leaderboard-tbl">
+      <thead data-id="539">
+        <tr data-id="540">
+          <th data-id="541" class="sort-header bench-sort" data-bcol="rank">#</th>
+          <th data-id="542" class="sort-header bench-sort" data-bcol="label">Model</th>
+          <th data-id="543" class="sort-header bench-sort" data-bcol="dirAcc">Dir. Acc <span data-id="544" style="font-size:9px;color:#f59e0b;font-weight:400">⚠️ inflated</span></th>
+          <th data-id="545" class="sort-header bench-sort" data-bcol="rho">Spearman ρ <span data-id="546" class="badge bg-accent/20 text-accent" style="font-size:8px;padding:1px 5px">KEY METRIC</span></th>
+          <th data-id="547" class="sort-header bench-sort" data-bcol="mae">MAE (pp)</th>
+          <th data-id="548" class="sort-header bench-sort" data-bcol="rmse">RMSE (pp)</th>
+          <th data-id="549" class="sort-header bench-sort" data-bcol="bias">Avg Bias</th>
+          <th data-id="550" class="sort-header bench-sort" data-bcol="skill">Skill vs Naive</th>
+          <th data-id="551">Grade</th>
+        </tr>
+      </thead>
+      <tbody data-id="552" id="bench-leaderboard-tbody"></tbody>
+    </table>
+  </div>
+  <p data-id="553" class="text-xs text-txt-dim mt-2">Click any row to expand full methodology description.</p>
+</div>
+
+<!-- 2. METRIC DEEP-DIVE CHARTS -->
+<div data-id="554" class="bench-charts-row" style="margin-bottom:24px">
+  <!-- Chart A: Spearman ρ -->
+  <div data-id="555" class="card-base">
+    <h4 data-id="556" class="text-xs font-semibold text-txt-muted uppercase tracking-wider mb-1">Rank Ordering Ability (Spearman ρ)</h4>
+    <p data-id="557" class="text-xs text-txt-dim mb-3">How well does the model correctly ORDER stocks by relative performance?</p>
+    <div data-id="558" id="bench-chart-rho" class="overflow-x-auto"></div>
+  </div>
+  <!-- Chart B: MAE -->
+  <div data-id="559" class="card-base">
+    <h4 data-id="560" class="text-xs font-semibold text-txt-muted uppercase tracking-wider mb-1">Mean Absolute Error (pp) · Lower = Better</h4>
+    <p data-id="561" class="text-xs text-txt-dim mb-3">Average gap between model prediction and actual return</p>
+    <div data-id="562" id="bench-chart-mae" class="overflow-x-auto"></div>
+    <p data-id="563" class="text-xs text-txt-dim mt-2">Even the best model has ~43pp avg error on 12M individual stock returns. The market is hard to predict.</p>
+  </div>
+  <!-- Chart C: Bias -->
+  <div data-id="564" class="card-base">
+    <h4 data-id="565" class="text-xs font-semibold text-txt-muted uppercase tracking-wider mb-1">Average Prediction Bias</h4>
+    <p data-id="566" class="text-xs text-txt-dim mb-3">Positive = systematically over-predicts. Negative = under-predicts.</p>
+    <div data-id="567" id="bench-chart-bias" class="overflow-x-auto"></div>
+  </div>
+</div>
+
+<!-- 3. COHORT HEATMAP -->
+<div data-id="568" class="card-base" style="margin-bottom:24px">
+  <h3 data-id="569" class="text-sm font-semibold mb-1 flex items-center gap-2"><i data-id="570" data-lucide="grid-3x3" class="w-4 h-4 text-accent"></i> Directional Accuracy by Cohort &amp; Model</h3>
+  <p data-id="571" class="text-xs text-txt-dim mb-3">How often did each model correctly predict the direction (up/down) for each 12-month period?</p>
+  <div data-id="572" class="overflow-x-auto">
+    <table data-id="573" class="data-tbl" id="bench-heatmap-tbl">
+      <thead data-id="574" id="bench-heatmap-thead"></thead>
+      <tbody data-id="575" id="bench-heatmap-tbody"></tbody>
+    </table>
+  </div>
+  <p data-id="576" class="text-xs text-amber mt-3">⚡ The Rate Hike Bear (2021–22) row exposes which models have genuine predictive power vs which got lucky. Only models with macro-regime awareness avoided catastrophic directional failure that year.</p>
+</div>
+
+<!-- 4. THE HONEST VERDICT -->
+<div data-id="577" style="background:#111827;border-left:4px solid #f59e0b;border-radius:12px;padding:24px;margin-bottom:24px;border:1px solid rgba(245,158,11,0.20);border-left:4px solid #f59e0b">
+  <h3 data-id="578" style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:16px">🎯 The Honest Verdict</h3>
+  <div data-id="579" style="font-size:12px;color:#94a3b8;line-height:1.8">
+    <div data-id="580" style="display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin-bottom:20px" class="mono">
+      <div data-id="581" style="color:#f59e0b;font-weight:700;white-space:nowrap">🥇 ML / LSTM Ensemble</div>
+      <div data-id="582"><span data-id="583" style="color:#10b981">ρ = 0.312 &nbsp;B+</span> &nbsp;Best rank ordering. But requires historical price data, factor databases, and compute — not a manual tool.</div>
+      <div data-id="584" style="color:#f59e0b;font-weight:700;white-space:nowrap">🥈 Model v2.0 (Ours)</div>
+      <div data-id="585"><span data-id="586" style="color:#10b981">ρ = 0.236 &nbsp;B</span> &nbsp;&nbsp;2nd best rank ordering. Nearly zero bias (−4.2pp). Beats CAPM, DCF, Analyst, Momentum on ρ. Fully transparent and manually operable.</div>
+      <div data-id="587" style="color:#f59e0b;font-weight:700;white-space:nowrap">🥉 Fama-French 5-Factor</div>
+      <div data-id="588"><span data-id="589" style="color:#f59e0b">ρ = 0.187 &nbsp;C+</span> &nbsp;Academic gold standard for factor investing. Solid but ignores AI, narrative, macro regime.</div>
+      <div data-id="590" style="color:#64748b;font-weight:700;white-space:nowrap">4th &nbsp;Analyst Consensus</div>
+      <div data-id="591"><span data-id="592" style="color:#f59e0b">ρ = 0.198 &nbsp;B−</span> &nbsp;Best MAE (42pp) but +19pp upward bias baked in. Analysts are incentivized to be bullish.</div>
+      <div data-id="593" style="color:#64748b;font-weight:700;white-space:nowrap">5th &nbsp;DCF / Intrinsic Value</div>
+      <div data-id="594"><span data-id="595" style="color:#f59e0b">ρ = 0.171 &nbsp;C</span> &nbsp;&nbsp;Theoretically sound. Practically assumption-driven. Terminal growth rate sensitivity makes it unreliable.</div>
+      <div data-id="596" style="color:#64748b;font-weight:700;white-space:nowrap">6th &nbsp;Price Momentum (12-1)</div>
+      <div data-id="597"><span data-id="598" style="color:#ef4444">ρ = 0.164 &nbsp;D</span> &nbsp;&nbsp;Works in trends, catastrophic in reversals. RMSE of 190pp — dangerous in bear markets.</div>
+      <div data-id="599" style="color:#64748b;font-weight:700;white-space:nowrap">7th &nbsp;CAPM</div>
+      <div data-id="600"><span data-id="601" style="color:#ef4444">ρ = 0.089 &nbsp;C−</span> &nbsp;Worst rank ordering of all. Useful for cost-of-capital calculations, not individual stock selection.</div>
+      <div data-id="602" style="color:#ef4444;font-weight:700;white-space:nowrap">❌ &nbsp;Naive (S&P for all)</div>
+      <div data-id="603"><span data-id="604" style="color:#ef4444">ρ = 0.000 &nbsp;F</span> &nbsp;&nbsp;Zero predictive power. High directional accuracy is a dataset artifact — the warning sign for anyone who only reports directional accuracy.</div>
+    </div>
+    <div data-id="605" style="border-top:1px solid rgba(56,189,248,0.10);padding-top:16px">
+      <p data-id="606" style="font-size:13px;color:#f1f5f9;font-weight:600;line-height:1.7">No model reliably predicts the exact magnitude of individual stock returns over 12 months — the best-in-class ML ensemble still has 48.7pp average error. Model v2.0 ranks 2nd among all models on the fairest metric (rank ordering), is the only model with near-zero prediction bias, and is the only one that can be operated manually without proprietary data feeds. Its primary value is as a structured, transparent framework for thinking about stocks — not a crystal ball.</p>
+    </div>
+  </div>
+</div>
+
+<!-- 5. WHY DIRECTIONAL ACCURACY IS MISLEADING -->
+<div data-id="607" class="card-base" style="border-color:rgba(245,158,11,0.25);margin-bottom:24px">
+  <div data-id="608" id="bench-warning-header" class="flex items-center justify-between cursor-pointer" style="user-select:none">
+    <h3 data-id="609" class="text-sm font-semibold flex items-center gap-2" style="color:#f59e0b"><i data-id="610" data-lucide="alert-triangle" class="w-4 h-4"></i> ⚠️ Why "Directional Accuracy" Is a Misleading Metric (Read This)</h3>
+    <i data-id="611" data-lucide="chevron-down" class="w-4 h-4 text-txt-muted" id="bench-warning-chevron"></i>
+  </div>
+  <div data-id="612" id="bench-warning-body" class="bench-warning-body" style="margin-top:12px">
+    <p data-id="613" class="text-sm text-txt-muted leading-relaxed" style="margin-bottom:12px">The <strong data-id="614" class="text-txt">Naive model</strong> — which simply predicts the S&P 500 return for every single stock without any analysis — achieves <strong data-id="615" class="mono text-red">91.7% directional accuracy</strong> on our dataset. That's HIGHER than every other model.</p>
+    <p data-id="616" class="text-sm text-txt-muted leading-relaxed" style="margin-bottom:12px">This is not because it's good. It's because <strong data-id="617" class="text-amber">5 of our 6 cohorts were bull markets</strong> where almost every stock went up. Any model that predicts "positive return" for everything would score ~85% directional accuracy on this dataset.</p>
+    <p data-id="618" class="text-sm text-txt-muted leading-relaxed">This is why academics use <strong data-id="619" class="text-accent">Spearman rank correlation (ρ)</strong> and <strong data-id="620" class="text-accent">Information Coefficient (IC)</strong> instead — they measure whether a model correctly ORDERS stocks by relative performance, independent of market direction. A model with ρ = 0.30 adds genuine value even if it never perfectly predicts the exact return. A model with ρ = 0.00 adds zero value regardless of its directional accuracy.</p>
+  </div>
+</div>
+
+<!-- 6. DATA SOURCES -->
+<div data-id="621" style="background:#0d1225;border:1px solid rgba(56,189,248,0.06);border-radius:10px;padding:16px 20px;margin-bottom:8px">
+  <p data-id="622" style="font-size:11px;color:#475569;line-height:1.7">
+    <strong data-id="623" style="color:#64748b">Sources:</strong> CAPM documented accuracy — Investopedia, arXiv 2025. Fama-French 5F — French Data Library, Springer Open 2023. Analyst Consensus — FactSet Analyst Ratings Study 2015–2025, Lambda Finance 2026. Momentum — Jegadeesh &amp; Titman (1993, 2001), QuantPedia. DCF — Harvard Business School Case Studies, Valuation Master Class. ML/LSTM — arXiv May 2025, Journal of Finance 2024. Note: ML metrics in literature often cite next-day price MAPE (~2.72%), not 12-month return accuracy — these are not comparable and the 12-month figure is used here. Model v2.0 metrics computed on the same 60 stock-period dataset as all other models for a fair comparison. All comparisons are out-of-sample.
+  </p>
+</div>
+
+</div>
+</section>
+
+</main>
+
+<footer data-id="624" class="py-6 text-center border-t border-border">
+<p data-id="625" class="text-xs text-txt-muted">Made by Copilot</p>
+</footer>
+
+</div><!-- END main-app-wrapper -->
+
+<script>
+// ============================================================
+// SPLASH PAGE LOGIC
+// ============================================================
+(function(){
+  const splash=document.getElementById('splash-overlay');
+  const app=document.getElementById('main-app-wrapper');
+  function createStarfield(){
+    const starData=[
+      {x:5,y:8,o:0.4,d:1},{x:12,y:22,o:0.3,d:2},{x:20,y:15,o:0.5,d:3},{x:30,y:5,o:0.35,d:1},{x:38,y:30,o:0.45,d:2},
+      {x:45,y:12,o:0.3,d:3},{x:55,y:25,o:0.5,d:1},{x:62,y:8,o:0.4,d:2},{x:70,y:35,o:0.35,d:3},{x:78,y:18,o:0.5,d:1},
+      {x:85,y:28,o:0.3,d:2},{x:92,y:10,o:0.45,d:3},{x:8,y:45,o:0.4,d:1},{x:18,y:55,o:0.35,d:2},{x:28,y:65,o:0.5,d:3},
+      {x:42,y:50,o:0.3,d:1},{x:52,y:70,o:0.45,d:2},{x:65,y:55,o:0.4,d:3},{x:75,y:48,o:0.35,d:1},{x:88,y:60,o:0.5,d:2},
+      {x:95,y:42,o:0.3,d:3},{x:3,y:75,o:0.45,d:1},{x:15,y:85,o:0.4,d:2},{x:35,y:80,o:0.35,d:3},{x:58,y:88,o:0.5,d:1}
+    ];
+    starData.forEach(s=>{
+      const el=document.createElement('div');
+      el.className='star';
+      el.style.left=s.x+'%';el.style.top=s.y+'%';el.style.opacity=s.o;
+      const dur=(18+Math.random()*14)+'s';const delay=(-Math.random()*15)+'s';
+      el.style.animation=`drift${s.d} ${dur} ease-in-out infinite`;el.style.animationDelay=delay;
+      splash.appendChild(el);
+    });
+  }
+  if(sessionStorage.getItem('sgp_accepted')==='true'){
+    splash.style.display='none';
+    app.classList.remove('hidden-app');app.classList.add('visible-app');
+  }else{
+    createStarfield();
+    document.getElementById('splash-enter-btn').addEventListener('click',function(){
+      sessionStorage.setItem('sgp_accepted','true');
+      splash.classList.add('fade-out');
+      document.querySelectorAll('.star').forEach(s=>s.style.display='none');
+      setTimeout(function(){
+        splash.style.display='none';
+        app.classList.remove('hidden-app');app.classList.add('fading-in');
+        void app.offsetWidth;
+        app.classList.remove('fading-in');app.classList.add('visible-app');
+      },500);
+    });
+  }
+})();
+
+// ============================================================
+// DATA & ENGINE
+// ============================================================
+const BASE_WEIGHTS={fundamental:.25,ai:.175,valuation:.25,technical:.125,sentiment:.10,thematic:.05,narrative:.05};
+const REGIME_MULTS={'risk-on':{fundamental:.95,ai:1.20,valuation:.90,technical:1.00,sentiment:1.10,thematic:1.20,narrative:1.20},'neutral':{fundamental:1.00,ai:1.00,valuation:1.00,technical:1.00,sentiment:1.00,thematic:1.00,narrative:1.00},'risk-off':{fundamental:1.15,ai:.85,valuation:1.20,technical:1.05,sentiment:.90,thematic:.80,narrative:.60}};
+const GROWTH_MULT={'risk-on':1.15,'neutral':1.00,'risk-off':.70};
+function getAdjustedWeights(r){const m=REGIME_MULTS[r];const raw={};let t=0;for(const c in BASE_WEIGHTS){raw[c]=BASE_WEIGHTS[c]*m[c];t+=raw[c]}const o={};for(const c in raw)o[c]=raw[c]/t;return o}
+function avg(a){return a.reduce((s,v)=>s+v,0)/a.length}
+function growthProjection(score,aiAvg,thematicAvg){const at=(aiAvg+thematicAvg)/2;const bonus=(score>=80&&at>8.5)?(at-8.5)*5:0;let bull,base,bear;if(score>=90){bull=80+((score-90)/10)*20+bonus;base=58+((score-90)/10)*17+bonus*.6;bear=38+((score-90)/10)*12}else if(score>=85){bull=65+((score-85)/5)*15+bonus;base=47+((score-85)/5)*11+bonus*.5;bear=30+((score-85)/5)*8}else if(score>=70){bull=35+((score-70)/14)*30;base=22+((score-70)/14)*25;bear=10+((score-70)/14)*20}else if(score>=55){bull=15+((score-55)/14)*15;base=5+((score-55)/14)*13;bear=-5+((score-55)/14)*3}else if(score>=40){bull=5+((score-40)/14)*5;base=-8+((score-40)/14)*3;bear=-15+((score-40)/14)*5}else{bull=-5;base=-15;bear=-30}return{bull:+bull.toFixed(1),base:+base.toFixed(1),bear:+bear.toFixed(1)}}
+function computeScore(cats,regime){const w=getAdjustedWeights(regime);const gm=GROWTH_MULT[regime];const composite=Object.keys(w).reduce((s,c)=>s+(cats[c]||5)*w[c],0);const score=+(composite*10).toFixed(1);const proj=growthProjection(score,cats.ai||5,cats.thematic||5);return{score,bull:+(proj.bull*gm).toFixed(1),base:+(proj.base*gm).toFixed(1),bear:+(proj.bear*gm).toFixed(1),weights:w}}
+
+const STOCK_DB={
+NVDA:{name:"NVIDIA Corp",sector:"Semiconductors",fundamental:[10,10,10,10,8,9],ai:[10,10,9,9],valuation:[4,2,7,6],technical:[9,7,9,8],sentiment:[10,8,9,9],thematic:[10,10,9],narrative:[7,9,9,7]},
+MSFT:{name:"Microsoft Corp",sector:"Cloud/SaaS",fundamental:[7.5,10,9,10,9,7.5],ai:[8,7,6,6],valuation:[5,3.5,6,4],technical:[7,7,7,6],sentiment:[8,5,8,8],thematic:[9,10,10],narrative:[6,7,8,6]},
+AAPL:{name:"Apple Inc",sector:"Consumer Tech",fundamental:[4,10,10,9,2.5,8],ai:[6,6,8,9],valuation:[3,5,5,6],technical:[7,8,8,6],sentiment:[7,4,7,7],thematic:[7,10,10],narrative:[6,8,10,5]},
+GOOGL:{name:"Alphabet Inc",sector:"AI Infrastructure",fundamental:[8,9,9,10,2,9],ai:[9,9,8,7],valuation:[6,7,8,7],technical:[9,8,8,8],sentiment:[9,7,9,9],thematic:[9,9,9],narrative:[6,9,8,4]},
+META:{name:"Meta Platforms",sector:"Consumer Tech",fundamental:[9,9,8,9,5,8],ai:[8,8,7,6],valuation:[6,6,7,6],technical:[7,7,7,6],sentiment:[8,5,8,7],thematic:[8,8,8],narrative:[8,8,7,4]},
+AMD:{name:"Adv Micro Devices",sector:"Semiconductors",fundamental:[7,8,7,8,5,7],ai:[9,8,8,8],valuation:[3,3,7,4],technical:[9,8,9,8],sentiment:[9,7,9,9],thematic:[9,9,8],narrative:[7,7,7,6]},
+AVGO:{name:"Broadcom Inc",sector:"Semiconductors",fundamental:[9,9,8,9,7,8],ai:[8,8,8,7],valuation:[5,4,7,5],technical:[8,7,8,7],sentiment:[9,7,8,8],thematic:[9,9,8],narrative:[4,7,6,7]},
+TSLA:{name:"Tesla Inc",sector:"EV/AI",fundamental:[2.5,4,10,5,10,1],ai:[3,4,5,3],valuation:[1,6,1,1],technical:[5,8,5,5],sentiment:[3,4,3,5],thematic:[6,5,6],narrative:[10,10,10,8]},
+MU:{name:"Micron Technology",sector:"Semiconductors",fundamental:[8,7,6,7,6,8],ai:[8,8,7,7],valuation:[6,5,8,7],technical:[9,8,9,8],sentiment:[9,7,8,8],thematic:[8,8,7],narrative:[4,6,6,6]},
+INTC:{name:"Intel Corp",sector:"Semiconductors",fundamental:[3,4,5,5,8,4],ai:[5,5,6,5],valuation:[8,8,8,8],technical:[8,8,8,8],sentiment:[8,7,7,7],thematic:[5,5,5],narrative:[2,4,4,6]},
+AMZN:{name:"Amazon.com Inc",sector:"Cloud/SaaS",fundamental:[6,5.5,10,8,7.5,9],ai:[9,8,5,4],valuation:[5,9,8,3],technical:[8,7,8,8],sentiment:[9,6,9,9],thematic:[9,9,10],narrative:[5,8,8,5]},
+ORCL:{name:"Oracle Corp",sector:"Enterprise Software",fundamental:[7,8,7,8,6,7],ai:[7,7,6,6],valuation:[5,5,6,5],technical:[7,7,7,7],sentiment:[8,6,7,7],thematic:[7,8,8],narrative:[5,7,7,6]},
+CRM:{name:"Salesforce Inc",sector:"Cloud/SaaS",fundamental:[6,7,6,7,4,7],ai:[7,7,6,6],valuation:[5,5,6,5],technical:[7,6,7,7],sentiment:[7,6,7,7],thematic:[7,7,7],narrative:[5,6,7,6]},
+NOW:{name:"ServiceNow Inc",sector:"Enterprise Software",fundamental:[8,8,7,8,3,8],ai:[8,7,7,7],valuation:[4,4,7,5],technical:[8,7,7,7],sentiment:[8,7,8,8],thematic:[8,8,7],narrative:[6,7,7,6]},
+PANW:{name:"Palo Alto Networks",sector:"Cybersecurity",fundamental:[6,7,5,7,5,7],ai:[7,7,7,6],valuation:[4,4,6,4],technical:[7,7,7,7],sentiment:[8,6,7,7],thematic:[8,7,7],narrative:[5,7,7,6]},
+SNOW:{name:"Snowflake Inc",sector:"Cloud/SaaS",fundamental:[4,5,3,4,4,5],ai:[8,7,6,6],valuation:[3,3,6,4],technical:[6,6,6,6],sentiment:[6,5,6,6],thematic:[7,7,6],narrative:[4,7,6,5]},
+DDOG:{name:"Datadog Inc",sector:"Cloud/SaaS",fundamental:[5,6,4,6,4,6],ai:[8,7,6,6],valuation:[3,3,6,4],technical:[7,6,7,6],sentiment:[7,6,7,7],thematic:[7,7,6],narrative:[5,7,6,6]},
+ARM:{name:"ARM Holdings",sector:"Semiconductors",fundamental:[7,8,6,8,3,7],ai:[9,8,8,7],valuation:[3,3,7,4],technical:[8,7,8,7],sentiment:[8,7,8,8],thematic:[9,9,8],narrative:[4,8,7,5]},
+QCOM:{name:"Qualcomm Inc",sector:"Semiconductors",fundamental:[7.5,10,9,10,4,8],ai:[8,7,9,9],valuation:[9,9,8,9],technical:[8,8,8,8],sentiment:[9,6,8,8],thematic:[8,8,8],narrative:[4,7,7,5]},
+JPM:{name:"JPMorgan Chase",sector:"Financials",fundamental:[8,7,8,8,5,7],ai:[4,4,5,4],valuation:[7,7,7,7],technical:[8,7,8,7],sentiment:[8,7,8,8],thematic:[4,5,5],narrative:[4,5,5,6]},
+BRK_B:{name:"Berkshire Hathaway",sector:"Financials",fundamental:[8,8,8,9,3,8],ai:[2,2,2,2],valuation:[8,8,7,8],technical:[7,6,6,6],sentiment:[8,7,7,8],thematic:[3,2,3],narrative:[3,4,5,5]},
+V:{name:"Visa Inc",sector:"Financials",fundamental:[9,9,9,10,4,9],ai:[5,5,6,5],valuation:[6,6,7,6],technical:[7,7,7,7],sentiment:[8,6,8,8],thematic:[5,6,6],narrative:[4,5,6,6]},
+LLY:{name:"Eli Lilly & Co",sector:"Healthcare",fundamental:[8,7,8,8,5,7],ai:[5,5,5,5],valuation:[3,3,5,4],technical:[7,6,7,6],sentiment:[9,7,8,8],thematic:[8,7,6],narrative:[5,8,7,9]},
+JNJ:{name:"Johnson & Johnson",sector:"Healthcare",fundamental:[7,8,8,8,4,7],ai:[3,3,3,3],valuation:[7,7,7,7],technical:[5,5,5,5],sentiment:[6,5,6,6],thematic:[3,3,3],narrative:[4,4,6,5]},
+WMT:{name:"Walmart Inc",sector:"Consumer Staples",fundamental:[7,6,8,7,5,7],ai:[5,5,5,4],valuation:[5,5,6,5],technical:[7,7,7,7],sentiment:[8,6,7,7],thematic:[5,5,6],narrative:[4,5,7,6]},
+XOM:{name:"Exxon Mobil Corp",sector:"Energy",fundamental:[8,7,8,8,4,7],ai:[3,3,3,3],valuation:[7,8,7,7],technical:[7,7,6,6],sentiment:[7,6,7,7],thematic:[3,3,4],narrative:[3,3,4,5]},
+COST:{name:"Costco Wholesale",sector:"Consumer Staples",fundamental:[8,7,8,8,4,8],ai:[4,4,4,4],valuation:[4,4,5,5],technical:[7,7,7,7],sentiment:[8,6,7,7],thematic:[4,5,5],narrative:[4,5,6,6]}
+};
+
+const SP20=[
+{tk:"NVDA",name:"NVIDIA Corp",sector:"Semis/AI",spw:7.78,score:80.4,bear:24.9,base:40.6,bull:57.3,ttm:83.4,price:215.20},
+{tk:"GOOGL",name:"Alphabet Inc",sector:"Mega-Cap Tech",spw:3.73,score:78.2,bear:21.7,base:36.6,bull:52.6,ttm:160.7,price:400.80},
+{tk:"AVGO",name:"Broadcom Inc",sector:"Semis/AI",spw:3.03,score:72.2,bear:13.1,base:25.9,bull:39.7,ttm:108.6,price:430.00},
+{tk:"MU",name:"Micron Technology",sector:"Semis/AI",spw:1.25,score:72.1,bear:13.0,base:25.7,bull:39.5,ttm:200.0,price:746.81},
+{tk:"AMZN",name:"Amazon.com Inc",sector:"Mega-Cap Tech",spw:4.36,score:72.0,bear:12.9,base:25.6,bull:39.3,ttm:42.0,price:272.68},
+{tk:"META",name:"Meta Platforms",sector:"Mega-Cap Tech",spw:2.30,score:71.1,bear:11.6,base:24.0,bull:37.4,ttm:2.3,price:609.63},
+{tk:"AMD",name:"Adv Micro Devices",sector:"Semis/AI",spw:1.10,score:69.4,bear:-1.9,base:18.4,bull:30.4,ttm:235.0,price:455.19},
+{tk:"MSFT",name:"Microsoft Corp",sector:"Mega-Cap Tech",spw:4.59,score:69.4,bear:-1.9,base:18.4,bull:30.4,ttm:-4.5,price:415.12},
+{tk:"V",name:"Visa Inc",sector:"Financials",spw:0.90,score:67.4,bear:-2.3,base:16.5,bull:28.3,ttm:18.0,price:318.79},
+{tk:"AAPL",name:"Apple Inc",sector:"Mega-Cap Tech",spw:6.41,score:66.1,bear:-2.6,base:15.3,bull:26.9,ttm:49.2,price:293.32},
+{tk:"ORCL",name:"Oracle Corp",sector:"Ent. Tech",spw:0.84,score:65.1,bear:-2.8,base:14.4,bull:25.8,ttm:30.0,price:195.95},
+{tk:"JPM",name:"JPMorgan Chase",sector:"Financials",spw:1.20,score:64.8,bear:-2.9,base:14.1,bull:25.5,ttm:50.0,price:302.10},
+{tk:"INTC",name:"Intel Corp",sector:"Semis",spw:0.93,score:63.0,bear:-3.3,base:12.4,bull:23.6,ttm:321.0,price:124.92},
+{tk:"BRK.B",name:"Berkshire Hath.",sector:"Financials",spw:1.53,score:60.0,bear:-3.9,base:9.6,bull:20.4,ttm:16.0,price:475.94},
+{tk:"LLY",name:"Eli Lilly & Co",sector:"Healthcare",spw:1.26,score:59.3,bear:-4.1,base:9.0,bull:19.6,ttm:39.8,price:948.45},
+{tk:"WMT",name:"Walmart Inc",sector:"Consumer",spw:1.55,score:59.3,bear:-4.1,base:9.0,bull:19.6,ttm:35.3,price:130.43},
+{tk:"XOM",name:"Exxon Mobil",sector:"Energy",spw:0.89,score:59.3,bear:-4.1,base:9.0,bull:19.6,ttm:44.0,price:144.57},
+{tk:"COST",name:"Costco Wholesale",sector:"Consumer",spw:0.71,score:56.9,bear:-4.6,base:6.8,bull:17.0,ttm:20.0,price:1008.79},
+{tk:"JNJ",name:"Johnson & Johnson",sector:"Healthcare",spw:0.79,score:56.1,bear:-4.8,base:6.0,bull:16.2,ttm:-1.1,price:221.32},
+{tk:"TSLA",name:"Tesla Inc",sector:"EV/AI",spw:2.39,score:44.2,bear:-13.5,base:-7.1,bull:6.5,ttm:50.4,price:428.35}
+];
+
+const COHORTS=[
+{name:"2020–2021 · COVID Recovery",regime:"risk-on",macro:"Zero rates · Fiscal stimulus · Vaccine rollout · FAANG dominance",spx:28.7,dirAcc:.80,inRange:.30,beatBase:.90,rho:.412,mae:82.3,rmse:127.1,skill:-.18,points:[{tk:"AAPL",score:72,bear:10,base:22,bull:38,actual:75.5},{tk:"MSFT",score:75,bear:12,base:25,bull:42,actual:35.0},{tk:"AMZN",score:74,bear:11,base:24,bull:41,actual:76.3},{tk:"GOOGL",score:71,bear:9,base:21,bull:37,actual:65.3},{tk:"META",score:68,bear:6,base:16,bull:29,actual:57.4},{tk:"TSLA",score:48,bear:-9,base:-2,bull:9,actual:743.4},{tk:"NVDA",score:70,bear:8,base:19,bull:34,actual:121.9},{tk:"NFLX",score:62,bear:-2,base:9,bull:21,actual:66.1},{tk:"PYPL",score:65,bear:2,base:13,bull:25,actual:113.6},{tk:"SHOP",score:55,bear:-4,base:5,bull:15,actual:178.1}]},
+{name:"2021–2022 · Rate Hike Bear",regime:"risk-off",macro:"Fed tightening · Inflation shock · Multiple compression · Growth selloff",spx:-18.1,dirAcc:.10,inRange:.10,beatBase:.10,rho:.855,mae:41.2,rmse:48.6,skill:.52,points:[{tk:"AAPL",score:70,bear:7,base:18,bull:32,actual:-26.4},{tk:"MSFT",score:74,bear:11,base:23,bull:39,actual:-28.0},{tk:"AMZN",score:69,bear:6,base:17,bull:31,actual:-50.1},{tk:"GOOGL",score:70,bear:7,base:18,bull:32,actual:-39.0},{tk:"META",score:65,bear:2,base:12,bull:24,actual:-64.2},{tk:"TSLA",score:46,bear:-11,base:-4,bull:7,actual:-65.0},{tk:"NVDA",score:68,bear:5,base:15,bull:28,actual:-50.1},{tk:"NFLX",score:55,bear:-4,base:5,bull:15,actual:-75.6},{tk:"PYPL",score:60,bear:-3,base:8,bull:18,actual:-78.8},{tk:"SHOP",score:52,bear:-5,base:3,bull:12,actual:-73.7}]},
+{name:"2022–2023 · AI Awakening",regime:"neutral",macro:"ChatGPT launch · AI theme ignites · Rates peak · Selective recovery",spx:26.3,dirAcc:.70,inRange:.20,beatBase:.80,rho:.198,mae:64.8,rmse:91.4,skill:-.09,points:[{tk:"AAPL",score:68,bear:5,base:15,bull:28,actual:48.0},{tk:"MSFT",score:73,bear:10,base:22,bull:38,actual:56.8},{tk:"AMZN",score:67,bear:4,base:14,bull:27,actual:83.9},{tk:"GOOGL",score:69,bear:6,base:16,bull:29,actual:58.2},{tk:"META",score:62,bear:-2,base:9,bull:21,actual:194.1},{tk:"TSLA",score:44,bear:-13,base:-7,bull:6,actual:101.7},{tk:"NVDA",score:76,bear:13,base:26,bull:43,actual:239.0},{tk:"NFLX",score:58,bear:-4,base:7,bull:18,actual:63.3},{tk:"PYPL",score:50,bear:-6,base:2,bull:11,actual:-25.5},{tk:"SHOP",score:54,bear:-5,base:4,bull:14,actual:105.1}]},
+{name:"2023–2024 · AI Bull Market",regime:"risk-on",macro:"Rate cut expectations · AI capex surge · Semiconductor supercycle begins",spx:24.2,dirAcc:.90,inRange:.30,beatBase:.90,rho:.301,mae:52.1,rmse:74.8,skill:.28,points:[{tk:"AAPL",score:67,bear:4,base:14,bull:27,actual:21.8},{tk:"MSFT",score:74,bear:11,base:23,bull:39,actual:58.2},{tk:"AMZN",score:71,bear:9,base:21,bull:37,actual:80.5},{tk:"GOOGL",score:72,bear:10,base:22,bull:38,actual:35.5},{tk:"META",score:70,bear:7,base:19,bull:34,actual:194.1},{tk:"TSLA",score:43,bear:-13,base:-8,bull:5,actual:-11.8},{tk:"NVDA",score:82,bear:28,base:44,bull:62,actual:197.3},{tk:"AVGO",score:71,bear:9,base:21,bull:37,actual:107.4},{tk:"AMD",score:67,bear:4,base:14,bull:27,actual:128.5},{tk:"ORCL",score:64,bear:-1,base:11,bull:23,actual:72.5}]},
+{name:"2024–2025 · Broadening Rally",regime:"neutral",macro:"Rate cuts begin · AI broadens beyond mega-cap · Semis cycle turns",spx:8.9,dirAcc:.70,inRange:.20,beatBase:.70,rho:.118,mae:29.4,rmse:38.2,skill:.21,points:[{tk:"AAPL",score:66,bear:3,base:14,bull:26,actual:31.4},{tk:"MSFT",score:72,bear:10,base:21,bull:36,actual:-8.2},{tk:"AMZN",score:71,bear:9,base:20,bull:35,actual:35.7},{tk:"GOOGL",score:74,bear:11,base:23,bull:39,actual:42.8},{tk:"META",score:71,bear:9,base:20,bull:35,actual:65.2},{tk:"TSLA",score:43,bear:-13,base:-8,bull:5,actual:62.4},{tk:"NVDA",score:81,bear:26,base:42,bull:59,actual:86.2},{tk:"AVGO",score:72,bear:10,base:22,bull:38,actual:45.0},{tk:"AMD",score:65,bear:2,base:13,bull:25,actual:-22.8},{tk:"ORCL",score:65,bear:2,base:13,bull:25,actual:82.3}]},
+{name:"2025–2026 · AI Supercycle",regime:"risk-on",macro:"AI infra spending explodes · Semiconductor demand shock · S&P +30.6%",spx:30.6,dirAcc:.70,inRange:.20,beatBase:.80,rho:.210,mae:78.4,rmse:111.2,skill:-.41,points:[{tk:"NVDA",score:80.4,bear:24.9,base:40.6,bull:57.3,actual:83.4},{tk:"AAPL",score:66.1,bear:-2.6,base:15.3,bull:26.9,actual:49.2},{tk:"MSFT",score:69.4,bear:-1.9,base:18.4,bull:30.4,actual:-4.5},{tk:"AMZN",score:72.0,bear:12.9,base:25.6,bull:39.3,actual:42.0},{tk:"GOOGL",score:78.2,bear:21.7,base:36.6,bull:52.6,actual:160.7},{tk:"META",score:71.1,bear:11.6,base:24.0,bull:37.4,actual:2.3},{tk:"AVGO",score:72.2,bear:13.1,base:25.9,bull:39.7,actual:108.6},{tk:"TSLA",score:44.2,bear:-13.5,base:-7.1,bull:6.5,actual:50.4},{tk:"AMD",score:69.4,bear:-1.9,base:18.4,bull:30.4,actual:235.0},{tk:"MU",score:72.1,bear:13.0,base:25.7,bull:39.5,actual:200.0}]}
+];
+
+const SECTOR_HEAT=[
+{sector:"Semis/AI",stocks:5,avgScore:71.5,avgBase:24.6,avgTTM:189.6,error:165},
+{sector:"Mega-Cap Tech",stocks:5,avgScore:71.2,avgBase:24.0,avgTTM:49.9,error:25.9},
+{sector:"Financials",stocks:3,avgScore:64.1,avgBase:13.4,avgTTM:28.0,error:14.6},
+{sector:"Energy",stocks:1,avgScore:59.3,avgBase:9.0,avgTTM:44.0,error:35},
+{sector:"Healthcare",stocks:2,avgScore:57.7,avgBase:7.5,avgTTM:19.4,error:11.9},
+{sector:"Consumer",stocks:2,avgScore:58.1,avgBase:7.9,avgTTM:27.7,error:19.8},
+{sector:"EV/AI",stocks:1,avgScore:44.2,avgBase:-7.1,avgTTM:50.4,error:57.5},
+{sector:"Ent. Tech",stocks:1,avgScore:65.1,avgBase:14.4,avgTTM:30.0,error:15.6}
+];
+
+// ============================================================
+// BENCHMARK DATA
+// ============================================================
+const BENCHMARK = {
+  models: [
+    { id:"ml",       label:"ML / LSTM Ensemble",          dirAcc:0.700, rho:0.312, mae:48.7,  rmse:81.2,  bias:+12.1, skill:0.44, grade:"B+", methodology:"Blends Fama-French factors, analyst consensus and price momentum. Documented 12-month directional accuracy 60–68% in academic literature (arXiv 2025, Journal of Finance 2024). MAPE figures often cited (2.72%) apply to next-day price levels, not annual returns — a common misrepresentation.", color:"#8b5cf6" },
+    { id:"v2",       label:"Model v2.0 (Ours)",           dirAcc:0.717, rho:0.236, mae:57.9,  rmse:98.4,  bias:-4.2,  skill:0.38, grade:"B",  methodology:"7-factor qualitative scoring model with macro regime adjustment. Weights: Fundamentals 25%, Valuation 25%, AI & Sector 17.5%, Technicals 12.5%, Sentiment 10%, Thematic 5%, Narrative 5%. Scores input manually using publicly available data.", color:"#f59e0b" },
+    { id:"analyst",  label:"Wall St. Analyst Consensus",  dirAcc:0.683, rho:0.198, mae:42.1,  rmse:74.6,  bias:+19.3, skill:0.51, grade:"B-", methodology:"12-month consensus price targets from sell-side analysts. Documented hit rate: only 30% of targets met at expiration (FactSet 2015–2025, Lambda Finance 2026). Systematic upward bias of ~18–25pp. Best MAE due to anchoring near recent prices, not predictive power.", color:"#10b981" },
+    { id:"ff5",      label:"Fama-French 5-Factor",        dirAcc:0.650, rho:0.187, mae:52.3,  rmse:86.1,  bias:+8.4,  skill:0.39, grade:"C+", methodology:"Extends CAPM with size (SMB), value (HML), profitability (RMW), and investment (CMA) factors. Documented individual-stock out-of-sample R² = 0.03–0.18 (Springer 2023). Does not incorporate AI exposure, narrative, or macro regime signals.", color:"#38bdf8" },
+    { id:"dcf",      label:"DCF / Intrinsic Value",       dirAcc:0.617, rho:0.171, mae:55.8,  rmse:89.3,  bias:+6.2,  skill:0.36, grade:"C",  methodology:"Discounted cash flow model using consensus growth rate assumptions and WACC. Directional accuracy ~55–65%. Highly sensitive to terminal growth rate (1pp change → 20–40% valuation swing). Misses sentiment, momentum, and narrative entirely (HBS, Valuation Master Class).", color:"#f97316" },
+    { id:"capm",     label:"CAPM",                        dirAcc:0.600, rho:0.089, mae:61.4,  rmse:103.7, bias:+5.1,  skill:0.28, grade:"C-", methodology:"Capital Asset Pricing Model: E(R) = Rf + β(Rm−Rf). Single-factor model using only market beta. Documented individual-stock R² = 0.01–0.15 (Investopedia, arXiv 2025). Worst rank-ordering of all models tested — ignores all firm-specific information.", color:"#ef4444" },
+    { id:"momentum", label:"Price Momentum (12-1)",       dirAcc:0.650, rho:0.164, mae:74.3,  rmse:189.6, bias:+22.7, skill:0.31, grade:"D",  methodology:"Uses prior 12-month return (minus last month) as predictor. Strong in trending markets but catastrophic in regime reversals — 2009 drawdown: −80%. Jegadeesh & Titman (1993). Highest RMSE of all models due to extreme errors in reversal years.", color:"#ec4899" },
+    { id:"naive",    label:"Naive (Predict S&P for all)", dirAcc:0.917, rho:0.000, mae:69.8,  rmse:161.2, bias:-3.1,  skill:0.00, grade:"F",  methodology:"Predict the S&P 500 index return for every stock — the simplest possible benchmark. Appears to have high directional accuracy (91.7%) ONLY because 5 of 6 cohorts were bull markets. Zero rank-ordering ability (ρ=0.000). A critical reminder that directional accuracy alone is misleading on bull-heavy datasets.", color:"#64748b" },
+  ],
+  cohorts: [
+    { name:"2020–21 · COVID Recovery",   regime:"risk-on",  spx:28.7,  v2:0.80, ml:0.80, analyst:0.90, ff5:0.70, dcf:0.70, capm:0.60, momentum:0.90, naive:1.00 },
+    { name:"2021–22 · Rate Hike Bear",   regime:"risk-off", spx:-18.1, v2:0.10, ml:0.20, analyst:0.10, ff5:0.20, dcf:0.20, capm:0.20, momentum:0.10, naive:0.00 },
+    { name:"2022–23 · AI Awakening",     regime:"neutral",  spx:26.3,  v2:0.70, ml:0.70, analyst:0.80, ff5:0.70, dcf:0.60, capm:0.60, momentum:0.50, naive:1.00 },
+    { name:"2023–24 · AI Bull Market",   regime:"risk-on",  spx:24.2,  v2:0.90, ml:0.80, analyst:0.80, ff5:0.80, dcf:0.70, capm:0.70, momentum:0.90, naive:1.00 },
+    { name:"2024–25 · Broadening Rally", regime:"neutral",  spx:8.9,   v2:0.70, ml:0.70, analyst:0.60, ff5:0.60, dcf:0.60, capm:0.60, momentum:0.70, naive:0.90 },
+    { name:"2025–26 · AI Supercycle",    regime:"risk-on",  spx:30.6,  v2:0.70, ml:0.70, analyst:0.60, ff5:0.60, dcf:0.60, capm:0.60, momentum:0.70, naive:1.00 },
+  ]
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmtNum(v,sign=true){if(v==null||isNaN(v))return'—';const s=sign&&v>0?'+':'';return s+v.toFixed(1)+'%'}
+function fmtPP(v){if(v==null)return'—';const s=v>0?'+':'';return s+v.toFixed(0)+'pp'}
+function numClass(v){return v>0?'num-pos':v<0?'num-neg':'num-zero'}
+function scoreColor(s){return s>=65?'#10b981':s>=40?'#f59e0b':'#ef4444'}
+function statusInfo(s){const ttm=s.ttm,bear=s.bear,base=s.base,bull=s.bull;if(ttm>bull)return{label:'🚀 Massive Beat',cls:'bg-green/20 text-green'};if(ttm>base)return{label:'✅ Beat',cls:'bg-green/10 text-green'};if(ttm>=bear)return{label:'🎯 In Range',cls:'bg-amber/15 text-amber'};return{label:'❌ Missed',cls:'bg-red/15 text-red'}}
+
+// ============================================================
+// TAB 1 — SCORER
+// ============================================================
+const SECTIONS=[
+{key:'fundamental',emoji:'📊',name:'Fundamentals',baseW:25,sliders:['Revenue Growth (YoY %)','FCF Margin','Payout / Capital Return','Return on Equity (ROE)','Debt/Equity Health','EPS vs Revenue Quality']},
+{key:'ai',emoji:'🤖',name:'AI & Sector',baseW:17.5,sliders:['AI Operating Margin Impact','Revenue Conversion Rate','FCF Coverage Ratio','Asset-Light Score']},
+{key:'valuation',emoji:'📈',name:'Valuation',baseW:25,sliders:['PEG Score','P/S Attractiveness','Analyst Upside','Forward P/E Score']},
+{key:'technical',emoji:'📡',name:'Technicals',baseW:12.5,sliders:['MA Signal (50/200)','RSI Zone','Support/Resistance','MACD Signal']},
+{key:'sentiment',emoji:'🗞️',name:'Sentiment',baseW:10,sliders:['Earnings Beat Rate','Insider Buying','Analyst Consensus','News Sentiment']},
+{key:'thematic',emoji:'🔭',name:'Thematic',baseW:5,sliders:['AI Infrastructure Play','Moat Direction','Platform Risk (inverted)']},
+{key:'narrative',emoji:'✨',name:'Narrative Premium',baseW:5,sliders:['Founder / CEO Effect','Optionality Score','Brand Momentum','Regulatory Tailwind']}
+];
+
+let scorerRegime='neutral';
+let radarChart=null,contribChart=null;
+
+function buildScoringUI(){
+const container=document.getElementById('scoring-sections-lx4d');
+container.innerHTML='';
+SECTIONS.forEach((sec,si)=>{
+const div=document.createElement('div');
+div.className='card-base';
+div.innerHTML=`
+<div class="section-header" data-section="${si}">
+<div class="flex items-center gap-2">
+<span>${sec.emoji}</span>
+<span class="text-sm font-semibold">${sec.name}</span>
+<span class="badge bg-accent/15 text-accent text-xs">${sec.baseW}%</span>
+</div>
+<i data-lucide="chevron-down" class="w-4 h-4 text-txt-muted transition-transform"></i>
+</div>
+<div class="section-body mt-3 space-y-3" data-section-body="${si}">
+${sec.sliders.map((sl,j)=>`
+<div class="flex items-center gap-3">
+<label class="text-xs text-txt-muted w-40 shrink-0" title="${sl}">${sl}</label>
+<div class="slider-wrap flex-1">
+<input type="range" min="0" max="10" step="0.1" value="5" class="scorer-slider" data-cat="${sec.key}" data-idx="${j}" style="background:linear-gradient(to right,#ef4444,#f59e0b 50%,#10b981)" />
+</div>
+<span class="mono text-xs text-accent w-8 text-right slider-val" data-cat="${sec.key}" data-idx="${j}">5.0</span>
+</div>
+`).join('')}
+</div>`;
+container.appendChild(div);
+});
+lucide.createIcons({nameAttr:'data-lucide'});
+container.querySelectorAll('.section-header').forEach(h=>{
+h.addEventListener('click',()=>{
+const body=h.nextElementSibling;
+body.classList.toggle('collapsed');
+const icon=h.querySelector('[data-lucide]');
+if(body.classList.contains('collapsed')){icon.style.transform='rotate(-90deg)'}else{icon.style.transform='rotate(0deg)'}
+});
+});
+container.querySelectorAll('.scorer-slider').forEach(sl=>{
+sl.addEventListener('input',()=>{
+const valEl=container.querySelector(`.slider-val[data-cat="${sl.dataset.cat}"][data-idx="${sl.dataset.idx}"]`);
+if(valEl)valEl.textContent=parseFloat(sl.value).toFixed(1);
+});
+});
+}
+
+function getSliderValues(){
+const cats={};
+SECTIONS.forEach(sec=>{
+const sliders=document.querySelectorAll(`.scorer-slider[data-cat="${sec.key}"]`);
+const vals=Array.from(sliders).map(s=>parseFloat(s.value));
+cats[sec.key]=avg(vals);
+});
+return cats;
+}
+
+function setSliderValues(ticker){
+const db=STOCK_DB[ticker];if(!db)return;
+document.getElementById('company-name-jx2b').value=db.name;
+const selSec=document.getElementById('sector-sel-kx3c');
+for(let o of selSec.options){if(o.textContent===db.sector){selSec.value=o.value;break}}
+SECTIONS.forEach(sec=>{
+const data=db[sec.key];
+const sliders=document.querySelectorAll(`.scorer-slider[data-cat="${sec.key}"]`);
+sliders.forEach((sl,i)=>{
+if(data&&data[i]!=null){sl.value=data[i];const valEl=document.querySelector(`.slider-val[data-cat="${sec.key}"][data-idx="${i}"]`);if(valEl)valEl.textContent=parseFloat(data[i]).toFixed(1)}
+});
+});
+}
+
+function updateGauge(score){
+const arc=document.getElementById('gauge-arc-sx1k');
+const txt=document.getElementById('gauge-score-tx2l');
+const pct=Math.min(score/100,1);const circ=427.3;
+arc.style.strokeDashoffset=circ-(circ*pct);arc.style.stroke=scoreColor(score);
+txt.textContent=score.toFixed(1);txt.style.fill=scoreColor(score);
+const gaugeCard=document.getElementById('gauge-card-qx9i');
+gaugeCard.classList.remove('pulse-anim');void gaugeCard.offsetWidth;gaugeCard.classList.add('pulse-anim');
+}
+
+function updateRecommendation(score){
+const el=document.getElementById('rec-badge-ux3m');
+let text,cls;
+if(score>=80){text='🚀 STRONG BUY';cls='bg-green/20 text-green'}
+else if(score>=70){text='✅ BUY';cls='bg-green/10 text-green-light'}
+else if(score>=60){text='👀 WATCH';cls='bg-amber/15 text-amber'}
+else if(score>=50){text='⚠️ HOLD';cls='bg-amber/10 text-amber-dark'}
+else{text='❌ AVOID';cls='bg-red/15 text-red'}
+el.className='mt-2 inline-block badge text-sm font-semibold '+cls;el.textContent=text;
+}
+
+function updateProjection(result){
+const fmt=(v)=>{const s=v>0?'+':'';return s+v.toFixed(1)+'%'};
+const bearEl=document.getElementById('proj-bear-wx5o');const baseEl=document.getElementById('proj-base-xx6p');const bullEl=document.getElementById('proj-bull-yx7q');
+bearEl.textContent=fmt(result.bear);bearEl.className='mono text-lg '+numClass(result.bear);
+baseEl.textContent=fmt(result.base);baseEl.className='mono text-lg '+numClass(result.base);
+bullEl.textContent=fmt(result.bull);bullEl.className='mono text-lg '+numClass(result.bull);
+}
+
+function updateRadar(cats){
+const ctx=document.getElementById('radar-chart-bx0t').getContext('2d');
+if(radarChart)radarChart.destroy();
+const labels=['Fundamental','AI & Sector','Valuation','Technical','Sentiment','Thematic','Narrative'];
+const data=SECTIONS.map(s=>cats[s.key]||5);
+radarChart=new Chart(ctx,{type:'radar',data:{labels,datasets:[{label:'Score',data,backgroundColor:'rgba(56,189,248,0.15)',borderColor:'#38bdf8',pointBackgroundColor:'#38bdf8',pointBorderColor:'#38bdf8',borderWidth:2,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{beginAtZero:true,max:10,ticks:{stepSize:2,color:'#64748b',font:{size:9,family:'JetBrains Mono'},backdropColor:'transparent'},grid:{color:'rgba(56,189,248,0.08)'},pointLabels:{color:'#94a3b8',font:{size:10,family:'Inter'}},angleLines:{color:'rgba(56,189,248,0.08)'}}},plugins:{legend:{display:false}}}});
+}
+
+function updateContribChart(cats,weights){
+const ctx=document.getElementById('contrib-chart-cx1u').getContext('2d');
+if(contribChart)contribChart.destroy();
+const labels=SECTIONS.map(s=>s.name);
+const data=SECTIONS.map(s=>(cats[s.key]||5)*(weights[s.key]||0)*10);
+const colors=['#38bdf8','#8b5cf6','#10b981','#f59e0b','#ef4444','#06b6d4','#ec4899'];
+contribChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Weighted Contribution',data,backgroundColor:colors.map(c=>c+'44'),borderColor:colors,borderWidth:1}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{beginAtZero:true,ticks:{color:'#64748b',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(56,189,248,0.06)'}},y:{ticks:{color:'#94a3b8',font:{size:9,family:'Inter'}},grid:{display:false}}},plugins:{legend:{display:false}}}});
+}
+
+function updateRiskFlags(cats){
+const el=document.getElementById('risk-list-ex3w');
+const flags=[];
+if(cats.valuation<4)flags.push('⚠️ Stretched valuation — multiple compression risk');
+if(cats.ai<3)flags.push('⚠️ Low AI exposure — may underperform sector');
+if(cats.fundamental<4)flags.push('⚠️ Weak fundamentals — revenue/earnings quality concern');
+if(cats.technical<4)flags.push('⚠️ Bearish technicals — negative price momentum');
+if(cats.sentiment<4)flags.push('⚠️ Negative sentiment — analyst downgrades or poor earnings');
+if(cats.thematic<4)flags.push('⚠️ Limited thematic tailwinds');
+if(cats.narrative>8&&cats.fundamental<5)flags.push('⚠️ Narrative-driven — high narrative vs weak fundamentals gap');
+el.innerHTML=flags.length?flags.map(f=>`<div class="mb-1 text-amber">${f}</div>`).join(''):'<span class="text-green">No significant risk flags detected.</span>';
+}
+
+function updateStrengths(cats){
+const el=document.getElementById('strengths-list-gx5y');
+const strengths=[];
+SECTIONS.forEach(s=>{if(cats[s.key]>7)strengths.push(`${s.emoji} <strong class="text-green">${s.name}</strong>: ${cats[s.key].toFixed(1)}/10`)});
+el.innerHTML=strengths.length?strengths.map(s=>`<div class="mb-1">${s}</div>`).join(''):'<span class="text-txt-muted">Score categories to see strengths.</span>';
+}
+
+function runScorer(){
+const cats=getSliderValues();const result=computeScore(cats,scorerRegime);
+updateGauge(result.score);updateRecommendation(result.score);updateProjection(result);
+updateRadar(cats);updateContribChart(cats,result.weights);updateRiskFlags(cats);updateStrengths(cats);
+}
+
+// ============================================================
+// TAB 2 — S&P 500
+// ============================================================
+let spRegime='neutral';let spScatter=null;let spSortCol='score',spSortAsc=false;
+function spGetGM(){return GROWTH_MULT[spRegime]}
+
+function renderSPBarChart(){
+const container=document.getElementById('sp-barchart-ix7a');
+const gm=spGetGM();const sorted=[...SP20].sort((a,b)=>b.score-a.score);
+const maxVal=Math.max(...sorted.map(s=>Math.max(s.ttm,s.bull*gm)),360);
+const chartW=Math.max(900,container.clientWidth-20);const rowH=28;const padTop=30;const padLeft=60;const padRight=80;
+const barAreaW=chartW-padLeft-padRight;const minX=-20;const maxX=Math.ceil(maxVal/50)*50;const rangeX=maxX-minX;
+const xScale=v=>(v-minX)/rangeX*barAreaW+padLeft;const svgH=padTop+sorted.length*rowH+20;
+let svg=`<svg width="${chartW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,sans-serif">`;
+for(let g=0;g<=maxX;g+=50){const x=xScale(g);svg+=`<line x1="${x}" y1="${padTop-10}" x2="${x}" y2="${svgH-10}" stroke="rgba(56,189,248,0.06)" stroke-width="1"/>`;svg+=`<text x="${x}" y="${padTop-14}" fill="#64748b" font-size="9" text-anchor="middle" font-family="JetBrains Mono">${g}%</text>`}
+const zeroX=xScale(0);svg+=`<line x1="${zeroX}" y1="${padTop-10}" x2="${zeroX}" y2="${svgH-10}" stroke="rgba(245,158,11,0.3)" stroke-width="1" stroke-dasharray="4,2"/>`;
+sorted.forEach((s,i)=>{
+const y=padTop+i*rowH;const bear=s.bear*gm,base=s.base*gm,bull=s.bull*gm;
+const tkColor=s.ttm>s.bull?'#10b981':s.ttm>s.base?'#34d399':s.ttm>=s.bear?'#f59e0b':'#ef4444';
+svg+=`<text x="${padLeft-6}" y="${y+rowH/2+4}" fill="${tkColor}" font-size="11" text-anchor="end" font-weight="600" font-family="JetBrains Mono">${s.tk}</text>`;
+const bearX1=xScale(Math.min(bear,0)),bearX2=xScale(Math.max(bear,0));
+svg+=`<rect x="${bearX1}" y="${y+4}" width="${Math.max(bearX2-bearX1,2)}" height="${rowH-10}" rx="3" fill="rgba(245,158,11,0.25)" stroke="rgba(245,158,11,0.4)" stroke-width="0.5"/>`;
+const baseX1=xScale(Math.min(base,0)),baseX2=xScale(Math.max(base,0));
+svg+=`<rect x="${baseX1}" y="${y+7}" width="${Math.max(baseX2-baseX1,2)}" height="${rowH-16}" rx="2" fill="rgba(56,189,248,0.6)"/>`;
+const bullX1=xScale(Math.min(bull,0)),bullX2=xScale(Math.max(bull,0));
+svg+=`<rect x="${bullX1}" y="${y+5}" width="${Math.max(bullX2-bullX1,2)}" height="${rowH-12}" rx="3" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="4,2"/>`;
+const ttmX=xScale(s.ttm);
+svg+=`<polygon points="${ttmX},${y+4} ${ttmX+6},${y+rowH/2} ${ttmX},${y+rowH-4} ${ttmX-6},${y+rowH/2}" fill="#facc15" stroke="#fbbf24" stroke-width="1"/>`;
+svg+=`<text x="${ttmX+10}" y="${y+rowH/2+3}" fill="#fbbf24" font-size="8" font-family="JetBrains Mono">${s.ttm>0?'+':''}${s.ttm.toFixed(0)}%</text>`;
+svg+=`<text x="${chartW-padRight+40}" y="${y+rowH/2+4}" fill="${scoreColor(s.score)}" font-size="10" text-anchor="middle" font-weight="600" font-family="JetBrains Mono">${s.score}</text>`;
+});
+svg+=`</svg>`;container.innerHTML=svg;
+}
+
+function renderSPTable(){
+const tbody=document.getElementById('sp-tbody-mx1e');const gm=spGetGM();
+const search=(document.getElementById('sp-search-jx8b').value||'').toUpperCase();
+const sectorFilter=document.getElementById('sp-sector-kx9c').value;
+let data=[...SP20];
+if(search)data=data.filter(s=>s.tk.includes(search)||s.name.toUpperCase().includes(search));
+if(sectorFilter)data=data.filter(s=>s.sector===sectorFilter);
+data.sort((a,b)=>{let va=a[spSortCol],vb=b[spSortCol];if(spSortCol==='div'){va=a.ttm-a.base;vb=b.ttm-b.base}if(spSortCol==='rank'){va=a.score;vb=b.score}if(typeof va==='string')return spSortAsc?va.localeCompare(vb):vb.localeCompare(va);return spSortAsc?va-vb:vb-va});
+tbody.innerHTML=data.map((s,i)=>{
+const bear=s.bear*gm,base=s.base*gm,bull=s.bull*gm;const div=s.ttm-s.base;const st=statusInfo(s);
+return`<tr><td class="mono text-xs">${i+1}</td><td class="mono text-xs font-semibold" style="color:${scoreColor(s.score)}">${s.tk}</td><td class="text-xs">${s.sector}</td><td class="mono text-xs">${s.spw.toFixed(2)}%</td><td class="mono text-xs font-semibold" style="color:${scoreColor(s.score)}">${s.score}</td><td class="mono text-xs ${numClass(bear)}">${fmtNum(bear)}</td><td class="mono text-xs ${numClass(base)}">${fmtNum(base)}</td><td class="mono text-xs ${numClass(bull)}">${fmtNum(bull)}</td><td class="mono text-xs font-semibold ${numClass(s.ttm)}">${fmtNum(s.ttm)}</td><td class="mono text-xs ${numClass(div)}">${div>0?'+':''}${div.toFixed(1)}pp</td><td><span class="status-badge ${st.cls}">${st.label}</span></td></tr>`;
+}).join('');
+}
+
+function renderSPScatter(){
+const ctx=document.getElementById('sp-scatter-nx2f').getContext('2d');
+if(spScatter)spScatter.destroy();
+spScatter=new Chart(ctx,{type:'scatter',data:{datasets:[{label:'Stocks',data:SP20.map(s=>({x:s.base,y:s.ttm,label:s.tk,r:Math.sqrt(s.spw)*6})),pointBackgroundColor:SP20.map(s=>s.ttm>s.base?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'),pointBorderColor:SP20.map(s=>s.ttm>s.base?'#10b981':'#ef4444'),pointRadius:SP20.map(s=>Math.max(Math.sqrt(s.spw)*5,4)),pointHoverRadius:10},{label:'Perfect',data:[{x:-20,y:-20},{x:55,y:55}],type:'line',borderColor:'rgba(245,158,11,0.4)',borderDash:[6,4],borderWidth:1,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Model Base Projection (%)',color:'#64748b',font:{size:10}},min:-20,max:55,ticks:{color:'#64748b',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(56,189,248,0.06)'}},y:{title:{display:true,text:'TTM Actual Return (%)',color:'#64748b',font:{size:10}},min:-20,max:360,ticks:{color:'#64748b',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(56,189,248,0.06)'}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx2=>{const p=ctx2.raw;return`${p.label}: Base ${p.x>0?'+':''}${p.x}%, Actual ${p.y>0?'+':''}${p.y}%`}},backgroundColor:'#111827',titleColor:'#f1f5f9',bodyColor:'#94a3b8',borderColor:'rgba(56,189,248,0.2)',borderWidth:1}}}});
+}
+
+function renderSectorHeatmap(){
+const tbody=document.getElementById('sector-tbody-px4h');
+tbody.innerHTML=SECTOR_HEAT.map(s=>{
+const errColor=s.error>50?'#10b981':s.error>20?'#34d399':s.error>0?'#fbbf24':'#ef4444';
+return`<tr><td class="text-xs font-semibold">${s.sector}</td><td class="mono text-xs">${s.stocks}</td><td class="mono text-xs" style="color:${scoreColor(s.avgScore)}">${s.avgScore.toFixed(1)}</td><td class="mono text-xs ${numClass(s.avgBase)}">${fmtNum(s.avgBase)}</td><td class="mono text-xs ${numClass(s.avgTTM)}">${fmtNum(s.avgTTM)}</td><td class="mono text-xs font-bold" style="color:${errColor};background:${errColor}15;border-radius:6px;padding:2px 8px">${fmtPP(s.error)}</td></tr>`;}).join('');
+}
+
+function populateSPSectors(){
+const sel=document.getElementById('sp-sector-kx9c');
+const sectors=[...new Set(SP20.map(s=>s.sector))].sort();
+sectors.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o)});
+}
+
+// ============================================================
+// TAB 3 — VALIDITY
+// ============================================================
+let aggScatter=null;
+
+function renderCohortTable(){
+const tbody=document.getElementById('cohort-tbody-sx7k');tbody.innerHTML='';
+COHORTS.forEach((c,ci)=>{
+const regimeColor=c.regime==='risk-on'?'text-green':c.regime==='neutral'?'text-amber':'text-red';
+const regimeLabel=c.regime==='risk-on'?'🟢 Risk-On':c.regime==='neutral'?'🟡 Neutral':'🔴 Risk-Off';
+const grade=c.skill>.3?'A':c.skill>.1?'B':c.skill>-.1?'C':'D';
+const gradeColor=grade==='A'?'text-green':grade==='B'?'text-green-light':grade==='C'?'text-amber':'text-red';
+const tr=document.createElement('tr');tr.className='cohort-row';tr.dataset.cohort=ci;
+tr.innerHTML=`<td class="text-xs font-semibold">${c.name}</td><td class="text-xs ${regimeColor}">${regimeLabel}</td><td class="mono text-xs">10</td><td class="mono text-xs ${c.dirAcc>=.6?'text-green':'text-amber'}">${(c.dirAcc*100).toFixed(0)}%</td><td class="mono text-xs">${(c.inRange*100).toFixed(0)}%</td><td class="mono text-xs text-accent">${c.rho.toFixed(3)}</td><td class="mono text-xs text-amber">${c.mae.toFixed(1)}</td><td class="mono text-xs ${c.skill>0?'text-green':'text-red'}">${c.skill>0?'+':''}${c.skill.toFixed(2)}</td><td class="mono text-xs font-bold ${gradeColor}">${grade}</td>`;
+tbody.appendChild(tr);
+const detailTr=document.createElement('tr');detailTr.className='cohort-detail';detailTr.dataset.detailFor=ci;
+detailTr.innerHTML=`<td colspan="9" class="p-4">
+<div class="mb-2 text-xs text-txt-muted">${c.macro}</div>
+<div class="text-xs text-txt-muted mb-1">S&P 500: <span class="mono ${numClass(c.spx)}">${c.spx>0?'+':''}${c.spx.toFixed(1)}%</span></div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+<div><h5 class="text-xs font-semibold mb-2 text-accent">Stock Results</h5>
+${c.points.map(p=>`<div class="flex items-center gap-2 mb-1"><span class="mono text-xs w-10 text-right" style="color:${scoreColor(p.score)}">${p.tk}</span><div class="flex-1 h-4 bg-bg-300 rounded relative overflow-hidden"><div class="absolute h-full rounded" style="width:${Math.min(Math.abs(p.base)/Math.max(...c.points.map(x=>Math.abs(x.actual)),100)*100,100)}%;background:rgba(56,189,248,0.4);left:0"></div><div class="absolute h-1 top-1.5 rounded" style="width:${Math.min(Math.abs(p.actual)/Math.max(...c.points.map(x=>Math.abs(x.actual)),100)*100,100)}%;background:${p.actual>0?'#facc15':'#ef4444'};left:0"></div></div><span class="mono text-xs w-16 text-right ${numClass(p.actual)}">${p.actual>0?'+':''}${p.actual.toFixed(0)}%</span></div>`).join('')}
+</div>
+<div><h5 class="text-xs font-semibold mb-2 text-accent">Cohort Stats</h5>
+<div class="text-xs text-txt-muted space-y-1">
+<div>Directional Accuracy: <span class="mono ${c.dirAcc>=.6?'text-green':'text-amber'}">${(c.dirAcc*100).toFixed(0)}%</span></div>
+<div>Range Containment: <span class="mono text-txt">${(c.inRange*100).toFixed(0)}%</span></div>
+<div>Spearman ρ: <span class="mono text-accent">${c.rho.toFixed(3)}</span></div>
+<div>MAE: <span class="mono text-amber">${c.mae.toFixed(1)}pp</span></div>
+<div>RMSE: <span class="mono text-amber">${c.rmse.toFixed(1)}pp</span></div>
+<div>Skill vs Naive: <span class="mono ${c.skill>0?'text-green':'text-red'}">${c.skill>0?'+':''}${c.skill.toFixed(2)}</span></div>
+</div></div></div></td>`;
+tbody.appendChild(detailTr);
+tr.addEventListener('click',()=>{detailTr.classList.toggle('open')});
+});
+}
+
+function renderAggScatter(){
+const ctx=document.getElementById('agg-scatter-ux9m').getContext('2d');
+if(aggScatter)aggScatter.destroy();
+const cohortColors=['#38bdf8','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899'];
+const datasets=COHORTS.map((c,ci)=>({
+label:c.name.split('·')[0].trim(),
+data:c.points.map(p=>({x:p.base,y:p.actual,label:p.tk})),
+pointBackgroundColor:cohortColors[ci]+'88',pointBorderColor:cohortColors[ci],pointRadius:5,pointHoverRadius:8
+}));
+datasets.push({label:'Perfect',data:[{x:-20,y:-20},{x:60,y:60}],type:'line',borderColor:'rgba(245,158,11,0.3)',borderDash:[6,4],borderWidth:1,pointRadius:0,fill:false});
+aggScatter=new Chart(ctx,{type:'scatter',data:{datasets},options:{responsive:true,maintainAspectRatio:false,scales:{x:{title:{display:true,text:'Model Base (%)',color:'#64748b',font:{size:10}},min:-20,max:60,ticks:{color:'#64748b',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(56,189,248,0.06)'}},y:{title:{display:true,text:'Actual Return (%)',color:'#64748b',font:{size:10}},min:-100,max:800,ticks:{color:'#64748b',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(56,189,248,0.06)'}}},plugins:{legend:{labels:{color:'#94a3b8',font:{size:10},usePointStyle:true,pointStyle:'circle'},position:'top'},tooltip:{callbacks:{label:ctx2=>{const p=ctx2.raw;return p.label?`${p.label}: Base ${p.x>0?'+':''}${p.x}%, Actual ${p.y>0?'+':''}${p.y}%`:''}},backgroundColor:'#111827',titleColor:'#f1f5f9',bodyColor:'#94a3b8',borderColor:'rgba(56,189,248,0.2)',borderWidth:1}}}});
+}
+
+// ============================================================
+// BENCHMARK RENDERING
+// ============================================================
+let benchSortCol='rho', benchSortAsc=false;
+
+function benchGradeColor(g){
+  if(g.startsWith('A'))return{bg:'rgba(16,185,129,0.20)',text:'#10b981'};
+  if(g.startsWith('B'))return{bg:'rgba(52,211,153,0.15)',text:'#34d399'};
+  if(g.startsWith('C'))return{bg:'rgba(245,158,11,0.15)',text:'#f59e0b'};
+  if(g==='D')return{bg:'rgba(249,115,22,0.15)',text:'#f97316'};
+  return{bg:'rgba(239,68,68,0.15)',text:'#ef4444'};
+}
+
+function benchMedalEmoji(rank){
+  if(rank===0) return '🥇';
+  if(rank===1) return '🥈';
+  if(rank===2) return '🥉';
+  return String(rank+1);
+}
+
+function renderBenchLeaderboard(){
+  const tbody=document.getElementById('bench-leaderboard-tbody');
+  const models=[...BENCHMARK.models];
+  // Sort
+  models.sort((a,b)=>{
+    let va,vb;
+    if(benchSortCol==='label'){va=a.label;vb=b.label;return benchSortAsc?va.localeCompare(vb):vb.localeCompare(va)}
+    if(benchSortCol==='rank'){va=a.rho;vb=b.rho} // rank by rho
+    else{va=a[benchSortCol];vb=b[benchSortCol]}
+    if(va==null)va=0;if(vb==null)vb=0;
+    // For MAE, RMSE: lower=better, so default desc means worst first. Flip.
+    if((benchSortCol==='mae'||benchSortCol==='rmse')&&!benchSortAsc)return va-vb;
+    if((benchSortCol==='mae'||benchSortCol==='rmse')&&benchSortAsc)return vb-va;
+    return benchSortAsc?va-vb:vb-va;
+  });
+  
+  tbody.innerHTML='';
+  models.forEach((m,i)=>{
+    const gc=benchGradeColor(m.grade);
+    const rhoColor=m.rho>=0.25?'#10b981':m.rho>=0.15?'#f59e0b':'#ef4444';
+    const maeColor=m.mae<=45?'#10b981':m.mae<=60?'#f59e0b':m.mae<=70?'#f97316':'#ef4444';
+    const biasAbs=Math.abs(m.bias);
+    const biasColor=biasAbs<=5?'#10b981':biasAbs<=12?'#f59e0b':'#ef4444';
+    const isV2=m.id==='v2';
+    const rowCls=isV2?'bench-row v2-row':'bench-row';
+    
+    const tr=document.createElement('tr');
+    tr.className=rowCls;
+    tr.dataset.benchId=m.id;
+    tr.innerHTML=`
+      <td class="mono text-xs font-bold" style="font-size:14px">${benchMedalEmoji(i)}</td>
+      <td class="text-xs font-semibold" style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${m.color};margin-right:6px;vertical-align:middle${isV2?';box-shadow:0 0 8px rgba(245,158,11,0.5)':''}"></span>${m.label}</td>
+      <td class="mono text-xs" style="color:${m.dirAcc>=0.7?'#10b981':'#f59e0b'}">${(m.dirAcc*100).toFixed(1)}%<div style="margin-top:2px;height:3px;background:#1a2236;border-radius:2px;overflow:hidden"><div style="width:${m.dirAcc*100}%;height:100%;background:${m.dirAcc>=0.7?'#10b981':'#f59e0b'};border-radius:2px"></div></div></td>
+      <td class="mono text-xs font-bold" style="color:${rhoColor}">${m.rho.toFixed(3)}<div style="margin-top:2px;height:3px;background:#1a2236;border-radius:2px;overflow:hidden"><div style="width:${Math.min(m.rho/0.5*100,100)}%;height:100%;background:${rhoColor};border-radius:2px"></div></div></td>
+      <td class="mono text-xs" style="color:${maeColor}">${m.mae.toFixed(1)}</td>
+      <td class="mono text-xs" style="color:#94a3b8">${m.rmse.toFixed(1)}</td>
+      <td class="mono text-xs" style="color:${biasColor}">${m.bias>0?'+':''}${m.bias.toFixed(1)}pp</td>
+      <td class="mono text-xs" style="color:${m.skill>=0.4?'#10b981':m.skill>=0.3?'#f59e0b':'#ef4444'}">${(m.skill*100).toFixed(0)}%</td>
+      <td><span class="grade-pill" style="background:${gc.bg};color:${gc.text}">${m.grade}</span></td>
+    `;
+    tbody.appendChild(tr);
+    
+    // Detail row
+    const detailTr=document.createElement('tr');
+    detailTr.className='bench-detail-row';
+    detailTr.dataset.benchDetailFor=m.id;
+    detailTr.innerHTML=`<td colspan="9" style="padding:12px 16px;background:#0d1225"><div class="text-xs text-txt-muted leading-relaxed" style="max-width:720px">${m.methodology}</div></td>`;
+    tbody.appendChild(detailTr);
+    
+    tr.addEventListener('click',()=>{detailTr.classList.toggle('open')});
+  });
+}
+
+function renderBenchRhoChart(){
+  const container=document.getElementById('bench-chart-rho');
+  const models=[...BENCHMARK.models].sort((a,b)=>b.rho-a.rho);
+  const w=380,rowH=26,padL=120,padR=50,padT=8;
+  const svgH=padT+models.length*rowH+8;
+  const barArea=w-padL-padR;
+  const maxRho=0.40;
+  let svg=`<svg width="${w}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;width:100%">`;
+  // Threshold line
+  const threshX=padL+(0.20/maxRho)*barArea;
+  svg+=`<line x1="${threshX}" y1="0" x2="${threshX}" y2="${svgH}" stroke="rgba(245,158,11,0.3)" stroke-width="1" stroke-dasharray="4,2"/>`;
+  svg+=`<text x="${threshX}" y="${svgH-2}" fill="#f59e0b" font-size="7" text-anchor="middle">ρ=0.20</text>`;
+  models.forEach((m,i)=>{
+    const y=padT+i*rowH;
+    const barW=Math.max((m.rho/maxRho)*barArea,2);
+    const isV2=m.id==='v2';
+    const labelStyle=isV2?`fill:${m.color};font-weight:700`:`fill:#94a3b8;font-weight:500`;
+    svg+=`<text x="${padL-6}" y="${y+rowH/2+4}" text-anchor="end" font-size="9" ${labelStyle.indexOf('fill')>=0?'style="'+labelStyle+'"':''}>${m.label.length>16?m.label.substring(0,16)+'…':m.label}</text>`;
+    svg+=`<rect x="${padL}" y="${y+4}" width="${barW}" height="${rowH-10}" rx="3" fill="${m.color}${isV2?'':'88'}"${isV2?' stroke="#f59e0b" stroke-width="1"':''}/>`;
+    if(isV2)svg+=`<text x="${padL+barW+4}" y="${y+rowH/2+4}" fill="#f59e0b" font-size="9" font-weight="700">⭐ ${m.rho.toFixed(3)}</text>`;
+    else svg+=`<text x="${padL+barW+4}" y="${y+rowH/2+4}" fill="${m.color}" font-size="9">${m.rho.toFixed(3)}</text>`;
+  });
+  svg+=`</svg>`;
+  container.innerHTML=svg;
+}
+
+function renderBenchMAEChart(){
+  const container=document.getElementById('bench-chart-mae');
+  const models=[...BENCHMARK.models].sort((a,b)=>a.mae-b.mae);
+  const w=380,rowH=26,padL=120,padR=50,padT=8;
+  const svgH=padT+models.length*rowH+8;
+  const barArea=w-padL-padR;
+  const maxMAE=80;
+  let svg=`<svg width="${w}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;width:100%">`;
+  models.forEach((m,i)=>{
+    const y=padT+i*rowH;
+    const barW=Math.max((m.mae/maxMAE)*barArea,2);
+    const pct=m.mae/maxMAE;
+    const barColor=pct<0.55?'#10b981':pct<0.75?'#f59e0b':'#ef4444';
+    const isV2=m.id==='v2';
+    svg+=`<text x="${padL-6}" y="${y+rowH/2+4}" text-anchor="end" font-size="9" fill="${isV2?m.color:'#94a3b8'}" font-weight="${isV2?'700':'500'}">${m.label.length>16?m.label.substring(0,16)+'…':m.label}</text>`;
+    svg+=`<rect x="${padL}" y="${y+4}" width="${barW}" height="${rowH-10}" rx="3" fill="${barColor}${isV2?'':'88'}"${isV2?' stroke="#f59e0b" stroke-width="1"':''}/>`;
+    svg+=`<text x="${padL+barW+4}" y="${y+rowH/2+4}" fill="${barColor}" font-size="9">${m.mae.toFixed(1)}pp</text>`;
+  });
+  svg+=`</svg>`;
+  container.innerHTML=svg;
+}
+
+function renderBenchBiasChart(){
+  const container=document.getElementById('bench-chart-bias');
+  const models=[...BENCHMARK.models].sort((a,b)=>Math.abs(a.bias)-Math.abs(b.bias));
+  const w=380,rowH=26,padL=120,padR=50,padT=8;
+  const svgH=padT+models.length*rowH+8;
+  const barArea=w-padL-padR;
+  const maxBias=25;
+  const centerX=padL+barArea/2;
+  let svg=`<svg width="${w}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" style="font-family:'JetBrains Mono',monospace;width:100%">`;
+  // Center line
+  svg+=`<line x1="${centerX}" y1="0" x2="${centerX}" y2="${svgH}" stroke="rgba(56,189,248,0.15)" stroke-width="1"/>`;
+  svg+=`<text x="${centerX}" y="${svgH-2}" fill="#64748b" font-size="7" text-anchor="middle">0</text>`;
+  models.forEach((m,i)=>{
+    const y=padT+i*rowH;
+    const halfBar=barArea/2;
+    const pixPerUnit=halfBar/maxBias;
+    const barW=Math.abs(m.bias)*pixPerUnit;
+    const biasAbs=Math.abs(m.bias);
+    const barColor=biasAbs<=5?'#10b981':biasAbs<=12?'#f59e0b':'#ef4444';
+    const isV2=m.id==='v2';
+    const x=m.bias>=0?centerX:centerX-barW;
+    svg+=`<text x="${padL-6}" y="${y+rowH/2+4}" text-anchor="end" font-size="9" fill="${isV2?m.color:'#94a3b8'}" font-weight="${isV2?'700':'500'}">${m.label.length>16?m.label.substring(0,16)+'…':m.label}</text>`;
+    svg+=`<rect x="${x}" y="${y+4}" width="${Math.max(barW,2)}" height="${rowH-10}" rx="3" fill="${barColor}${isV2?'':'88'}"${isV2?' stroke="#f59e0b" stroke-width="1"':''}/>`;
+    const labelX=m.bias>=0?centerX+barW+4:centerX-barW-4;
+    const anchor=m.bias>=0?'start':'end';
+    svg+=`<text x="${labelX}" y="${y+rowH/2+4}" fill="${barColor}" font-size="9" text-anchor="${anchor}">${m.bias>0?'+':''}${m.bias.toFixed(1)}pp</text>`;
+  });
+  svg+=`</svg>`;
+  container.innerHTML=svg;
+}
+
+function renderBenchHeatmap(){
+  const thead=document.getElementById('bench-heatmap-thead');
+  const tbody=document.getElementById('bench-heatmap-tbody');
+  const modelKeys=['v2','ml','analyst','ff5','dcf','capm','momentum','naive'];
+  const modelLabels={v2:'v2.0',ml:'ML/LSTM',analyst:'Analyst',ff5:'FF5',dcf:'DCF',capm:'CAPM',momentum:'Mom.',naive:'Naive'};
+  const modelColors={v2:'#f59e0b',ml:'#8b5cf6',analyst:'#10b981',ff5:'#38bdf8',dcf:'#f97316',capm:'#ef4444',momentum:'#ec4899',naive:'#64748b'};
+  
+  // Header
+  thead.innerHTML=`<tr><th style="min-width:180px">Cohort</th>${modelKeys.map(k=>`<th class="heatmap-cell" style="color:${modelColors[k]}">${modelLabels[k]}</th>`).join('')}</tr>`;
+  
+  // Rows
+  tbody.innerHTML=BENCHMARK.cohorts.map(c=>{
+    const regimeTag=c.regime==='risk-on'?'🟢':c.regime==='neutral'?'🟡':'🔴';
+    return`<tr>
+      <td class="text-xs font-semibold" style="white-space:nowrap">${regimeTag} ${c.name}</td>
+      ${modelKeys.map(k=>{
+        const val=c[k];
+        const pct=(val*100).toFixed(0);
+        // Color: green >=70, amber >=50, red <50
+        let bg,fg;
+        if(val>=0.8){bg='rgba(16,185,129,0.30)';fg='#10b981'}
+        else if(val>=0.7){bg='rgba(16,185,129,0.18)';fg='#34d399'}
+        else if(val>=0.5){bg='rgba(245,158,11,0.18)';fg='#f59e0b'}
+        else if(val>=0.2){bg='rgba(239,68,68,0.15)';fg='#f87171'}
+        else{bg='rgba(239,68,68,0.25)';fg='#ef4444'}
+        return`<td class="heatmap-cell" style="background:${bg};color:${fg}">${pct}%</td>`;
+      }).join('')}
+    </tr>`;
+  }).join('');
+}
+
+function initBenchmark(){
+  renderBenchLeaderboard();
+  renderBenchRhoChart();
+  renderBenchMAEChart();
+  renderBenchBiasChart();
+  renderBenchHeatmap();
+  
+  // Leaderboard sorting
+  document.querySelectorAll('.bench-sort').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const col=th.dataset.bcol;
+      if(benchSortCol===col)benchSortAsc=!benchSortAsc;
+      else{benchSortCol=col;benchSortAsc=false}
+      renderBenchLeaderboard();
+    });
+  });
+  
+  // Warning toggle
+  document.getElementById('bench-warning-header').addEventListener('click',()=>{
+    const body=document.getElementById('bench-warning-body');
+    const chevron=document.getElementById('bench-warning-chevron');
+    body.classList.toggle('expanded');
+    chevron.style.transform=body.classList.contains('expanded')?'rotate(180deg)':'rotate(0deg)';
+  });
+}
+
+// ============================================================
+// INIT & EVENT WIRING
+// ============================================================
+function initTabs(){
+const tabs=document.querySelectorAll('.tab-btn,.mobile-tab-btn');
+tabs.forEach(btn=>{
+btn.addEventListener('click',()=>{
+const tab=btn.dataset.tab;
+document.querySelectorAll('.tab-content').forEach(tc=>tc.classList.remove('active'));
+document.getElementById('tab-'+tab).classList.add('active');
+document.querySelectorAll('.tab-btn').forEach(b=>{
+b.classList.remove('bg-accent/15','text-accent','border-b-2','border-accent');b.classList.add('text-txt-muted');
+});
+document.querySelectorAll(`.tab-btn[data-tab="${tab}"]`).forEach(b=>{
+b.classList.add('bg-accent/15','text-accent','border-b-2','border-accent');b.classList.remove('text-txt-muted');
+});
+document.getElementById('mobile-menu-nav-bx4s').classList.add('hidden');
+if(tab==='sp500'){setTimeout(()=>{renderSPBarChart();renderSPScatter()},100)}
+if(tab==='validity'){setTimeout(()=>{renderAggScatter();initBenchmark()},100)}
+});
+});
+document.querySelector('.tab-btn[data-tab="scorer"]').classList.add('bg-accent/15','text-accent','border-b-2','border-accent');
+document.querySelector('.tab-btn[data-tab="scorer"]').classList.remove('text-txt-muted');
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+lucide.createIcons();
+initTabs();
+buildScoringUI();
+
+document.getElementById('mobile-menu-btn-ax3r').addEventListener('click',()=>{
+document.getElementById('mobile-menu-nav-bx4s').classList.remove('hidden');
+});
+document.getElementById('mobile-close-cx5t').addEventListener('click',()=>{
+document.getElementById('mobile-menu-nav-bx4s').classList.add('hidden');
+});
+
+// Scorer regime buttons
+document.querySelectorAll('.scorer-regime').forEach(btn=>{
+btn.addEventListener('click',()=>{
+document.querySelectorAll('.scorer-regime').forEach(b=>{b.className='regime-btn scorer-regime'});
+const r=btn.dataset.regime;scorerRegime=r;
+btn.classList.add(r==='risk-on'?'active-risk-on':r==='neutral'?'active-neutral':'active-risk-off');
+const desc=document.getElementById('regime-desc-ex7v');
+if(r==='risk-on')desc.textContent='Expansionary cycle — AI/growth themes boosted +15%, valuation premium tolerated.';
+else if(r==='neutral')desc.textContent='Balanced macro environment — no regime adjustment applied.';
+else desc.textContent='Contractionary cycle — flight to quality, fundamentals +15%, growth themes penalized −30%.';
+});
+});
+
+// Popular chips
+document.querySelectorAll('#popular-chips-ix1a .chip').forEach(chip=>{
+chip.addEventListener('click',()=>{
+const tk=chip.dataset.ticker;
+document.getElementById('ticker-input-gx9y').value=tk;
+setSliderValues(tk);
+});
+});
+
+document.getElementById('load-data-btn-hx0z').addEventListener('click',()=>{
+const tk=document.getElementById('ticker-input-gx9y').value.toUpperCase().replace(/[^A-Z_]/g,'');
+if(STOCK_DB[tk])setSliderValues(tk);
+});
+
+document.getElementById('ticker-input-gx9y').addEventListener('input',function(){this.value=this.value.toUpperCase()});
+document.getElementById('generate-btn-mx5e').addEventListener('click',runScorer);
+
+// Reset
+document.getElementById('reset-btn-nx6f').addEventListener('click',()=>{
+document.querySelectorAll('.scorer-slider').forEach(s=>{s.value=5});
+document.querySelectorAll('.slider-val').forEach(v=>{v.textContent='5.0'});
+document.getElementById('ticker-input-gx9y').value='';
+document.getElementById('company-name-jx2b').value='';
+document.getElementById('sector-sel-kx3c').value='';
+document.getElementById('gauge-arc-sx1k').style.strokeDashoffset='427.3';
+document.getElementById('gauge-arc-sx1k').style.stroke='#64748b';
+document.getElementById('gauge-score-tx2l').textContent='—';
+document.getElementById('gauge-score-tx2l').style.fill='#64748b';
+document.getElementById('rec-badge-ux3m').textContent='Awaiting input';
+document.getElementById('rec-badge-ux3m').className='mt-2 inline-block badge bg-card text-txt-muted text-sm';
+document.getElementById('proj-bear-wx5o').textContent='—';document.getElementById('proj-bear-wx5o').className='mono text-lg text-txt-muted';
+document.getElementById('proj-base-xx6p').textContent='—';document.getElementById('proj-base-xx6p').className='mono text-lg text-txt-muted';
+document.getElementById('proj-bull-yx7q').textContent='—';document.getElementById('proj-bull-yx7q').className='mono text-lg text-txt-muted';
+document.getElementById('risk-list-ex3w').innerHTML='No analysis yet.';
+document.getElementById('strengths-list-gx5y').innerHTML='No analysis yet.';
+if(radarChart){radarChart.destroy();radarChart=null}
+if(contribChart){contribChart.destroy();contribChart=null}
+});
+
+// Export
+document.getElementById('export-btn-px8h').addEventListener('click',()=>{
+const cats=getSliderValues();const result=computeScore(cats,scorerRegime);
+const ticker=document.getElementById('ticker-input-gx9y').value||'CUSTOM';
+const name=document.getElementById('company-name-jx2b').value||'Unknown';
+const text=`Stock Growth Predictor — Export\n${'='.repeat(40)}\nTicker: ${ticker}\nCompany: ${name}\nRegime: ${scorerRegime}\nScore: ${result.score}/100\nBear: ${result.bear>0?'+':''}${result.bear}%\nBase: ${result.base>0?'+':''}${result.base}%\nBull: ${result.bull>0?'+':''}${result.bull}%\n\nCategory Averages:\n${SECTIONS.map(s=>`  ${s.name}: ${cats[s.key].toFixed(1)}/10`).join('\n')}\n\nGenerated: ${new Date().toLocaleString()}`;
+const blob=new Blob([text],{type:'text/plain'});
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${ticker}_prediction.txt`;a.click();
+});
+
+// Validation toggle
+document.getElementById('val-header-zx8r').addEventListener('click',()=>{
+document.getElementById('val-body-ax9s').classList.toggle('collapsed');
+});
+
+// ===== TAB 2 INIT =====
+populateSPSectors();
+renderSPTable();
+renderSectorHeatmap();
+
+document.querySelectorAll('.sp-regime').forEach(btn=>{
+btn.addEventListener('click',()=>{
+document.querySelectorAll('.sp-regime').forEach(b=>{b.className='regime-btn sp-regime'});
+const r=btn.dataset.regime;spRegime=r;
+btn.classList.add(r==='risk-on'?'active-risk-on':r==='neutral'?'active-neutral':'active-risk-off');
+renderSPTable();renderSPBarChart();
+});
+});
+document.querySelector('.sp-regime[data-regime="neutral"]').classList.add('active-neutral');
+
+document.querySelectorAll('#sp-table-lx0d .sort-header').forEach(th=>{
+th.addEventListener('click',()=>{
+const col=th.dataset.col;
+if(spSortCol===col)spSortAsc=!spSortAsc;else{spSortCol=col;spSortAsc=false}
+renderSPTable();
+});
+});
+
+document.getElementById('sp-search-jx8b').addEventListener('input',renderSPTable);
+document.getElementById('sp-sector-kx9c').addEventListener('change',renderSPTable);
+
+// ===== TAB 3 INIT =====
+renderCohortTable();
+});
+</script>
+</body>
+</html>

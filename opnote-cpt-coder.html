@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpCoder Assist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { DEFAULT: '#1B3A6B', dark: '#142D54', light: '#2A4F8A' },
+            teal: { DEFAULT: '#0E7C7B', dark: '#0A5E5D', light: '#10A09F' },
+            bg: '#F0F4F8',
+            card: '#FFFFFF',
+            border: '#CBD5E1',
+            text: { primary: '#1E293B', muted: '#64748B' },
+            success: '#16A34A',
+            warning: '#D97706',
+            danger: '#DC2626',
+            inactive: '#94A3B8',
+          },
+        },
+      },
+    };
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+      :root {
+        --navy: #1B3A6B;
+        --teal: #0E7C7B;
+        --bg: #F0F4F8;
+        --card: #FFFFFF;
+        --border: #CBD5E1;
+        --text-primary: #1E293B;
+        --text-muted: #64748B;
+        --success: #16A34A;
+        --warning: #D97706;
+        --danger: #DC2626;
+        --inactive: #94A3B8;
+      }
+      * { box-sizing: border-box; }
+      body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; background: var(--bg); margin: 0; }
+      textarea { font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace; }
+      .step-line { height: 3px; flex: 1; margin-top: 14px; transition: background 0.4s; }
+      .toast-enter { animation: slideIn 0.35s ease-out; }
+      .toast-exit { animation: slideOut 0.3s ease-in forwards; }
+      @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+      .confidence-high { background: #DCFCE7; color: #16A34A; }
+      .confidence-medium { background: #FEF3C7; color: #D97706; }
+      .confidence-low { background: #FEE2E2; color: #DC2626; }
+      .modifier-pill { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+      .result-row:hover { background: #EFF6FF !important; }
+      .pane-border-navy { border-top: 4px solid var(--navy); }
+      .pane-border-teal { border-top: 4px solid var(--teal); }
+      @media print {
+        body * { visibility: hidden; }
+        #results-section-r4k2, #results-section-r4k2 * { visibility: visible; }
+        #results-section-r4k2 { position: absolute; left: 0; top: 0; width: 100%; }
+        #export-bar-x9m1 { display: none !important; }
+        .print-header-z8q2 { display: block !important; }
+      }
+      .print-header-z8q2 { display: none; }
+      textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(14,124,123,0.25); border-color: var(--teal); }
+      .btn-primary { background: var(--navy); color: #fff; transition: all 0.2s; }
+      .btn-primary:hover:not(:disabled) { background: #142D54; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(27,58,107,0.3); }
+      .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-teal { background: var(--teal); color: #fff; transition: all 0.2s; }
+      .btn-teal:hover:not(:disabled) { background: #0A5E5D; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(14,124,123,0.3); }
+      .btn-teal:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-secondary { background: #fff; color: var(--navy); border: 1.5px solid var(--navy); transition: all 0.2s; }
+      .btn-secondary:hover { background: #F0F4F8; }
+      .btn-violet { background: #7C3AED; color: #fff; transition: all 0.2s; }
+      .btn-violet:hover:not(:disabled) { background: #6D28D9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(124,58,237,0.3); }
+      .btn-violet:disabled { opacity: 0.5; cursor: not-allowed; }
+      .step-btn { cursor: pointer; user-select: none; }
+      .step-btn:hover .step-circle { transform: scale(1.12); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+      .step-btn:hover span:last-child { filter: brightness(1.15); }
+      .step-circle { transition: transform 0.2s, box-shadow 0.2s; }
+    </style>
+</head>
+<body data-id="0" class="min-h-screen bg-bg">
+    <app-icon data-id="1" hidden data-icon="heart-pulse" data-palette="Blue"></app-icon>
+    <app-disclaimer data-id="2" intent="medical"></app-disclaimer>
+
+    <!-- HEADER -->
+    <header data-id="3" id="header-m3v7" class="bg-navy text-white border-b border-navy-dark">
+      <div data-id="4" class="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+        <div data-id="5" class="flex items-center gap-3">
+          <svg data-id="6" class="w-8 h-8 text-white flex-shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect data-id="7" x="3" y="3" width="26" height="26" rx="6" stroke="currentColor" stroke-width="2"/>
+            <rect data-id="8" x="14" y="8" width="4" height="16" rx="1" fill="currentColor"/>
+            <rect data-id="9" x="8" y="14" width="16" height="4" rx="1" fill="currentColor"/>
+          </svg>
+          <div data-id="10">
+            <h1 data-id="11" class="text-xl font-bold tracking-tight leading-tight">OpCoder Assist</h1>
+          </div>
+        </div>
+        <div data-id="12" class="flex items-center gap-3">
+          <span data-id="13" class="hidden sm:inline text-blue-200 text-xs font-medium">Powered by Microsoft Copilot</span>
+          <button data-id="14" id="clear-all-btn-k8p2" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-300/40 text-blue-100 hover:bg-white/10 transition-colors">
+            <i data-id="15" data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span data-id="16" class="hidden sm:inline">Clear All</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- STEP PROGRESS BAR -->
+    <div data-id="17" id="progress-bar-w5n3" class="bg-white border-b border-border shadow-sm">
+      <div data-id="18" class="max-w-4xl mx-auto px-4 md:px-6 py-4">
+        <div data-id="19" class="flex items-start justify-between relative">
+          <!-- Step 1 -->
+          <div data-id="20" id="step-btn-1" class="step-btn flex flex-col items-center z-10 flex-1">
+            <div data-id="21" id="step-circle-1" class="step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-teal bg-teal text-white transition-all duration-300">1</div>
+            <span data-id="22" id="step-label-1" class="text-xs font-semibold mt-1.5 text-teal text-center transition-colors">Paste Op Note</span>
+          </div>
+          <div data-id="23" id="step-line-1" class="step-line bg-inactive/30 flex-1"></div>
+          <!-- Step 2 -->
+          <div data-id="24" id="step-btn-2" class="step-btn flex flex-col items-center z-10 flex-1">
+            <div data-id="25" id="step-circle-2" class="step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inactive bg-white text-inactive transition-all duration-300">2</div>
+            <span data-id="26" id="step-label-2" class="text-xs font-medium mt-1.5 text-inactive text-center transition-colors">Launch Copilot</span>
+          </div>
+          <div data-id="27" id="step-line-2" class="step-line bg-inactive/30 flex-1"></div>
+          <!-- Step 3 -->
+          <div data-id="28" id="step-btn-3" class="step-btn flex flex-col items-center z-10 flex-1">
+            <div data-id="29" id="step-circle-3" class="step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inactive bg-white text-inactive transition-all duration-300">3</div>
+            <span data-id="30" id="step-label-3" class="text-xs font-medium mt-1.5 text-inactive text-center transition-colors">Paste Response</span>
+          </div>
+          <div data-id="31" id="step-line-3" class="step-line bg-inactive/30 flex-1"></div>
+          <!-- Step 4 -->
+          <div data-id="32" id="step-btn-4" class="step-btn flex flex-col items-center z-10 flex-1">
+            <div data-id="33" id="step-circle-4" class="step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inactive bg-white text-inactive transition-all duration-300">4</div>
+            <span data-id="34" id="step-label-4" class="text-xs font-medium mt-1.5 text-inactive text-center transition-colors">View Results</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main data-id="35" class="max-w-7xl mx-auto px-4 md:px-6 py-6">
+
+      <!-- COPILOT READY BANNER -->
+      <div data-id="36" id="copilot-ready-banner-z3m1" class="hidden mb-4 rounded-xl overflow-hidden shadow-lg border-2 border-teal" style="background: linear-gradient(135deg, #0E7C7B 0%, #1B3A6B 100%);">
+        <div data-id="37" class="flex flex-col sm:flex-row items-center gap-4 px-6 py-5">
+          <div data-id="38" class="flex-shrink-0 w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+            <svg data-id="39" class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path data-id="40" stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div data-id="41" class="flex-1 text-center sm:text-left">
+            <p data-id="42" class="text-white font-bold text-lg leading-tight">Copilot is open in a new tab — your prompt is ready!</p>
+            <p data-id="43" class="text-white/90 text-sm mt-1">Switch to the Copilot tab, click the chat box, then press <kbd data-id="44" class="px-2 py-0.5 bg-white/20 rounded font-mono font-bold text-white text-sm">Ctrl+V</kbd> and <kbd data-id="45" class="px-2 py-0.5 bg-white/20 rounded font-mono font-bold text-white text-sm">Enter</kbd> to start your analysis.</p>
+          </div>
+          <div data-id="46" class="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+            <button data-id="47" id="open-copilot-again-btn-p4n7" class="flex items-center gap-2 px-4 py-2.5 bg-white text-teal font-bold text-sm rounded-lg hover:bg-white/90 transition whitespace-nowrap">
+              <svg data-id="48" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path data-id="49" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+              Open Copilot Again
+            </button>
+            <button data-id="50" id="recopy-prompt-btn-k2w8" class="flex items-center gap-2 px-4 py-2.5 bg-white/20 text-white font-semibold text-sm rounded-lg hover:bg-white/30 transition border border-white/30 whitespace-nowrap">
+              <svg data-id="51" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect data-id="52" x="9" y="9" width="13" height="13" rx="2"/><path data-id="53" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy Prompt Again
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TWO PANES -->
+      <div data-id="54" class="flex flex-col lg:flex-row gap-6 mb-6">
+
+        <!-- LEFT PANE -->
+        <section data-id="55" id="left-pane-a7j4" class="flex-1 bg-card rounded-xl shadow-md pane-border-navy overflow-hidden">
+          <div data-id="56" class="p-5 md:p-6">
+            <!-- Pane header -->
+            <div data-id="57" class="flex items-start gap-3 mb-4">
+              <span data-id="58" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-navy text-white tracking-wide">STEP 1 & 2</span>
+              <div data-id="59">
+                <h2 data-id="60" class="text-lg font-bold text-text-primary leading-tight">Operative Note Input</h2>
+                <p data-id="61" class="text-xs text-text-muted mt-0.5">Paste the complete, de-identified operative report below</p>
+              </div>
+            </div>
+            <!-- PHI Warning -->
+            <div data-id="62" id="phi-warning-b3k9" class="flex items-start gap-2.5 px-3.5 py-2.5 rounded-lg bg-amber-50 border border-amber-200 mb-4">
+              <i data-id="63" data-lucide="alert-triangle" class="w-4 h-4 text-warning flex-shrink-0 mt-0.5"></i>
+              <p data-id="64" class="text-xs text-amber-800 leading-relaxed"><strong data-id="65">Remove all PHI before pasting:</strong> patient name, DOB, MRN, provider name, dates of service.</p>
+            </div>
+            <!-- Textarea -->
+            <textarea data-id="66" id="opnote-textarea-g2m5" class="w-full rounded-lg border border-gray-300 p-3 text-sm resize-y bg-white placeholder:text-gray-400" style="min-height:320px" placeholder="Paste the full operative report here including: Pre-op Diagnosis, Post-op Diagnosis, Procedure Performed, full narrative body, Findings, Specimens, and Complications..."></textarea>
+            <!-- Char count -->
+            <div data-id="67" class="flex justify-end mt-1.5 mb-4">
+              <span data-id="68" id="char-count-h1v8" class="text-xs text-text-muted tabular-nums">0 characters</span>
+            </div>
+            <!-- Analyze button -->
+            <button data-id="69" id="analyze-btn-q4r6" class="btn-teal w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-lg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              <i data-id="70" data-lucide="sparkles" class="w-5 h-5"></i>
+              Analyze with Copilot →
+            </button>
+            <!-- Copy prompt again (hidden, superseded by banner) -->
+            <button data-id="71" id="copy-again-btn-n9w3" class="btn-secondary w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold mt-2 hidden">
+              <i data-id="72" data-lucide="copy" class="w-3.5 h-3.5"></i>
+              ⎘ Copy Prompt (Fallback)
+            </button>
+          </div>
+        </section>
+
+        <!-- COPILOT LAUNCH BANNER -->
+        <div data-id="73" id="launch-banner-x9k2" class="hidden w-full lg:col-span-2">
+        </div>
+
+        <!-- DIVIDER (visible on desktop) -->
+        <div data-id="74" class="hidden lg:flex items-stretch">
+          <div data-id="75" class="w-px bg-border"></div>
+        </div>
+
+        <!-- RIGHT PANE -->
+        <section data-id="76" id="right-pane-c6t1" class="flex-1 bg-card rounded-xl shadow-md pane-border-teal overflow-hidden">
+          <div data-id="77" class="p-5 md:p-6">
+            <!-- Pane header -->
+            <div data-id="78" class="flex items-start gap-3 mb-4">
+              <span data-id="79" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-teal text-white tracking-wide">STEP 3 & 4</span>
+              <div data-id="80">
+                <h2 data-id="81" class="text-lg font-bold text-text-primary leading-tight">Copilot Response</h2>
+                <p data-id="82" class="text-xs text-text-muted mt-0.5">Copy Copilot's full response and paste it below</p>
+              </div>
+            </div>
+            <!-- Instructions card -->
+            <div data-id="83" id="instructions-card-f8e2" class="bg-sky-50 border border-sky-200 rounded-lg px-4 py-3 mb-4">
+              <div data-id="84" class="flex flex-col gap-1.5">
+                <div data-id="85" class="flex items-center gap-2 text-xs text-sky-900"><span data-id="86" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-200 text-sky-800 text-xs font-bold flex-shrink-0">1</span>Switch to your Copilot tab</div>
+                <div data-id="87" class="flex items-center gap-2 text-xs text-sky-900"><span data-id="88" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-200 text-sky-800 text-xs font-bold flex-shrink-0">2</span>Copy the full response (Ctrl+A, Ctrl+C)</div>
+                <div data-id="89" class="flex items-center gap-2 text-xs text-sky-900"><span data-id="90" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-200 text-sky-800 text-xs font-bold flex-shrink-0">3</span>Paste here (Ctrl+V)</div>
+                <div data-id="91" class="flex items-center gap-2 text-xs text-sky-900"><span data-id="92" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-sky-200 text-sky-800 text-xs font-bold flex-shrink-0">4</span>Click Parse Results</div>
+              </div>
+            </div>
+            <!-- Textarea -->
+            <textarea data-id="93" id="response-textarea-p5s7" class="w-full rounded-lg border border-gray-300 p-3 text-sm resize-y bg-white placeholder:text-gray-400" style="min-height:320px" placeholder="Paste Copilot's complete response here..."></textarea>
+            <!-- Char count -->
+            <div data-id="94" class="flex justify-end mt-1.5 mb-4">
+              <span data-id="95" id="response-char-count-u2d4" class="text-xs text-text-muted tabular-nums">0 characters</span>
+            </div>
+            <!-- Copy Codes button -->
+            <button data-id="96" id="copy-codes-btn-v3q8" class="btn-violet w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-lg font-semibold text-sm mb-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              <i data-id="97" data-lucide="clipboard-copy" class="w-5 h-5"></i>
+              Copy Codes
+            </button>
+            <!-- Parse button -->
+            <button data-id="98" id="parse-btn-y7k9" class="btn-primary w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-lg font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              <i data-id="99" data-lucide="table" class="w-5 h-5"></i>
+              Parse & Display Results
+            </button>
+            <p data-id="100" class="text-xs text-text-muted text-center mt-2">Tip: Use <kbd data-id="101" class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Ctrl+A</kbd> then <kbd data-id="102" class="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Ctrl+C</kbd> in Copilot to copy the full response</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- RESULTS SECTION -->
+      <section data-id="103" id="results-section-r4k2" class="bg-card rounded-xl shadow-md pane-border-navy overflow-hidden mb-8">
+        <!-- Print header -->
+        <div data-id="104" class="print-header-z8q2 p-6 border-b border-gray-200">
+          <h1 data-id="105" class="text-xl font-bold text-navy">OpCoder Assist — CPT Code Results</h1>
+          <p data-id="106" id="print-date-j3f1" class="text-sm text-text-muted mt-1"></p>
+        </div>
+
+        <div data-id="107" class="p-5 md:p-6">
+          <!-- Results header -->
+          <div data-id="108" id="export-bar-x9m1" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div data-id="109" class="flex items-center gap-3">
+              <h2 data-id="110" class="text-lg font-bold text-navy">CPT Code Results</h2>
+              <span data-id="111" id="codes-badge-e4w7" class="hidden inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal/10 text-teal tabular-nums">0 codes</span>
+            </div>
+            <div data-id="112" id="export-buttons-d6n1" class="hidden flex items-center gap-2">
+              <button data-id="113" id="export-csv-btn-l3x8" class="btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold">
+                <i data-id="114" data-lucide="download" class="w-3.5 h-3.5"></i>
+                Export CSV
+              </button>
+              <button data-id="115" id="print-btn-m7z5" class="btn-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold">
+                <i data-id="116" data-lucide="printer" class="w-3.5 h-3.5"></i>
+                Print Results
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary stats -->
+          <div data-id="117" id="summary-stats-v2b8" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+            <div data-id="118" class="flex items-center gap-3 px-4 py-3 bg-navy/5 rounded-lg border border-navy/10">
+              <div data-id="119" class="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center">
+                <i data-id="120" data-lucide="hash" class="w-5 h-5 text-navy"></i>
+              </div>
+              <div data-id="121">
+                <p data-id="122" class="text-xs text-text-muted font-medium">Total Unique Codes</p>
+                <p data-id="123" id="stat-unique-f9q1" class="text-xl font-bold text-navy tabular-nums">0</p>
+              </div>
+            </div>
+            <div data-id="124" class="flex items-center gap-3 px-4 py-3 bg-teal/5 rounded-lg border border-teal/10">
+              <div data-id="125" class="w-10 h-10 rounded-full bg-teal/10 flex items-center justify-center">
+                <i data-id="126" data-lucide="layers" class="w-5 h-5 text-teal"></i>
+              </div>
+              <div data-id="127">
+                <p data-id="128" class="text-xs text-text-muted font-medium">Total Procedures</p>
+                <p data-id="129" id="stat-total-g2r4" class="text-xl font-bold text-teal tabular-nums">0</p>
+              </div>
+            </div>
+            <div data-id="130" class="flex items-center gap-3 px-4 py-3 bg-amber-50 rounded-lg border border-amber-200/50">
+              <div data-id="131" class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <i data-id="132" data-lucide="alert-circle" class="w-5 h-5 text-warning"></i>
+              </div>
+              <div data-id="133">
+                <p data-id="134" class="text-xs text-text-muted font-medium">Codes Requiring Review</p>
+                <p data-id="135" id="stat-review-h5s7" class="text-xl font-bold text-warning tabular-nums">0</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- EMPTY STATE -->
+          <div data-id="136" id="empty-state-t8u6" class="flex flex-col items-center justify-center py-16 text-center">
+            <div data-id="137" class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <i data-id="138" data-lucide="table-2" class="w-8 h-8 text-inactive"></i>
+            </div>
+            <p data-id="139" class="text-sm font-medium text-text-muted">Results will appear here after you paste and parse the Copilot response.</p>
+            <p data-id="140" class="text-xs text-inactive mt-1">Complete Steps 1–3 above to get started</p>
+          </div>
+
+          <!-- RESULTS TABLE -->
+          <div data-id="141" id="results-table-wrapper-a1c3" class="hidden overflow-x-auto rounded-lg border border-gray-200">
+            <table data-id="142" class="w-full text-left" id="results-table-b2d5">
+              <thead data-id="143">
+                <tr data-id="144" class="bg-navy text-white text-xs uppercase tracking-wider">
+                  <th data-id="145" class="px-4 py-3 font-semibold whitespace-nowrap">CPT Code</th>
+                  <th data-id="146" class="px-4 py-3 font-semibold">Description</th>
+                  <th data-id="147" class="px-4 py-3 font-semibold text-center whitespace-nowrap">Times Performed</th>
+                  <th data-id="148" class="px-4 py-3 font-semibold whitespace-nowrap">Modifier(s)</th>
+                  <th data-id="149" class="px-4 py-3 font-semibold">Rationale</th>
+                  <th data-id="150" class="px-4 py-3 font-semibold text-center">Confidence</th>
+                </tr>
+              </thead>
+              <tbody data-id="151" id="results-tbody-c3e7" class="divide-y divide-gray-100">
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Notes area -->
+          <div data-id="152" id="bundling-notes-z4x9" class="hidden mt-5 p-4 bg-sky-50 border border-sky-200 rounded-lg">
+            <h4 data-id="153" class="text-sm font-semibold text-sky-900 mb-2 flex items-center gap-2">
+              <i data-id="154" data-lucide="info" class="w-4 h-4"></i>
+              Additional Notes (Bundling / NCCI Considerations)
+            </h4>
+            <div data-id="155" id="bundling-notes-content-w5y2" class="text-xs text-sky-800 leading-relaxed whitespace-pre-wrap"></div>
+          </div>
+
+          <!-- Disclaimer footer -->
+          <div data-id="156" id="results-disclaimer-q1a8" class="hidden mt-5 flex items-start gap-2 px-3.5 py-2.5 rounded-lg bg-amber-50 border border-amber-200">
+            <i data-id="157" data-lucide="alert-triangle" class="w-4 h-4 text-warning flex-shrink-0 mt-0.5"></i>
+            <p data-id="158" class="text-xs text-amber-800 leading-relaxed">All AI-generated codes must be reviewed by a certified coder before claim submission. This tool does not replace professional coding judgment.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer data-id="159" id="footer-n3p6" class="bg-white border-t border-border py-4">
+      <div data-id="160" class="max-w-7xl mx-auto px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p data-id="161" class="text-xs text-text-muted">Made by Copilot</p>
+        <p data-id="162" class="text-xs text-text-muted">For surgical coding teams · Not a substitute for certified coder review</p>
+      </div>
+    </footer>
+
+    <!-- TOAST CONTAINER -->
+    <div data-id="163" id="toast-container-i7o2" class="fixed top-4 right-4 z-50 flex flex-col gap-2" style="max-width:380px;"></div>
+
+    <script>
+      lucide.createIcons();
+
+      // ===== STATE =====
+      let currentStep = 1;
+      let parsedResults = [];
+
+      // ===== DOM REFS =====
+      const opnoteTextarea = document.getElementById('opnote-textarea-g2m5');
+      const responseTextarea = document.getElementById('response-textarea-p5s7');
+      const charCount = document.getElementById('char-count-h1v8');
+      const responseCharCount = document.getElementById('response-char-count-u2d4');
+      const analyzeBtn = document.getElementById('analyze-btn-q4r6');
+      const copyAgainBtn = document.getElementById('copy-again-btn-n9w3');
+      const parseBtn = document.getElementById('parse-btn-y7k9');
+      const clearAllBtn = document.getElementById('clear-all-btn-k8p2');
+      const exportCsvBtn = document.getElementById('export-csv-btn-l3x8');
+      const printBtn = document.getElementById('print-btn-m7z5');
+      const copyCodesBtn = document.getElementById('copy-codes-btn-v3q8');
+
+      // ===== STEP PROGRESS =====
+      function updateStepProgress(step) {
+        currentStep = step;
+        for (let i = 1; i <= 4; i++) {
+          const circle = document.getElementById(`step-circle-${i}`);
+          const label = document.getElementById(`step-label-${i}`);
+          if (i < step) {
+            circle.className = 'step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-navy bg-navy text-white transition-all duration-300';
+            circle.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+            label.className = 'text-xs font-semibold mt-1.5 text-navy text-center transition-colors';
+          } else if (i === step) {
+            circle.className = 'step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-teal bg-teal text-white transition-all duration-300';
+            circle.textContent = i;
+            label.className = 'text-xs font-semibold mt-1.5 text-teal text-center transition-colors';
+          } else {
+            circle.className = 'step-circle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 border-inactive bg-white text-inactive transition-all duration-300';
+            circle.textContent = i;
+            label.className = 'text-xs font-medium mt-1.5 text-inactive text-center transition-colors';
+          }
+        }
+        for (let i = 1; i <= 3; i++) {
+          const line = document.getElementById(`step-line-${i}`);
+          line.style.background = i < step ? '#1B3A6B' : 'rgba(148,163,184,0.3)';
+        }
+      }
+
+      // ===== CHARACTER COUNTERS =====
+      opnoteTextarea.addEventListener('input', () => {
+        const len = opnoteTextarea.value.length;
+        charCount.textContent = len.toLocaleString() + ' character' + (len !== 1 ? 's' : '');
+        analyzeBtn.disabled = len === 0;
+      });
+
+      responseTextarea.addEventListener('input', () => {
+        const len = responseTextarea.value.length;
+        responseCharCount.textContent = len.toLocaleString() + ' character' + (len !== 1 ? 's' : '');
+        parseBtn.disabled = len === 0;
+        copyCodesBtn.disabled = len === 0;
+      });
+
+      // ===== PROMPT CONSTRUCTION =====
+      function buildPrompt(opNoteText) {
+        return `You are a nationally certified professional medical coder (CPC, CCS) with 20+ years of experience in surgical CPT coding across all specialties. You have deep expertise in AMA CPT guidelines, CMS coding policies, NCCI (National Correct Coding Initiative) edits, global surgical package rules, separate procedure guidelines, modifier usage, add-on code rules, and HCPCS Level II coding.
+
+Your task is to perform a comprehensive, multi-pass analysis of the operative report below and identify EVERY billable CPT and HCPCS code supported by the documentation.
+
+---
+
+PASS 1 — READ THE FULL DOCUMENT FIRST
+Before identifying any codes, read the entire operative report from beginning to end. Do not stop at the "Procedure Performed" header. The header is often incomplete. The billable procedures are found throughout the body of the report.
+
+PASS 2 — IDENTIFY ALL DISTINCT BILLABLE SERVICES
+Look for and code every one of the following if documented:
+• Primary surgical procedure(s) — the main reason for the operative encounter
+• All secondary and concurrent procedures performed through separate incisions or at separate anatomical sites
+• Add-on codes (+codes) that are required by AMA guidelines to accompany primary codes
+• Bilateral procedures — note if a procedure was performed on both sides; apply Modifier 50 or separate LT/RT codes as appropriate
+• Staged or unrelated procedures that qualify under Modifier 58, 78, or 79
+• Graft harvest procedures — donor site work is separately billable in many cases
+• Wound closure: layered closure, complex repair, or flap closure if documented beyond simple closure
+• Implants, hardware, bone grafts, biologics, surgical mesh, bone void fillers — CPT or HCPCS Level II codes
+• Drain or catheter placement if separately documented and billable
+• Nerve monitoring, fluoroscopy, or imaging guidance if separately billable
+• Specimen handling, frozen section, or pathology requests if documented
+• Evaluation and Management (E&M) services only if a separately identifiable E&M is clearly documented with Modifier 25
+• Any unlisted procedure codes (e.g., 2XXXX, 6XXXX) where no specific CPT exists
+
+PASS 3 — APPLY CODING RULES PRECISELY
+• Apply AMA CPT guidelines strictly — do not unbundle procedures that are included in the primary code's global package
+• Apply NCCI edits — identify any column 1/column 2 code pairs and determine if a modifier overcomes the edit
+• Apply the "separate procedure" parenthetical rule — do not code procedures marked as "separate procedure" when performed as part of a larger procedure in the same anatomical area
+• Count "Times Performed" exactly — if a procedure was performed at multiple distinct sites (e.g., 3 nerve decompressions, 2 tendon repairs), record the count accurately as this drives unit billing
+
+PASS 4 — ASSIGN ALL MODIFIERS
+For every code, determine and list all applicable modifiers:
+-LT / -RT: Laterality (left or right side)
+-50: Bilateral procedure performed during the same operative session
+-51: Multiple procedures (attach to secondary procedures, not to add-on codes)
+-59: Distinct procedural service (overcomes NCCI bundling when appropriate)
+-22: Increased procedural complexity (requires documentation of unusual circumstances)
+-62: Two surgeons (if co-surgery is documented)
+-66: Surgical team (if team surgery is documented)
+-78: Return to OR for related complication during postoperative period
+-79: Unrelated procedure during postoperative period
+-80 / -82: Assistant surgeon
+If no modifiers apply, write "None."
+
+---
+
+OUTPUT FORMAT — MANDATORY
+Present ALL identified codes in a single markdown table with EXACTLY these six column headers, in this exact order:
+
+| CPT Code | Description | Times Performed | Modifier(s) | Rationale | Confidence |
+
+Column rules:
+- CPT Code: 5-digit CPT code or alphanumeric HCPCS Level II code. Add-on codes should be prefixed with (+).
+- Description: The official AMA short descriptor for the CPT code.
+- Times Performed: An integer representing the number of times this specific code applies in this single operative encounter. Must be ≥ 1. If performed bilaterally with Modifier 50, write 1. If billed as two separate line items (LT and RT), write 2.
+- Modifier(s): All applicable modifiers separated by commas (e.g., -51, -59). Write "None" if none apply.
+- Rationale: Quote or closely paraphrase the specific language from the operative report that supports this code. Be precise.
+- Confidence: Use exactly one of: HIGH (unambiguously documented), MEDIUM (supported but requires interpretation), LOW (inferred — human coder must verify before billing).
+
+After the table, write a clearly labeled section called "Additional Coding Notes" that includes:
+1. Any add-on code relationships (which add-on goes with which primary code)
+2. Any NCCI bundling conflicts identified and how to resolve them
+3. Any codes that may require an operative report attachment or special documentation for payer review
+4. Any codes you considered but excluded, and why
+
+---
+
+CRITICAL INSTRUCTIONS:
+✦ Do NOT skip the body of the operative note — the most commonly missed codes are buried in the narrative, not the header.
+✦ Do NOT bundle procedures that qualify as separately billable under Modifier 59 or XS/XU/XP/XE modifiers.
+✦ Do NOT omit add-on codes — they are required by AMA guidelines and are separately reimbursable.
+✦ Do NOT guess — if a procedure is not clearly documented, mark it LOW confidence with an explanation.
+✦ Be exhaustive. It is better to flag a LOW confidence code for human review than to miss a billable service entirely.
+
+[OPERATIVE REPORT — READ THE COMPLETE DOCUMENT INCLUDING ALL SECTIONS]
+---
+${opNoteText}
+---
+[END OF OPERATIVE REPORT — NOW PERFORM ALL 4 PASSES AND RETURN THE COMPLETE CODE TABLE]`;
+      }
+
+      // ===== COPY TO CLIPBOARD =====
+      async function copyToClipboard(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            return ok;
+          } catch (e2) {
+            return false;
+          }
+        }
+      }
+
+      // ===== TOAST SYSTEM =====
+      function showToast(message, type = 'success', duration = 6000) {
+        const container = document.getElementById('toast-container-i7o2');
+        const toast = document.createElement('div');
+        const colors = {
+          success: 'bg-green-50 border-green-300 text-green-800',
+          warning: 'bg-amber-50 border-amber-300 text-amber-800',
+          error: 'bg-red-50 border-red-300 text-red-800'
+        };
+        const icons = {
+          success: '<svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>',
+          warning: '<svg class="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>',
+          error: '<svg class="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6m0-6l6 6"/></svg>'
+        };
+        toast.className = `toast-enter flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg ${colors[type]}`;
+        toast.innerHTML = `
+          ${icons[type]}
+          <p class="text-sm font-medium flex-1">${message}</p>
+          <button class="toast-close flex-shrink-0 p-0.5 rounded hover:bg-black/5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        `;
+        container.appendChild(toast);
+        const closeBtn = toast.querySelector('.toast-close');
+        const dismiss = () => {
+          toast.classList.remove('toast-enter');
+          toast.classList.add('toast-exit');
+          setTimeout(() => toast.remove(), 300);
+        };
+        closeBtn.addEventListener('click', dismiss);
+        setTimeout(dismiss, duration);
+      }
+
+      // ===== ANALYZE BUTTON =====
+      analyzeBtn.addEventListener('click', () => {
+        const opNote = opnoteTextarea.value.trim();
+        if (!opNote) return;
+
+        const prompt = buildPrompt(opNote);
+
+        // Step 1: Copy to clipboard synchronously using execCommand (works within user gesture)
+        // This MUST happen before window.open to avoid popup blockers
+        let copied = false;
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = prompt;
+          ta.style.position = 'fixed';
+          ta.style.top = '0';
+          ta.style.left = '0';
+          ta.style.opacity = '0';
+          ta.style.pointerEvents = 'none';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          copied = document.execCommand('copy');
+          document.body.removeChild(ta);
+        } catch(e) { copied = false; }
+
+        // Also try async clipboard API as backup
+        if (!copied) {
+          try { navigator.clipboard.writeText(prompt).catch(() => {}); } catch(e) {}
+        }
+
+        // Step 2: Open Copilot with a CLEAN URL — no query params, no encoded content
+        // Must be synchronous within the click handler to bypass popup blocker
+        const copilotWin = window.open('https://copilot.microsoft.com', '_blank', 'noopener,noreferrer');
+
+        // Step 3: Show the prominent launch banner
+        const banner = document.getElementById('copilot-ready-banner-z3m1');
+        banner.classList.remove('hidden');
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        // Step 4: Hide the copy-again fallback button (banner replaces it)
+        if (copyAgainBtn) copyAgainBtn.classList.add('hidden');
+
+        updateStepProgress(3);
+      });
+
+      // Open Copilot Again button
+      document.getElementById('open-copilot-again-btn-p4n7').addEventListener('click', () => {
+        window.open('https://copilot.microsoft.com', '_blank', 'noopener,noreferrer');
+      });
+
+      // Re-copy Prompt button
+      document.getElementById('recopy-prompt-btn-k2w8').addEventListener('click', () => {
+        const opNote = opnoteTextarea.value.trim();
+        if (!opNote) return;
+        const prompt = buildPrompt(opNote);
+        let copied = false;
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = prompt;
+          ta.style.position = 'fixed';
+          ta.style.top = '0';
+          ta.style.left = '0';
+          ta.style.opacity = '0';
+          ta.style.pointerEvents = 'none';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          copied = document.execCommand('copy');
+          document.body.removeChild(ta);
+        } catch(e) {}
+        if (!copied) {
+          try { navigator.clipboard.writeText(prompt).catch(() => {}); } catch(e) {}
+        }
+        showToast('✓ Prompt copied to clipboard — paste it in Copilot (Ctrl+V then Enter).', 'success', 5000);
+      });
+
+      // ===== COPY AGAIN (FALLBACK) =====
+      copyAgainBtn.addEventListener('click', async () => {
+        const opNote = opnoteTextarea.value.trim();
+        if (!opNote) return;
+        const prompt = buildPrompt(opNote);
+        const copied = await copyToClipboard(prompt);
+        if (copied) {
+          showToast('Prompt copied — open copilot.microsoft.com and press Ctrl+V if auto-launch did not work.', 'success');
+        } else {
+          showToast('Could not copy to clipboard.', 'error');
+        }
+      });
+
+      // ===== COPY CODES BUTTON =====
+      copyCodesBtn.addEventListener('click', async () => {
+        const text = responseTextarea.value;
+        if (!text) return;
+        const copied = await copyToClipboard(text);
+        if (copied) {
+          showToast('✓ Copilot response copied to clipboard!', 'success');
+        } else {
+          showToast('Could not copy to clipboard. Please copy manually.', 'error');
+        }
+      });
+
+      // ===== PARSE RESULTS =====
+      function parseMarkdownTable(text) {
+        const lines = text.split('\n');
+        const tableLines = [];
+        let inTable = false;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+            inTable = true;
+            tableLines.push(trimmed);
+          } else if (inTable && trimmed === '') {
+            break;
+          } else if (inTable && !trimmed.startsWith('|')) {
+            break;
+          }
+        }
+        if (tableLines.length < 3) return null;
+        const headerCells = tableLines[0].split('|').map(c => c.trim()).filter(c => c);
+        const dataRows = [];
+        for (let i = 2; i < tableLines.length; i++) {
+          const sep = tableLines[i].replace(/^\|/, '').replace(/\|$/, '');
+          if (/^[\s\-:|]+$/.test(sep)) continue;
+          const cells = tableLines[i].split('|').map(c => c.trim()).filter(c => c);
+          if (cells.length >= 4) {
+            dataRows.push({
+              cptCode: (cells[0] || '').replace(/\*/g, '').trim(),
+              description: (cells[1] || '').replace(/\*/g, '').trim(),
+              timesPerformed: (cells[2] || '1').replace(/\*/g, '').trim(),
+              modifiers: (cells[3] || 'None').replace(/\*/g, '').trim(),
+              rationale: (cells[4] || '').replace(/\*/g, '').trim(),
+              confidence: (cells[5] || 'MEDIUM').replace(/\*/g, '').trim().toUpperCase()
+            });
+          }
+        }
+        return dataRows.length > 0 ? dataRows : null;
+      }
+
+      function fallbackParse(text) {
+        const cptPattern = /\b(\d{5})\b/g;
+        const hcpcsPattern = /\b([A-Z]\d{4})\b/g;
+        const codes = new Set();
+        let match;
+        while ((match = cptPattern.exec(text)) !== null) {
+          const num = parseInt(match[1]);
+          if (num >= 10000 && num <= 99999) codes.add(match[1]);
+        }
+        while ((match = hcpcsPattern.exec(text)) !== null) {
+          codes.add(match[1]);
+        }
+        return Array.from(codes).map(code => ({
+          cptCode: code,
+          description: 'Extracted from response (could not parse table)',
+          timesPerformed: '1',
+          modifiers: 'None',
+          rationale: 'Auto-extracted — review Copilot response for details',
+          confidence: 'LOW'
+        }));
+      }
+
+      function extractBundlingNotes(text) {
+        const tableEnd = text.lastIndexOf('|');
+        if (tableEnd === -1) return '';
+        const afterTable = text.substring(tableEnd);
+        const lines = afterTable.split('\n').slice(1);
+        const noteLines = [];
+        let started = false;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            if (started) noteLines.push('');
+            continue;
+          }
+          if (trimmed.startsWith('|') || /^[\-:|]+$/.test(trimmed)) continue;
+          started = true;
+          noteLines.push(trimmed);
+        }
+        return noteLines.join('\n').trim();
+      }
+
+      function renderResults(results) {
+        parsedResults = results;
+        const tbody = document.getElementById('results-tbody-c3e7');
+        tbody.innerHTML = '';
+
+        results.forEach((row, idx) => {
+          const tr = document.createElement('tr');
+          tr.className = 'result-row transition-colors ' + (idx % 2 === 0 ? 'bg-white' : 'bg-[#F8FAFC]');
+
+          // CPT Code
+          const tdCode = document.createElement('td');
+          tdCode.className = 'px-4 py-3 font-mono font-bold text-sm text-navy whitespace-nowrap';
+          tdCode.textContent = row.cptCode;
+          tr.appendChild(tdCode);
+
+          // Description
+          const tdDesc = document.createElement('td');
+          tdDesc.className = 'px-4 py-3 text-sm text-gray-800';
+          tdDesc.textContent = row.description;
+          tr.appendChild(tdDesc);
+
+          // Times Performed
+          const tdTimes = document.createElement('td');
+          tdTimes.className = 'px-4 py-3 text-center font-bold tabular-nums text-sm';
+          const tp = parseInt(row.timesPerformed) || 1;
+          if (tp > 1) {
+            tdTimes.innerHTML = `<span class="text-teal">${tp}</span>`;
+          } else {
+            tdTimes.textContent = tp;
+          }
+          tr.appendChild(tdTimes);
+
+          // Modifiers
+          const tdMod = document.createElement('td');
+          tdMod.className = 'px-4 py-3';
+          const mods = row.modifiers.split(/[,;]\s*/);
+          if (mods.length === 1 && mods[0].toLowerCase() === 'none') {
+            tdMod.innerHTML = '<span class="text-xs text-text-muted">None</span>';
+          } else {
+            tdMod.innerHTML = mods.map(m => `<span class="modifier-pill inline-block px-2 py-0.5 rounded-md text-xs font-medium mr-1 mb-0.5">${m.trim()}</span>`).join('');
+          }
+          tr.appendChild(tdMod);
+
+          // Rationale
+          const tdRat = document.createElement('td');
+          tdRat.className = 'px-4 py-3 text-xs text-gray-600 max-w-[260px]';
+          const ratSpan = document.createElement('span');
+          ratSpan.className = 'block truncate';
+          ratSpan.textContent = row.rationale;
+          ratSpan.title = row.rationale;
+          tdRat.appendChild(ratSpan);
+          tr.appendChild(tdRat);
+
+          // Confidence
+          const tdConf = document.createElement('td');
+          tdConf.className = 'px-4 py-3 text-center';
+          const conf = row.confidence.replace(/[^A-Z]/g, '');
+          let confClass = 'confidence-medium';
+          if (conf.includes('HIGH')) confClass = 'confidence-high';
+          else if (conf.includes('LOW')) confClass = 'confidence-low';
+          const confLabel = conf.includes('HIGH') ? 'HIGH' : conf.includes('LOW') ? 'LOW' : 'MEDIUM';
+          tdConf.innerHTML = `<span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold ${confClass}">${confLabel}</span>`;
+          tr.appendChild(tdConf);
+
+          tbody.appendChild(tr);
+        });
+
+        // Update stats
+        const unique = results.length;
+        const totalProcs = results.reduce((s, r) => s + (parseInt(r.timesPerformed) || 1), 0);
+        const needsReview = results.filter(r => r.confidence.toUpperCase().includes('LOW')).length;
+        document.getElementById('stat-unique-f9q1').textContent = unique;
+        document.getElementById('stat-total-g2r4').textContent = totalProcs;
+        document.getElementById('stat-review-h5s7').textContent = needsReview;
+
+        // Show elements
+        document.getElementById('codes-badge-e4w7').textContent = unique + ' code' + (unique !== 1 ? 's' : '') + ' identified';
+        document.getElementById('codes-badge-e4w7').classList.remove('hidden');
+        document.getElementById('export-buttons-d6n1').classList.remove('hidden');
+        document.getElementById('export-buttons-d6n1').style.display = 'flex';
+        document.getElementById('summary-stats-v2b8').classList.remove('hidden');
+        document.getElementById('results-table-wrapper-a1c3').classList.remove('hidden');
+        document.getElementById('empty-state-t8u6').classList.add('hidden');
+        document.getElementById('results-disclaimer-q1a8').classList.remove('hidden');
+
+        // Bundling notes
+        const notes = extractBundlingNotes(responseTextarea.value);
+        const notesEl = document.getElementById('bundling-notes-z4x9');
+        if (notes) {
+          notesEl.classList.remove('hidden');
+          document.getElementById('bundling-notes-content-w5y2').textContent = notes;
+        } else {
+          notesEl.classList.add('hidden');
+        }
+
+        // Re-create lucide icons in new elements
+        lucide.createIcons();
+
+        // Scroll to results
+        document.getElementById('results-section-r4k2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      parseBtn.addEventListener('click', () => {
+        const text = responseTextarea.value.trim();
+        if (!text) return;
+
+        let results = parseMarkdownTable(text);
+        if (!results || results.length === 0) {
+          results = fallbackParse(text);
+        }
+
+        if (results.length === 0) {
+          showToast('No CPT codes found in the response. Please check the pasted text.', 'warning');
+          return;
+        }
+
+        updateStepProgress(4);
+        renderResults(results);
+        showToast(`Successfully parsed ${results.length} CPT code${results.length !== 1 ? 's' : ''}.`, 'success');
+      });
+
+      // ===== EXPORT CSV =====
+      exportCsvBtn.addEventListener('click', () => {
+        if (parsedResults.length === 0) return;
+        const headers = ['CPT Code', 'Description', 'Times Performed', 'Modifier(s)', 'Rationale', 'Confidence'];
+        const csvRows = [headers.join(',')];
+        parsedResults.forEach(r => {
+          csvRows.push([
+            `"${r.cptCode}"`,
+            `"${r.description.replace(/"/g, '""')}"`,
+            `"${r.timesPerformed}"`,
+            `"${r.modifiers.replace(/"/g, '""')}"`,
+            `"${r.rationale.replace(/"/g, '""')}"`,
+            `"${r.confidence}"`
+          ].join(','));
+        });
+        const csvContent = csvRows.join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `CPT_Codes_${timestamp}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('CSV file downloaded.', 'success');
+      });
+
+      // ===== PRINT =====
+      printBtn.addEventListener('click', () => {
+        document.getElementById('print-date-j3f1').textContent = 'Generated: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        window.print();
+      });
+
+      // ===== CLEAR ALL =====
+      clearAllBtn.addEventListener('click', () => {
+        if (!confirm('Are you sure you want to clear all data and reset the tool?')) return;
+        opnoteTextarea.value = '';
+        responseTextarea.value = '';
+        charCount.textContent = '0 characters';
+        responseCharCount.textContent = '0 characters';
+        analyzeBtn.disabled = true;
+        parseBtn.disabled = true;
+        copyCodesBtn.disabled = true;
+        copyAgainBtn.classList.add('hidden');
+        document.getElementById('copilot-ready-banner-z3m1').classList.add('hidden');
+        parsedResults = [];
+        document.getElementById('results-tbody-c3e7').innerHTML = '';
+        document.getElementById('codes-badge-e4w7').classList.add('hidden');
+        document.getElementById('export-buttons-d6n1').classList.add('hidden');
+        document.getElementById('summary-stats-v2b8').classList.add('hidden');
+        document.getElementById('results-table-wrapper-a1c3').classList.add('hidden');
+        document.getElementById('empty-state-t8u6').classList.remove('hidden');
+        document.getElementById('results-disclaimer-q1a8').classList.add('hidden');
+        document.getElementById('bundling-notes-z4x9').classList.add('hidden');
+        updateStepProgress(1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('All data cleared.', 'success');
+      });
+
+      // ===== STEP BUTTON CLICK NAVIGATION =====
+      document.getElementById('step-btn-1').addEventListener('click', () => {
+        // Scroll to left pane and focus the op note textarea
+        document.getElementById('left-pane-a7j4').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { document.getElementById('opnote-textarea-g2m5').focus(); }, 400);
+        // Only update progress back to 1 if we haven't gone past step 1 yet
+        if (currentStep === 1) updateStepProgress(1);
+      });
+
+      document.getElementById('step-btn-2').addEventListener('click', () => {
+        // Scroll to analyze button and trigger it if there's content, otherwise just scroll and highlight
+        document.getElementById('left-pane-a7j4').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          if (opnoteTextarea.value.trim()) {
+            analyzeBtn.click();
+          } else {
+            const ta = opnoteTextarea;
+            ta.focus();
+            ta.style.boxShadow = '0 0 0 3px rgba(217,119,6,0.5)';
+            ta.style.borderColor = '#D97706';
+            setTimeout(() => { ta.style.boxShadow = ''; ta.style.borderColor = ''; }, 2000);
+            showToast('Paste your operative note first, then click Launch Copilot.', 'warning');
+          }
+        }, 400);
+      });
+
+      document.getElementById('step-btn-3').addEventListener('click', () => {
+        // Scroll to right pane and focus the response textarea
+        document.getElementById('right-pane-c6t1').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => { document.getElementById('response-textarea-p5s7').focus(); }, 400);
+      });
+
+      document.getElementById('step-btn-4').addEventListener('click', () => {
+        // Trigger parse if response textarea has content, otherwise scroll and prompt
+        const btn = document.getElementById('parse-btn-y7k9');
+        if (!btn.disabled) {
+          document.getElementById('right-pane-c6t1').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => { btn.click(); }, 400);
+        } else {
+          // Scroll to results section if results already exist, else highlight response textarea
+          const hasResults = parsedResults.length > 0;
+          if (hasResults) {
+            document.getElementById('results-section-r4k2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            document.getElementById('right-pane-c6t1').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const ta = document.getElementById('response-textarea-p5s7');
+            setTimeout(() => {
+              ta.focus();
+              ta.style.boxShadow = '0 0 0 3px rgba(217,119,6,0.5)';
+              ta.style.borderColor = '#D97706';
+              setTimeout(() => {
+                ta.style.boxShadow = '';
+                ta.style.borderColor = '';
+              }, 2000);
+              showToast('Paste the Copilot response first, then click View Results.', 'warning');
+            }, 400);
+          }
+        }
+      });
+
+    </script>
+</body>
+</html>

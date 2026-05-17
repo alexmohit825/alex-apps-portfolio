@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SurgicalCare — Unified Surgical Patient Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: {
+      primary: { 50:'#f0f8fa', 100:'#e0f1f5', 200:'#b8e0ea', 300:'#7ec8d8', 400:'#3aadc4', 500:'#1a9bb5', 600:'#1687a0', 700:'#0f3d4a', 800:'#0a2c36', 900:'#061d24' },
+      warm: { 50:'#fffbf8', 100:'#f8f4f1', 200:'#efeae7', 300:'#dac6b7', 400:'#a88c76', 500:'#745740', 600:'#59422f' },
+      green: { 100:'#f0fdf4', 200:'#bbf7d0', 400:'#4ade80', 500:'#22c55e', 600:'#16a34a', 700:'#15803d' },
+      yellow: { 100:'#fefce8', 200:'#fef08a', 400:'#facc15', 600:'#ca8a04', 700:'#a16207' },
+      orange: { 100:'#fff7ed', 200:'#fed7aa', 400:'#fb923c', 600:'#ea580c', 700:'#c2410c' },
+      red: { 100:'#fff1f2', 200:'#fecdd3', 400:'#f87171', 500:'#ef4444', 600:'#dc2626', 700:'#b91c1c' },
+      purple: { 100:'#faf5ff', 200:'#e9d5ff', 400:'#c084fc', 600:'#9333ea', 700:'#7e22ce' },
+    },
+    fontFamily: { sans: ['Inter','sans-serif'] },
+    borderRadius: { '2xl':'1rem','3xl':'1.25rem','4xl':'1.5rem' },
+  }}
+};
+</script>
+<style>
+body { font-family: 'Inter', sans-serif; background: #f0f8fa; margin:0; }
+#setup-screen, #main-app { display: none; }
+#setup-screen.active { display: flex; }
+#main-app.active { display: flex; flex-direction: column; min-height: 100vh; }
+#preop-mode { display: block; }
+#wound-mode { display: none; }
+body.wound-active #preop-mode { display: none; }
+body.wound-active #wound-mode { display: block; }
+.preop-section { display: none; }
+.preop-section.active { display: block; animation: fadeIn 0.3s ease; }
+.wound-tab-panel { display: none; }
+.wound-tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+.sidebar-link { transition: all 0.2s; cursor: pointer; }
+.sidebar-link.active { background: #e0f1f5; color: #0f3d4a; font-weight: 600; border-left: 3px solid #1a9bb5; }
+.sidebar-link:hover:not(.active) { background: #f0f8fa; }
+.wound-tab-btn { cursor: pointer; transition: all 0.2s; }
+.wound-tab-btn.active { color: #0f3d4a; border-top: 2px solid #1a9bb5; }
+.accordion-toggle { cursor: pointer; }
+.accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+.accordion-body.open { max-height: 5000px; }
+.quiz-opt { cursor: pointer; transition: all 0.2s; border: 2px solid #e0f1f5; }
+.quiz-opt:hover { border-color: #1a9bb5; background: #f0f8fa; }
+.quiz-opt.correct { background: #f0fdf4 !important; border-color: #16a34a !important; }
+.quiz-opt.wrong { background: #fff1f2 !important; border-color: #dc2626 !important; }
+.quiz-opt.selected { border-color: #0f3d4a; background: #e0f1f5; }
+.ans-btn { cursor: pointer; border: 2px solid #e0f1f5; transition: all 0.2s; text-align: left; }
+.ans-btn:hover { border-color: #1a9bb5; }
+.ans-btn.selected { border-color: #0f3d4a; background: #e0f1f5; }
+.ans-btn.selected-green { border-color: #16a34a; background: #f0fdf4; }
+.ans-btn.selected-yellow { border-color: #ca8a04; background: #fefce8; }
+.ans-btn.selected-orange { border-color: #ea580c; background: #fff7ed; }
+.ans-btn.selected-red { border-color: #dc2626; background: #fff1f2; }
+.card-shadow { box-shadow: 0 4px 20px rgba(15,61,74,0.08); }
+.readiness-float { position: fixed; bottom: 16px; right: 16px; z-index: 50; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes dotPulse { 0%,80%,100% { opacity:.3; } 40% { opacity:1; } }
+.typing-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#1a9bb5; margin:0 2px; animation: dotPulse 1.4s infinite ease-in-out; }
+.typing-dot:nth-child(2) { animation-delay:.2s; }
+.typing-dot:nth-child(3) { animation-delay:.4s; }
+#print-modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.75); overflow-y: auto; }
+#print-modal.open { display: flex; align-items: flex-start; justify-content: center; padding: 24px 12px; }
+#settings-modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); }
+#settings-modal.open { display: flex; align-items: center; justify-content: center; }
+#emergency-modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); }
+#emergency-modal.open { display: flex; align-items: center; justify-content: center; }
+#ssi-detail-modal { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); overflow-y:auto; }
+#ssi-detail-modal.open { display: flex; align-items: flex-start; justify-content: center; padding: 24px 12px; }
+.checklist-item input[type="checkbox"] { accent-color: #1a9bb5; width: 18px; height: 18px; cursor: pointer; }
+.timeline-pill { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.timeline-pill.current { background: #1a9bb5; color: white; animation: pulse 2s infinite; }
+.timeline-pill.past { background: #bbf7d0; color: #15803d; }
+.timeline-pill.future { background: #e0f1f5; color: #0f3d4a; }
+.chat-user-bubble { background: #0f3d4a; color: #fff; border-radius: 16px 16px 4px 16px; padding: 10px 14px; max-width: 80%; margin-left: auto; }
+.chat-ai-bubble { background: #fff; color: #0a2c36; border-radius: 16px 16px 16px 4px; padding: 10px 14px; max-width: 85%; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.chat-ai-bubble strong { color: #0f3d4a; }
+.chat-user { background: #0f3d4a; color: #fff; border-radius: 16px 16px 4px 16px; padding: 10px 14px; max-width: 80%; margin-left: auto; }
+.chat-ai { background: #fff; color: #0a2c36; border-radius: 16px 16px 16px 4px; padding: 10px 14px; max-width: 85%; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.chat-ai strong { color: #0f3d4a; }
+#ai-fab { position: fixed; bottom: 80px; right: 16px; z-index: 49; width: 52px; height: 52px; border-radius: 50%; background: #1a9bb5; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 16px rgba(26,155,181,0.35); transition: transform 0.2s; }
+#ai-fab:hover { transform: scale(1.08); }
+
+/* New modal styles */
+.modal-overlay { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-card { background:#fff; border-radius:1rem; box-shadow:0 8px 40px rgba(0,0,0,0.18); width:100%; max-width:480px; margin:16px; max-height:90vh; overflow-y:auto; animation: fadeIn 0.25s ease; }
+.modal-card-lg { max-width:540px; }
+
+/* Toast */
+#success-toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); z-index:400; background:#16a34a; color:#fff; padding:12px 24px; border-radius:12px; font-size:14px; font-weight:600; box-shadow:0 4px 16px rgba(22,163,106,0.35); display:none; animation: fadeIn 0.3s ease; }
+#success-toast.show { display:block; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  #printSummary, #printSummary * { visibility: visible !important; }
+  #printSummary { position: fixed; inset: 0; padding: 0.5in; font-size: 11pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; background: white; overflow: auto; }
+  @page { margin: 0.75in; size: letter; }
+}
+@media (max-width: 767px) {
+  .preop-layout { flex-direction: column !important; }
+  #preop-sidebar { display: none; width: 100% !important; }
+  #preop-sidebar.mobile-open { display: block; position: fixed; inset: 0; z-index: 100; background: white; overflow-y: auto; padding: 16px; }
+  .wound-bottom-tabs { position: sticky; bottom: 0; }
+  .wound-tab-btn .tab-label { display: none; }
+  .hdr-clinic-badge { display: none !important; }
+}
+</style>
+</head>
+<body data-id="0">
+<app-icon data-id="1" hidden data-icon="heart-pulse" data-palette="Blue"></app-icon>
+<app-disclaimer data-id="2" intent="medical"></app-disclaimer>
+
+<!-- SUCCESS TOAST -->
+<div data-id="3" id="success-toast"></div>
+
+<!-- SETUP SCREEN -->
+<div data-id="4" id="setup-screen" class="active min-h-screen items-center justify-center px-4 py-8">
+<div data-id="5" class="w-full max-w-xl bg-white rounded-3xl card-shadow p-6 md:p-10">
+  <div data-id="6" style="background:#fff; border-left:4px solid #1d4ed8; border-radius:10px; padding:14px 20px; margin-bottom:24px; box-shadow:0 2px 12px rgba(29,78,216,0.08);">
+    <p data-id="7" style="color:#1d4ed8; font-size:1.15rem; font-weight:700; margin:0; letter-spacing:0.01em;">MultiCare NeuroScience Institute</p>
+    <p data-id="8" style="color:#3b82f6; font-size:0.82rem; font-weight:500; margin:4px 0 0;">Powered by SurgicalCare™ Patient Platform</p>
+  </div>
+  <div data-id="9" class="text-center mb-8">
+    <div data-id="10" class="text-5xl mb-3">🏥</div>
+    <h1 data-id="11" class="text-3xl font-bold text-primary-700">SurgicalCare</h1>
+    <p data-id="12" class="text-sm text-gray-500 mt-1">Your complete surgical journey — from preparation to healing</p>
+  </div>
+  <form data-id="13" id="setup-form" class="space-y-4">
+    <div data-id="14">
+      <label data-id="15" class="block text-sm font-medium text-primary-700 mb-1">Patient Name *</label>
+      <input data-id="16" id="s-name" type="text" required class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Full name" />
+    </div>
+    <div data-id="17">
+      <label data-id="18" class="block text-sm font-medium text-primary-700 mb-1">Date of Birth</label>
+      <input data-id="19" id="s-dob" type="date" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+    </div>
+    <div data-id="20">
+      <label data-id="21" class="block text-sm font-medium text-primary-700 mb-1">Surgery Type *</label>
+      <select data-id="22" id="s-surgery" required class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+        <option data-id="23" value="">Select surgery type...</option>
+        <optgroup data-id="24" label="— Spine Surgery —">
+          <option data-id="25">Cervical Fusion (Anterior or Posterior)</option>
+          <option data-id="26">Cervical Laminectomy / Laminoplasty</option>
+          <option data-id="27">Lumbar Microdiscectomy</option>
+          <option data-id="28">Lumbar Laminectomy / Laminotomy</option>
+          <option data-id="29">Lumbar Fusion (TLIF / PLIF / ALIF / LLIF)</option>
+          <option data-id="30">Thoracic Spine Surgery</option>
+          <option data-id="31">Minimally Invasive Spine (MIS)</option>
+          <option data-id="32">Vertebroplasty / Kyphoplasty</option>
+        </optgroup>
+        <optgroup data-id="33" label="— Neurological Surgery —">
+          <option data-id="34">Craniotomy — Supratentorial</option>
+          <option data-id="35">Craniotomy — Infratentorial / Posterior Fossa</option>
+          <option data-id="36">Craniectomy / Cranioplasty</option>
+          <option data-id="37">Deep Brain Stimulation (DBS)</option>
+          <option data-id="38">Ventricular Shunt (VP / LP Shunt)</option>
+          <option data-id="39">Transsphenoidal Pituitary Surgery</option>
+          <option data-id="40">Awake Craniotomy</option>
+          <option data-id="41">Peripheral Nerve Surgery</option>
+        </optgroup>
+        <optgroup data-id="42" label="— Other Specialties —">
+          <option data-id="43">Orthopedic Surgery</option>
+          <option data-id="44">Cardiac Surgery</option>
+          <option data-id="45">General Surgery</option>
+        </optgroup>
+      </select>
+    </div>
+    <div data-id="46">
+      <label data-id="47" class="block text-sm font-medium text-primary-700 mb-1">Surgery Date *</label>
+      <input data-id="48" id="s-date" type="date" required class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+    </div>
+    <div data-id="49" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div data-id="50">
+        <label data-id="51" class="block text-sm font-medium text-primary-700 mb-1">Surgeon Name</label>
+        <input data-id="52" id="s-surgeon" type="text" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Dr. ..." />
+      </div>
+      <div data-id="53">
+        <label data-id="54" class="block text-sm font-medium text-primary-700 mb-1">Hospital / Clinic</label>
+        <input data-id="55" id="s-hospital" type="text" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+      </div>
+    </div>
+    <div data-id="56">
+      <label data-id="57" class="block text-sm font-medium text-primary-700 mb-1">Surgeon / Nurse Line Phone</label>
+      <input data-id="58" id="s-surgphone" type="tel" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="(555) 123-4567" />
+    </div>
+    <div data-id="59" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div data-id="60">
+        <label data-id="61" class="block text-sm font-medium text-primary-700 mb-1">Emergency Contact Name</label>
+        <input data-id="62" id="s-emname" type="text" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+      </div>
+      <div data-id="63">
+        <label data-id="64" class="block text-sm font-medium text-primary-700 mb-1">Emergency Contact Phone</label>
+        <input data-id="65" id="s-emphone" type="tel" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+      </div>
+    </div>
+    <button data-id="66" id="setup-submit" type="submit" class="w-full mt-4 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl py-3 text-sm transition-colors">Begin My Surgical Journey →</button>
+  </form>
+  <footer data-id="67" class="text-center py-4 text-xs text-gray-400 mt-6 border-t border-primary-100">
+    <p data-id="68"><span data-id="69" style="color:#1d4ed8;font-weight:700;">MultiCare NeuroScience Institute</span> — SurgicalCare™ Patient Platform</p>
+    <p data-id="70" class="mt-1">This app provides general educational information only. Always follow the specific instructions of your surgical team.</p>
+  </footer>
+</div>
+</div>
+
+<!-- MAIN APP -->
+<div data-id="71" id="main-app">
+<!-- HEADER -->
+<header data-id="72" id="app-header" class="sticky top-0 z-50 bg-primary-700 text-white shadow-lg">
+<div data-id="73" class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+  <div data-id="74" class="flex items-center gap-2 min-w-0">
+    <span data-id="75" class="text-xl">🏥</span>
+    <span data-id="76" class="font-bold text-sm md:text-base whitespace-nowrap">SurgicalCare</span>
+    <span data-id="77" id="hdr-patient" class="hidden md:inline-flex bg-primary-500 text-white text-xs px-2.5 py-0.5 rounded-full truncate max-w-[120px]"></span>
+    <div data-id="78" class="hdr-clinic-badge" style="background:#fff; border:2px solid #1d4ed8; border-radius:8px; padding:4px 14px; display:inline-flex; align-items:center; gap:6px; margin-left:10px;">
+      <span data-id="79" style="color:#1d4ed8; font-weight:700; font-size:0.78rem; letter-spacing:0.02em; white-space:nowrap;">MultiCare NeuroScience Institute</span>
+    </div>
+  </div>
+  <div data-id="80" class="flex items-center bg-primary-800 rounded-xl p-0.5 order-3 md:order-2 w-full md:w-auto justify-center">
+    <button data-id="81" id="mode-preop" class="mode-btn px-4 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-colors bg-white text-primary-700">📋 Pre-Op Prep</button>
+    <button data-id="82" id="mode-wound" class="mode-btn px-4 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-colors text-primary-200">🩹 Wound Monitor</button>
+  </div>
+  <div data-id="83" class="flex items-center gap-2 order-2 md:order-3">
+    <span data-id="84" id="hdr-days" class="text-xs bg-primary-500 px-2.5 py-1 rounded-full whitespace-nowrap"></span>
+    <button data-id="85" id="hdr-print" class="p-1.5 hover:bg-primary-600 rounded-lg" title="Print Summary"><i data-id="86" data-lucide="printer" class="w-4 h-4"></i></button>
+    <button data-id="87" id="hdr-settings" class="p-1.5 hover:bg-primary-600 rounded-lg" title="Settings"><i data-id="88" data-lucide="settings" class="w-4 h-4"></i></button>
+    <button data-id="89" id="mobile-sidebar-btn" class="md:hidden p-1.5 hover:bg-primary-600 rounded-lg"><i data-id="90" data-lucide="menu" class="w-5 h-5"></i></button>
+  </div>
+</div>
+</header>
+
+<!-- PRE-OP MODE -->
+<div data-id="91" id="preop-mode" class="flex-1">
+<div data-id="92" class="max-w-7xl mx-auto flex preop-layout" style="min-height:calc(100vh - 56px)">
+  <nav data-id="93" id="preop-sidebar" class="w-[260px] bg-white border-r border-primary-100 p-3 flex-shrink-0 overflow-y-auto">
+    <button data-id="94" id="mobile-sidebar-close" class="md:hidden mb-3 p-2 rounded-lg hover:bg-primary-50 self-end float-right"><i data-id="95" data-lucide="x" class="w-5 h-5"></i></button>
+    <div data-id="96" class="space-y-0.5 clear-both" id="sidebar-links"></div>
+  </nav>
+  <main data-id="97" id="preop-content" class="flex-1 p-4 md:p-6 overflow-y-auto"></main>
+</div>
+<div data-id="98" id="readiness-badge" class="readiness-float hidden">
+  <div data-id="99" class="bg-white rounded-2xl card-shadow p-3 flex items-center gap-3 cursor-pointer hover:scale-105 transition-transform">
+    <svg data-id="100" id="readiness-donut" width="52" height="52" viewBox="0 0 52 52"></svg>
+    <div data-id="101">
+      <div data-id="102" id="readiness-pct" class="text-lg font-bold text-primary-700">0%</div>
+      <div data-id="103" id="readiness-label" class="text-[10px] font-medium text-gray-500">Not Started</div>
+    </div>
+  </div>
+</div>
+<div data-id="104" id="ai-fab" title="Ask the AI Assistant"><i data-id="105" data-lucide="message-circle" class="w-6 h-6"></i></div>
+</div>
+
+<!-- WOUND MONITOR MODE -->
+<div data-id="106" id="wound-mode" class="flex-1 flex flex-col" style="min-height:calc(100vh - 56px)">
+  <div data-id="107" class="bg-primary-700 text-white px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+    <div data-id="108" class="flex items-center gap-2 text-sm flex-wrap">
+      <span data-id="109">🩹</span><span data-id="110" class="font-semibold">Wound Monitor</span>
+      <span data-id="111" id="wound-days-badge" class="bg-primary-500 text-xs px-2 py-0.5 rounded-full"></span>
+      <span data-id="112" id="wound-nwat-badge" class="text-xs px-2 py-0.5 rounded-full hidden"></span>
+      <span data-id="113" style="background:#fff;border:1px solid #1d4ed8;border-radius:6px;padding:2px 8px;color:#1d4ed8;font-size:0.65rem;font-weight:600;white-space:nowrap;">MultiCare NSI</span>
+    </div>
+    <button data-id="114" id="wound-emergency-btn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1">🆘 Emergency</button>
+  </div>
+  <div data-id="115" id="wound-content" class="flex-1 overflow-y-auto p-4 md:p-6 max-w-4xl mx-auto w-full"></div>
+  <div data-id="116" class="wound-bottom-tabs bg-white border-t border-primary-100 flex justify-around py-1.5 px-1">
+    <button data-id="117" class="wound-tab-btn active flex flex-col items-center py-1 px-1 text-[9px] md:text-xs" data-wtab="dashboard"><i data-id="118" data-lucide="home" class="w-5 h-5 tab-icon"></i><span data-id="119" class="tab-label">Dashboard</span></button>
+    <button data-id="120" class="wound-tab-btn flex flex-col items-center py-1 px-1 text-[9px] md:text-xs" data-wtab="checkin"><i data-id="121" data-lucide="camera" class="w-5 h-5 tab-icon"></i><span data-id="122" class="tab-label">Log</span></button>
+    <button data-id="123" class="wound-tab-btn flex flex-col items-center py-1 px-1 text-[9px] md:text-xs" data-wtab="history"><i data-id="124" data-lucide="calendar" class="w-5 h-5 tab-icon"></i><span data-id="125" class="tab-label">History</span></button>
+    <button data-id="126" class="wound-tab-btn flex flex-col items-center py-1 px-1 text-[9px] md:text-xs" data-wtab="escalation"><i data-id="127" data-lucide="alert-triangle" class="w-5 h-5 tab-icon"></i><span data-id="128" class="tab-label">Escalation</span></button>
+    <button data-id="129" class="wound-tab-btn flex flex-col items-center py-1 px-1 text-[9px] md:text-xs" data-wtab="education"><i data-id="130" data-lucide="book-open" class="w-5 h-5 tab-icon"></i><span data-id="131" class="tab-label">Education</span></button>
+    <button data-id="132" class="wound-tab-btn flex flex-col items-center py-1 px-1 text-[9px] md:text-xs" data-wtab="askai"><i data-id="133" data-lucide="message-circle" class="w-5 h-5 tab-icon"></i><span data-id="134" class="tab-label">Ask AI</span></button>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer data-id="135" class="text-center py-4 text-xs text-gray-400 bg-white border-t border-primary-100">
+  <p data-id="136"><span data-id="137" style="color:#1d4ed8;font-weight:700;">MultiCare NeuroScience Institute</span> — SurgicalCare™ Patient Platform</p>
+  <p data-id="138" class="mt-1">This app provides general educational information only. Always follow the specific instructions of your surgical team. Made by Copilot</p>
+</footer>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div data-id="139" id="settings-modal"><div data-id="140" class="bg-white rounded-2xl card-shadow p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+  <div data-id="141" class="flex items-center justify-between mb-4"><h2 data-id="142" class="text-lg font-bold text-primary-700">⚙️ Edit Profile</h2><button data-id="143" id="settings-close" class="p-1 hover:bg-primary-50 rounded-lg"><i data-id="144" data-lucide="x" class="w-5 h-5"></i></button></div>
+  <div data-id="145" id="settings-fields" class="space-y-3"></div>
+  <div data-id="146" class="flex gap-2 mt-4">
+    <button data-id="147" id="settings-save" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl py-2.5 text-sm">Save Changes</button>
+    <button data-id="148" id="settings-reset" class="bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-xl py-2.5 px-4 text-sm">Reset All</button>
+  </div>
+</div></div>
+
+<!-- EMERGENCY MODAL -->
+<div data-id="149" id="emergency-modal"><div data-id="150" class="bg-white rounded-2xl card-shadow p-6 w-full max-w-sm mx-4 text-center">
+  <div data-id="151" class="text-4xl mb-2">🆘</div>
+  <h2 data-id="152" class="text-lg font-bold text-red-700 mb-4">Emergency Contacts</h2>
+  <div data-id="153" id="emergency-contacts" class="space-y-3"></div>
+  <a data-id="154" href="tel:911" class="block mt-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl py-3 text-lg">🚨 Call 911</a>
+  <button data-id="155" id="emergency-close" class="mt-3 text-sm text-gray-500 hover:text-gray-700">Close</button>
+</div></div>
+
+<!-- PRINT MODAL -->
+<div data-id="156" id="print-modal"><div data-id="157" class="bg-white rounded-2xl w-full max-w-3xl mx-4 my-8 overflow-hidden">
+  <div data-id="158" class="flex items-center justify-between p-4 border-b border-primary-100">
+    <h2 data-id="159" class="font-bold text-primary-700">🖨️ Print Summary Preview</h2>
+    <div data-id="160" class="flex gap-2"><button data-id="161" id="print-now" class="bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold px-4 py-2 rounded-lg">Print Now</button><button data-id="162" id="print-close" class="p-1 hover:bg-primary-50 rounded-lg"><i data-id="163" data-lucide="x" class="w-5 h-5"></i></button></div>
+  </div>
+  <div data-id="164" id="printSummary" class="p-6 bg-white overflow-y-auto max-h-[75vh]"></div>
+</div></div>
+
+<!-- SSI DETAIL MODAL -->
+<div data-id="165" id="ssi-detail-modal"><div data-id="166" class="bg-white rounded-2xl w-full max-w-2xl mx-4 my-8 overflow-hidden card-shadow">
+  <div data-id="167" class="flex items-center justify-between p-4 border-b border-primary-100">
+    <h2 data-id="168" class="font-bold text-primary-700">🤖 AI Wound Analysis Detail</h2>
+    <button data-id="169" id="ssi-detail-close" class="p-1 hover:bg-primary-50 rounded-lg"><i data-id="170" data-lucide="x" class="w-5 h-5"></i></button>
+  </div>
+  <div data-id="171" id="ssi-detail-content" class="p-6 overflow-y-auto max-h-[75vh]"></div>
+</div></div>
+
+<!-- CHECK-IN MODAL -->
+<div data-id="172" id="checkin-modal" class="modal-overlay">
+  <div data-id="173" class="modal-card p-6">
+    <div data-id="174" class="flex items-center justify-between mb-5">
+      <h2 data-id="175" class="text-lg font-bold text-primary-700 flex items-center gap-2"><i data-id="176" data-lucide="clipboard-check" class="w-5 h-5"></i> Wound Check-In</h2>
+      <button data-id="177" id="checkin-modal-close" class="p-1.5 hover:bg-primary-50 rounded-lg text-gray-400 hover:text-gray-700"><i data-id="178" data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div data-id="179" class="space-y-4">
+      <div data-id="180">
+        <label data-id="181" class="block text-sm font-medium text-primary-700 mb-1">Date</label>
+        <input data-id="182" id="ci-date" type="text" readonly class="w-full rounded-xl border border-primary-100 bg-gray-50 px-4 py-2.5 text-sm text-gray-600 cursor-not-allowed" />
+      </div>
+      <div data-id="183">
+        <label data-id="184" class="block text-sm font-medium text-primary-700 mb-1">How does the wound look?</label>
+        <select data-id="185" id="ci-look" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option data-id="186" value="">Select...</option>
+          <option data-id="187" value="Healing well">Healing well</option>
+          <option data-id="188" value="Mild redness">Mild redness</option>
+          <option data-id="189" value="Increased swelling">Increased swelling</option>
+          <option data-id="190" value="Drainage present">Drainage present</option>
+          <option data-id="191" value="Wound opening">Wound opening</option>
+          <option data-id="192" value="Other">Other</option>
+        </select>
+      </div>
+      <div data-id="193">
+        <label data-id="194" class="block text-sm font-medium text-primary-700 mb-1">Pain level</label>
+        <select data-id="195" id="ci-pain" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option data-id="196" value="">Select...</option>
+          <option data-id="197" value="0">0 — No pain</option>
+          <option data-id="198" value="1">1</option>
+          <option data-id="199" value="2">2</option>
+          <option data-id="200" value="3">3</option>
+          <option data-id="201" value="4">4</option>
+          <option data-id="202" value="5">5 — Moderate</option>
+          <option data-id="203" value="6">6</option>
+          <option data-id="204" value="7">7</option>
+          <option data-id="205" value="8">8</option>
+          <option data-id="206" value="9">9</option>
+          <option data-id="207" value="10">10 — Worst pain</option>
+        </select>
+      </div>
+      <div data-id="208">
+        <label data-id="209" class="block text-sm font-medium text-primary-700 mb-1">Any fever?</label>
+        <select data-id="210" id="ci-fever" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+          <option data-id="211" value="">Select...</option>
+          <option data-id="212" value="No">No</option>
+          <option data-id="213" value="Yes">Yes</option>
+        </select>
+      </div>
+      <div data-id="214">
+        <label data-id="215" class="block text-sm font-medium text-primary-700 mb-1">Additional notes <span data-id="216" class="text-gray-400 font-normal">(optional)</span></label>
+        <textarea data-id="217" id="ci-notes" rows="3" class="w-full rounded-xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" placeholder="Any other observations..."></textarea>
+      </div>
+      <div data-id="218" class="flex gap-3 pt-2">
+        <button data-id="219" id="ci-submit" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl py-3 text-sm transition-colors">Log Check-In</button>
+        <button data-id="220" id="ci-cancel" class="px-5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl py-3 text-sm transition-colors">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ASK AI MODAL -->
+<div data-id="221" id="askai-modal" class="modal-overlay">
+  <div data-id="222" class="modal-card modal-card-lg flex flex-col" style="height:80vh;max-height:600px;">
+    <div data-id="223" class="flex items-center justify-between p-5 border-b border-primary-100 flex-shrink-0">
+      <h2 data-id="224" class="text-lg font-bold text-primary-700 flex items-center gap-2"><i data-id="225" data-lucide="bot" class="w-5 h-5"></i> Ask AI — Wound Care Assistant</h2>
+      <button data-id="226" id="askai-modal-close" class="p-1.5 hover:bg-primary-50 rounded-lg text-gray-400 hover:text-gray-700"><i data-id="227" data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div data-id="228" id="askai-messages" class="flex-1 overflow-y-auto p-5 space-y-3">
+      <div data-id="229" class="flex gap-2">
+        <div data-id="230" class="chat-ai-bubble">
+          <div data-id="231" class="text-[10px] text-primary-500 font-semibold mb-1">🤖 Wound Care AI</div>
+          <div data-id="232" class="text-sm">Hello! I'm your wound care assistant. Ask me about redness, drainage, pain, fever, stitches, showering, swelling, or any wound concern.</div>
+        </div>
+      </div>
+    </div>
+    <div data-id="233" class="p-4 border-t border-primary-100 flex gap-2 flex-shrink-0">
+      <input data-id="234" id="askai-input" type="text" class="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Type your question..." />
+      <button data-id="235" id="askai-send" class="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 font-medium text-sm flex-shrink-0">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALL SURGEON MODAL -->
+<div data-id="236" id="call-modal" class="modal-overlay">
+  <div data-id="237" class="modal-card p-6">
+    <div data-id="238" class="flex items-center justify-between mb-5">
+      <h2 data-id="239" class="text-lg font-bold text-primary-700 flex items-center gap-2"><i data-id="240" data-lucide="phone" class="w-5 h-5"></i> Contact Your Surgeon</h2>
+      <button data-id="241" id="call-modal-close" class="p-1.5 hover:bg-primary-50 rounded-lg text-gray-400 hover:text-gray-700"><i data-id="242" data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div data-id="243" class="space-y-3">
+      <a data-id="244" href="tel:5552345678" class="flex items-center gap-4 bg-primary-50 hover:bg-primary-100 rounded-xl p-4 transition-colors">
+        <div data-id="245" class="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0"><i data-id="246" data-lucide="phone" class="w-5 h-5 text-white"></i></div>
+        <div data-id="247">
+          <div data-id="248" class="text-xs text-gray-500 font-medium uppercase">Phone — Surgeon Office</div>
+          <div data-id="249" class="text-primary-700 font-bold">(555) 234-5678</div>
+        </div>
+      </a>
+      <a data-id="250" href="tel:5552345679" class="flex items-center gap-4 bg-orange-50 hover:bg-orange-100 rounded-xl p-4 transition-colors">
+        <div data-id="251" class="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0"><i data-id="252" data-lucide="phone-call" class="w-5 h-5 text-white"></i></div>
+        <div data-id="253">
+          <div data-id="254" class="text-xs text-gray-500 font-medium uppercase">After-Hours On-Call</div>
+          <div data-id="255" class="text-orange-700 font-bold">(555) 234-5679</div>
+        </div>
+      </a>
+      <a data-id="256" href="mailto:surgeon@example.com" class="flex items-center gap-4 bg-purple-50 hover:bg-purple-100 rounded-xl p-4 transition-colors">
+        <div data-id="257" class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0"><i data-id="258" data-lucide="mail" class="w-5 h-5 text-white"></i></div>
+        <div data-id="259">
+          <div data-id="260" class="text-xs text-gray-500 font-medium uppercase">Patient Portal Message</div>
+          <div data-id="261" class="text-purple-700 font-bold">Send a message</div>
+        </div>
+      </a>
+      <div data-id="262" class="bg-red-50 border-2 border-red-300 rounded-xl p-4 text-center">
+        <p data-id="263" class="text-red-700 font-bold text-sm">🚨 If this is a medical emergency, call 911 immediately.</p>
+      </div>
+      <div data-id="264" class="bg-gray-50 rounded-xl p-3">
+        <p data-id="265" class="text-xs text-gray-500 text-center"><i data-id="266" data-lucide="clock" class="w-3 h-3 inline-block mr-1" style="vertical-align:-2px"></i>Office hours: Mon–Fri 8am–5pm. For urgent wound concerns outside office hours, use the after-hours line.</p>
+      </div>
+    </div>
+    <button data-id="267" id="call-modal-close-btn" class="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl py-2.5 text-sm transition-colors">Close</button>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+var KEYS = { profile:'sc_profile', checkins:'sc_checkins', clChecks:'sc_cl_checks', visitedTabs:'sc_visited', medList:'sc_meds', quizResult:'sc_quiz', csfDismissed:'sc_csf_dim', chatHistory:'sc_chat_history', simpleCheckins:'sc_simple_checkins' };
+
+var SURGERY_TO_SPECIALTY = {
+  'Cervical Fusion (Anterior or Posterior)':'Spine Surgery','Cervical Laminectomy / Laminoplasty':'Spine Surgery','Lumbar Microdiscectomy':'Spine Surgery','Lumbar Laminectomy / Laminotomy':'Spine Surgery','Lumbar Fusion (TLIF / PLIF / ALIF / LLIF)':'Spine Surgery','Thoracic Spine Surgery':'Spine Surgery','Minimally Invasive Spine (MIS)':'Spine Surgery','Vertebroplasty / Kyphoplasty':'Spine Surgery',
+  'Craniotomy — Supratentorial':'Neurological Surgery','Craniotomy — Infratentorial / Posterior Fossa':'Neurological Surgery','Craniectomy / Cranioplasty':'Neurological Surgery','Deep Brain Stimulation (DBS)':'Neurological Surgery','Ventricular Shunt (VP / LP Shunt)':'Neurological Surgery','Transsphenoidal Pituitary Surgery':'Neurological Surgery','Awake Craniotomy':'Neurological Surgery','Peripheral Nerve Surgery':'Neurological Surgery',
+  'Orthopedic Surgery':'Orthopedic Surgery','Cardiac Surgery':'Cardiac Surgery','General Surgery':'General Surgery'
+};
+
+var SPECIALTIES = {
+  'Spine Surgery': { icon:'🦴', color:'blue', tagline:'Protecting your spine — every step of the way',
+    keyFacts:['No Bending/Lifting/Twisting (BLT)','Stop Nicotine ≥4 weeks','Log-Roll Technique required','Walk Day 1 post-op','Nothing over 5–10 lbs','Recovery 6wk–12mo'],
+    prepTips:['Practice log-roll technique daily before surgery','Set up home at waist height to avoid bending','Get grabber tool, shower bench, raised toilet seat'],
+    anesthesia:'General anesthesia with spinal cord neuromonitoring (SSEP/MEP)',
+    recovery:['Day 1: walk with PT','Week 1–2: home rest with BLT restrictions','Weeks 3–6: PT starts','6–12 months: fusion maturation'],
+    medNote:'If spine fusion: nicotine products (including patches/vaping) MUST be stopped ≥4 weeks prior — nicotine impairs bone fusion.',
+    warnSigns:['Positional headache (worse standing, better lying flat) — possible CSF leak','New numbness/weakness in arms or legs','Loss of bladder or bowel control — ER immediately','Clear watery fluid from wound — call surgeon']
+  },
+  'Neurological Surgery': { icon:'🧠', color:'purple', tagline:'Protecting your most vital organ — with knowledge and precision',
+    keyFacts:['NEVER skip anti-seizure meds','No driving min 6 weeks','Pre-op MRI/CT required','Steroids may be prescribed','Cognitive changes normal','Recovery varies weeks–months'],
+    prepTips:['Complete all pre-op imaging (MRI, CT, angiography)','Arrange seizure safety at home (no solo bathing, no driving)','Prepare soft headwear if craniotomy'],
+    anesthesia:'General anesthesia with advanced neuromonitoring; awake craniotomy possible for eloquent brain tumors',
+    recovery:['Days 1–3: ICU neuro checks','Week 1: reduce screen time','Weeks 4–8: gradual activity increase','2–6 months: full recovery'],
+    medNote:'Anti-seizure medications (Keppra, Dilantin) must NEVER be stopped abruptly. Continue through surgery unless explicitly changed by neurosurgeon.',
+    warnSigns:['Sudden severe headache — worst of life','New seizure or convulsions','Facial weakness, vision change, slurred speech','Clear fluid from ear or nose — CSF leak','New confusion or memory changes']
+  },
+  'Orthopedic Surgery': { icon:'🦵', color:'green', tagline:'Moving toward a stronger, pain-free life',
+    keyFacts:['DVT risk HIGH — blood thinners required','Ice & elevate above heart','Walk same day or Day 1','Arrange walker/crutches','Take blood thinner post-op','Recovery 6wk–12mo'],
+    prepTips:['Arrange and practice with walker/crutches/cane','Install grab bars and raised toilet seat','Remove all trip hazards (rugs, cords) from home'],
+    anesthesia:'Spinal anesthesia (awake but numb) + nerve block common for hip/knee',
+    recovery:['Walk hours after surgery','Day 1–3: discharge criteria met','Weeks 1–3: home PT','Weeks 4–8: driving return','3–12 months: full recovery'],
+    medNote:'DVT prevention is critical. Take prescribed blood thinners (Eliquis, Xarelto, Lovenox) exactly as directed post-op.',
+    warnSigns:['Calf pain with leg swelling (DVT sign)','Chest pain or shortness of breath (PE sign)','Significant wound opening','Hardware feels like protruding through skin']
+  },
+  'Cardiac Surgery': { icon:'❤️', color:'red', tagline:'Your heart is in good hands',
+    keyFacts:['Sternal precautions 6–8 weeks','Cardiac rehab mandatory','Daily weight monitoring','Dental clearance required','Fluid/sodium restrictions','Recovery 6–12 weeks'],
+    prepTips:['See dentist for dental clearance BEFORE surgery','Apply nasal mupirocin if prescribed','Purchase button-front shirts only (no overhead clothing)'],
+    anesthesia:'General anesthesia with cardiopulmonary bypass (heart-lung machine) for open-heart',
+    recovery:['Days 1–3: cardiac ICU','Days 3–5: step-down unit','Weeks 1–4: home sternal precautions','Weeks 4–8: cardiac rehab','2–6 months: full recovery'],
+    medNote:'Dental clearance is REQUIRED before cardiac surgery to prevent endocarditis. Do not skip this step.',
+    warnSigns:['Sternal clicking or popping with movement','Chest pain or pressure','Sudden weight gain >2 lbs/day (fluid retention)','Fever with wound redness']
+  },
+  'General Surgery': { icon:'🏥', color:'amber', tagline:'Routine doesn\'t mean unprepared',
+    keyFacts:['Gas pain normal after laparoscopy','Bowel prep may be required','Clear liquids → soft diet','Walk within hours post-op','Keep incision dry 48hrs','1–2wk lap; 4–6wk open'],
+    prepTips:['Confirm whether bowel prep is required','Purchase stool softeners (Colace)','Prepare easy foods at home (broth, yogurt, crackers)'],
+    anesthesia:'General anesthesia for most; regional/local+sedation for minor procedures',
+    recovery:['Day of surgery: PACU recovery','Days 1–3: liquid diet progression','Week 1–2: light activity','Weeks 2–4: normal return','1–3 months: full recovery'],
+    medNote:'Bowel prep (if required) must be completed exactly as prescribed. Confirm with your surgical team.',
+    warnSigns:['Spreading redness around incision','Pus or foul-smelling drainage','Fever >101°F','Abdominal distension or no bowel movements >3 days']
+  }
+};
+
+var SIDEBAR_TABS = [
+  {id:'overview',icon:'📋',label:'Overview & Timeline'},
+  {id:'surgery-guide',icon:'🔬',label:'My Surgery Guide'},
+  {id:'fasting',icon:'🍽️',label:'Fasting & Diet'},
+  {id:'medications',icon:'💊',label:'Medications'},
+  {id:'hygiene',icon:'🛁',label:'Hygiene & Prep'},
+  {id:'day-of',icon:'🧳',label:'Day of Surgery'},
+  {id:'anesthesia',icon:'😴',label:'Anesthesia Explained'},
+  {id:'recovery',icon:'🩺',label:'Post-Op Recovery'},
+  {id:'warning',icon:'⚠️',label:'Warning Signs'},
+  {id:'checklist',icon:'✅',label:'Pre-Op Checklist'},
+  {id:'readiness',icon:'🎯',label:'Readiness Assessment'}
+];
+
+var CHECKLIST_ITEMS = {
+  '2+ Weeks Before': ['Stop blood thinners if instructed by surgeon','Arrange childcare / pet care for recovery period','Fill post-op prescriptions','Prepare home recovery area (remove trip hazards)','Stop smoking / nicotine products','Notify work / arrange time off'],
+  '1 Week Before': ['Confirm surgery date, time, and arrival with hospital','Stop NSAIDs (ibuprofen, naproxen) and herbal supplements','Purchase CHG (chlorhexidine) antiseptic soap','Prep recovery area with supplies within reach','Arrange responsible adult driver for surgery day'],
+  'Night Before': ['Nothing to eat after midnight (NPO)','CHG antiseptic shower — follow instructions','Lay out loose, comfortable clothes for tomorrow','Charge phone and set alarm for arrival time'],
+  'Morning Of': ['Second CHG antiseptic shower','Take only surgeon-approved meds with small sip of water','Remove all jewelry, piercings, nail polish','Arrive at hospital at instructed time']
+};
+
+// ===== AI KNOWLEDGE BASE (for bottom-tab Ask AI) =====
+var AI_KNOWLEDGE_BASE = [
+  { id:'shower_timing', keywords:['shower','bath','bathe','bathing','washing','wash','water','wet','sponge','clean','when can i shower','swimming','pool','tub','submerge'],
+    response:'🚿 **Showering After Surgery**\n\nFor most spine and neurosurgical procedures:\n\n• **48–72 hours** after surgery — you may gently shower if cleared by your surgeon\n• Use lukewarm water — not hot\n• **Pat dry** gently with a clean towel — do NOT rub the incision\n• Keep water flowing over the wound briefly — don\'t soak it\n• **No baths, hot tubs, or pools** until your incision is fully healed (typically 4–6 weeks)\n• No submerging the wound in any water until cleared\n\n⚠️ Always confirm the exact timing with your surgeon — it may vary based on your specific procedure and closure type.' },
+  { id:'csf_leak', keywords:['csf','spinal fluid','clear fluid','watery','leak','leaking','fluid dripping','fluid from wound','clear drainage','halo test','meningitis','spinal fluid leak','headache when standing','headache lying down','positional headache'],
+    response:'🚨 **CSF (Spinal Fluid) Leak — Important Information**\n\nA CSF leak is a serious complication after spine or brain surgery that requires **immediate medical attention**.\n\n**Signs of a CSF leak:**\n• Clear, watery, colorless fluid dripping from your wound\n• Headache that is **worse when sitting or standing**, and **better when lying flat** (positional headache)\n• Soft, growing bulge under your incision (pseudomeningocele)\n• Clear fluid running from your nose or ear after brain surgery\n\n**What to do:**\n✅ Lie flat immediately\n✅ Call your surgeon IMMEDIATELY — do not wait\n✅ Go to the ER if you cannot reach your surgeon' },
+  { id:'normal_healing', keywords:['normal','healing','expected','bruising','swollen','swelling','itchy','itching','tight','tightness','numb','numbness','scar','scabbing','scab','discoloration','what is normal','steri strips','staples','stitches','sutures peeling'],
+    response:'✅ **Normal Healing Signs After Surgery**\n\nThese are all expected and normal:\n\n**Days 1–3:**\n• Swelling and bruising around the incision\n• Wound feeling tight or stiff\n• Mild to moderate soreness\n\n**Days 4–7:**\n• Itching at the wound ← this is a sign of healing!\n• Swelling may peak then start to go down\n\n**Weeks 2–4:**\n• Pink/red scar forming — this is normal\n• Numbness around the incision (nerve healing — can take months)' },
+  { id:'infection_signs', keywords:['infection','infected','pus','red','redness','hot','warm','swollen','fever','smell','odor','drainage','discharge','yellow','green','oozing','sign of infection','SSI','surgical site infection'],
+    response:'⚠️ **Signs of Wound Infection (SSI)**\n\n**Call your surgeon\'s office today if you notice:**\n• Increasing redness spreading beyond the wound edges\n• Warmth or heat around the wound\n• Cloudy, yellow, or green drainage (pus)\n• Foul-smelling wound\n• Fever above 101°F (38.3°C)\n• Wound pain that is worsening, not improving\n\n**Go to the ER immediately if:**\n• Fever above 103°F\n• Rapidly spreading bright red skin\n• New weakness, numbness, or loss of bladder/bowel control' },
+  { id:'pain_management', keywords:['pain','hurts','hurting','ache','aching','sore','soreness','discomfort','pain medication','painkiller','opioid'],
+    response:'💊 **Pain Management After Surgery**\n\n• Take pain medications **as prescribed** — don\'t wait until pain is severe\n• **Acetaminophen (Tylenol)** is often the foundation\n• **Opioids** — take only as directed; do not drink alcohol; do not drive\n• Ice packs (20 minutes on/off) can reduce swelling and pain\n• Constipation is a common opioid side effect — take stool softeners' },
+  { id:'activity_restrictions', keywords:['activity','exercise','lift','lifting','walk','walking','drive','driving','work','return to work','bending','twisting','stairs','BLT','restrictions','when can i'],
+    response:'🏃 **Activity Restrictions After Surgery**\n\n**Spine Surgery (BLT Restrictions):**\n• ❌ No Bending, Lifting, or Twisting\n• ❌ No lifting more than 5–10 lbs for 4–6 weeks\n• ✅ Walking is encouraged\n• ❌ No driving for at least 2–4 weeks\n\n⚠️ Your specific restrictions depend on your exact procedure.' },
+  { id:'medications_stop', keywords:['medication','medicine','stop medication','blood thinner','aspirin','ibuprofen','naproxen','warfarin','herbal','supplement','what to stop','hold medication'],
+    response:'💊 **Medications to Stop Before Surgery**\n\n🚫 **Usually STOP:**\n• Blood thinners (5–7 days)\n• NSAIDs: Ibuprofen, Naproxen (5–7 days)\n• Herbal supplements (2 weeks)\n\n✅ **Usually CONTINUE:**\n• Blood pressure medications\n• Anti-seizure medications\n• Thyroid medications' },
+  { id:'emergency_signs', keywords:['emergency','911','er','urgent','emergency room','hospital','call','dangerous','serious','when to go'],
+    response:'🚨 **When to Call 911 / Go to the ER**\n\n• Sudden facial drooping, arm weakness, speech difficulty\n• New seizure or loss of consciousness\n• Clear watery fluid from wound, nose, or ear\n• Loss of bladder or bowel control\n• Chest pain or difficulty breathing\n• Uncontrolled bleeding from wound\n• Fever above 103°F with altered mental status' },
+  { id:'wound_care', keywords:['wound care','dressing','change dressing','clean wound','gauze','bandage','tape','steri strip','how to clean','incision care'],
+    response:'🩹 **Home Wound Care Instructions**\n\n1. Wash hands thoroughly first\n2. Gently remove old dressing\n3. Inspect the wound carefully\n4. Pat dry with clean gauze\n5. Apply fresh dressing if wound is still draining\n\n• Keep wound dry for 48 hours after surgery\n• Do NOT put ointments on wound unless directed\n• Let steri-strips fall off on their own' },
+  { id:'diet_nutrition', keywords:['eat','food','diet','nutrition','drink','fluid','water','constipation','nausea','appetite','what to eat','bowel'],
+    response:'🍽️ **Diet & Nutrition for Recovery**\n\n• Start with clear liquids if nauseous\n• Progress to soft foods as tolerated\n• Protein, Vitamin C, and Zinc promote healing\n• Aim for 8+ glasses of water daily\n• Take stool softeners if on opioids\n• Avoid alcohol while on pain medication' },
+  { id:'follow_up', keywords:['follow up','appointment','when do i see doctor','next visit','surgeon appointment','post op visit'],
+    response:'📅 **Post-Operative Follow-Up**\n\n• First post-op visit: 10–14 days — Wound check, staple removal\n• Second visit: 4–6 weeks — Imaging, activity review\n• Third visit: 3–6 months — Assessment\n\nDo NOT skip your follow-up appointments even if you feel fine.' }
+];
+
+function findAIResponse(query) {
+  var q = query.toLowerCase().trim();
+  var bestMatch = null, bestScore = 0;
+  for (var i = 0; i < AI_KNOWLEDGE_BASE.length; i++) {
+    var item = AI_KNOWLEDGE_BASE[i];
+    var score = 0;
+    for (var j = 0; j < item.keywords.length; j++) {
+      if (q.includes(item.keywords[j].toLowerCase())) {
+        score += item.keywords[j].length > 8 ? 3 : item.keywords[j].length > 4 ? 2 : 1;
+      }
+    }
+    if (score > bestScore) { bestScore = score; bestMatch = item; }
+  }
+  if (bestScore >= 1) return bestMatch.response;
+  return 'I don\'t have specific information about that. For personalized medical advice, please contact your surgeon\'s office directly.\n\nYou can also try asking about: wound care, redness, drainage, pain, fever, activity restrictions, or emergency signs.';
+}
+
+function formatAIText(text) {
+  return text.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+}
+
+// ===== MODAL AI RESPONSE (keyword-based per instructions) =====
+function getModalAIResponse(msg) {
+  var q = msg.toLowerCase();
+  if (q.includes('red') || q.includes('redness')) {
+    return 'Some redness around a healing wound is normal in the first few days. However, if redness is spreading, warm to the touch, or accompanied by fever, contact your surgeon promptly.';
+  }
+  if (q.includes('drain') || q.includes('discharge') || q.includes('oozing')) {
+    return 'Clear or light yellow drainage can be normal. Green, brown, or foul-smelling discharge may indicate infection — contact your surgeon\'s office today.';
+  }
+  if (q.includes('pain') || q.includes('hurt') || q.includes('sore')) {
+    return 'Mild to moderate pain is expected after surgery. If pain is worsening after day 3, not controlled by prescribed medication, or is sharp and sudden, call your surgeon.';
+  }
+  if (q.includes('fever') || q.includes('temperature')) {
+    return 'A temperature above 101.5°F (38.6°C) after surgery should be reported to your surgeon. Take your temperature and call the office if it is elevated.';
+  }
+  if (q.includes('stitch') || q.includes('staple') || q.includes('suture') || q.includes('open')) {
+    return 'If your wound edges are separating or stitches have come out early, cover the area with a clean cloth and contact your surgeon immediately.';
+  }
+  if (q.includes('shower') || q.includes('bath') || q.includes('water') || q.includes('wet')) {
+    return 'Generally keep the wound dry for the first 48–72 hours. Your surgeon\'s specific instructions take priority — check your discharge paperwork.';
+  }
+  if (q.includes('swelling') || q.includes('swollen')) {
+    return 'Some swelling is normal post-surgery. Excessive or rapidly increasing swelling, especially with redness and warmth, may indicate infection or hematoma — contact your care team.';
+  }
+  if (q.includes('smell') || q.includes('odor')) {
+    return 'Any foul or unusual odor from the wound site is a warning sign of infection. Contact your surgeon today.';
+  }
+  return 'That\'s a good question. For personalized medical advice, please contact your surgeon\'s office directly. I can help with general wound care questions like redness, drainage, pain levels, fever, or activity restrictions.';
+}
+
+// ===== SSI CLASSIFIER =====
+function classifySSI(answers) {
+  var deepPoints=0, organPoints=0, superficialPoints=0, noInfectionPoints=0;
+  var organIndicators=[], deepIndicators=[], superficialIndicators=[], normalIndicators=[];
+  var drainMap = {4:'csf',3:'purulent',2:'cloudy',1:'serous',5:'blood',0:'none'};
+  var d = drainMap[answers.q2] !== undefined ? drainMap[answers.q2] : null;
+  if (d==='csf') { organPoints+=40; organIndicators.push('Clear watery (CSF-like) drainage'); }
+  else if (d==='purulent') { deepPoints+=20; superficialPoints+=10; deepIndicators.push('Purulent/foul drainage'); }
+  else if (d==='cloudy') { superficialPoints+=15; deepPoints+=8; superficialIndicators.push('Cloudy/turbid drainage'); }
+  else if (d==='serous') { superficialPoints+=3; normalIndicators.push('Small serous drainage'); }
+  else if (d==='blood') { superficialPoints+=5; }
+  else if (d==='none') { noInfectionPoints+=5; normalIndicators.push('No drainage'); }
+  var cMap = {3:'large_open',2:'moderate_sep',1:'minor_sep',0:'intact'};
+  var c = cMap[answers.q1] !== undefined ? cMap[answers.q1] : null;
+  if (c==='large_open') { organPoints+=15; deepPoints+=20; deepIndicators.push('Large wound opening'); }
+  else if (c==='moderate_sep') { deepPoints+=12; superficialPoints+=8; }
+  else if (c==='minor_sep') { superficialPoints+=5; }
+  else if (c==='intact') { noInfectionPoints+=8; normalIndicators.push('Wound closure intact'); }
+  var rMap = {3:'severe',2:'spreading',1:'edge',0:'none'};
+  var r = rMap[answers.q3] !== undefined ? rMap[answers.q3] : null;
+  if (r==='severe') { deepPoints+=15; organPoints+=10; deepIndicators.push('Rapidly spreading severe erythema'); }
+  else if (r==='spreading') { deepPoints+=8; superficialPoints+=10; superficialIndicators.push('Redness spreading beyond wound edges'); }
+  else if (r==='edge') { superficialPoints+=3; }
+  else if (r==='none') { noInfectionPoints+=5; }
+  var sMap = {3:'fluctuant',2:'moderate',1:'mild',0:'none'};
+  var s = sMap[answers.q4] !== undefined ? sMap[answers.q4] : null;
+  if (s==='fluctuant') { organPoints+=20; deepPoints+=15; organIndicators.push('Fluctuant/fluid mass'); }
+  else if (s==='moderate') { deepPoints+=8; superficialPoints+=5; }
+  else if (s==='mild') { superficialPoints+=2; }
+  if (answers.q6===2) { deepPoints+=12; superficialPoints+=8; deepIndicators.push('Foul odor'); }
+  else if (answers.q6===1) { superficialPoints+=3; }
+  if (answers.q5===2) { deepPoints+=6; superficialPoints+=4; }
+  else if (answers.q5===1) { superficialPoints+=2; }
+  if (answers.q7===3) { organPoints+=15; deepPoints+=10; organIndicators.push('Severe sudden pain increase'); }
+  else if (answers.q7===2) { deepPoints+=8; superficialPoints+=5; }
+  else if (answers.q7===1) { superficialPoints+=3; }
+  if (answers.q8===3) { organPoints+=20; deepPoints+=15; organIndicators.push('High fever'); }
+  else if (answers.q8===2) { deepPoints+=12; superficialPoints+=5; deepIndicators.push('Moderate fever'); }
+  else if (answers.q8===1) { superficialPoints+=6; superficialIndicators.push('Low-grade fever'); }
+  else if (answers.q8===0) { noInfectionPoints+=8; }
+  var flagEls = document.querySelectorAll('.flag-cb:checked');
+  flagEls.forEach(function(el) {
+    if (el.dataset.none) return;
+    var label = el.parentElement.querySelector('span').textContent;
+    var sc = parseInt(el.dataset.score||0);
+    if (el.dataset.force) { organPoints+=40; organIndicators.push(label); }
+    else if (sc >= 15) { deepPoints+=12; deepIndicators.push(label); }
+    else if (sc >= 10) { superficialPoints+=8; superficialIndicators.push(label); }
+  });
+  var classification, confidence, urgency, color, icon, description, cdc_criteria, recommendations;
+  if (organPoints>=30 || (organPoints>=20 && (deepPoints>=15 || answers.q8===3))) {
+    classification='Organ/Space SSI'; icon='🔴'; color='#dc2626'; confidence=Math.min(95,60+organPoints); urgency='EMERGENCY — Go to ER immediately';
+    cdc_criteria='CDC NHSN Organ/Space SSI'; description='Pattern consistent with potential Organ/Space SSI.';
+    recommendations=['🚨 Go to the Emergency Room or call 911 immediately','📞 Call your surgeon\'s office to notify them'];
+  } else if (deepPoints>=20 || (deepPoints>=12 && answers.q8!==0 && answers.q8!==4)) {
+    classification='Deep Incisional SSI'; icon='🟠'; color='#ea580c'; confidence=Math.min(90,50+deepPoints); urgency='Call Surgeon TODAY';
+    cdc_criteria='CDC NHSN Deep Incisional SSI'; description='Findings suggest possible Deep Incisional SSI.';
+    recommendations=['📞 Call your surgeon\'s office IMMEDIATELY','Go to the ER if you cannot reach your surgeon'];
+  } else if (superficialPoints>=10 || (superficialPoints>=6 && (answers.q2===2 || answers.q3===2))) {
+    classification='Superficial Incisional SSI'; icon='🟡'; color='#ca8a04'; confidence=Math.min(85,45+superficialPoints); urgency='Call Surgeon Today or Tomorrow';
+    cdc_criteria='CDC NHSN Superficial Incisional SSI'; description='Findings consistent with possible Superficial Incisional SSI.';
+    recommendations=['📞 Call your surgeon\'s office today','Keep the wound clean and dry'];
+  } else {
+    classification='No SSI Detected'; icon='🟢'; color='#16a34a'; confidence=Math.min(90,50+noInfectionPoints); urgency='Continue home wound care';
+    cdc_criteria='No SSI criteria met'; description='Wound appears to be following normal healing.';
+    recommendations=['✅ Continue your prescribed wound care routine','📸 Log another wound check-in tomorrow'];
+  }
+  return { classification:classification, icon:icon, color:color, confidence:confidence, urgency:urgency, cdc_criteria:cdc_criteria, description:description, recommendations:recommendations, organIndicators:organIndicators, deepIndicators:deepIndicators, superficialIndicators:superficialIndicators, normalIndicators:normalIndicators };
+}
+
+function renderSSIResultCard(ssi, compact) {
+  var concerning = ssi.organIndicators.concat(ssi.deepIndicators, ssi.superficialIndicators);
+  var h = '<div class="rounded-2xl p-5 mb-4" style="background:' + ssi.color + '11; border:2px solid ' + ssi.color + '">';
+  h += '<div class="text-center mb-3"><span class="text-3xl">' + ssi.icon + '</span><h3 class="text-xl font-bold mt-1" style="color:'+ssi.color+'">' + ssi.classification + '</h3>';
+  h += '<p class="text-sm font-semibold mt-1" style="color:'+ssi.color+'">' + ssi.urgency + '</p></div>';
+  h += '<div class="mb-3"><div class="text-xs text-gray-500 mb-1">Clinical Confidence: '+ssi.confidence+'%</div><div class="w-full bg-gray-200 rounded-full h-2.5"><div class="h-2.5 rounded-full" style="width:'+ssi.confidence+'%;background:'+ssi.color+'"></div></div></div>';
+  if (!compact) {
+    h += '<div class="bg-white rounded-xl p-3 mb-3 text-sm"><strong class="text-primary-700">What this means:</strong><p class="text-gray-600 mt-1">' + ssi.description + '</p></div>';
+    h += '<div class="bg-white rounded-xl p-3 mb-3"><h4 class="text-xs font-bold text-primary-700 mb-2">Recommended Actions:</h4><div class="space-y-1.5">';
+    ssi.recommendations.forEach(function(r,i) { h += '<div class="text-xs bg-primary-50 rounded-lg p-2">' + (i+1) + '. ' + r + '</div>'; });
+    h += '</div></div>';
+    h += '<div class="bg-gray-50 rounded-xl p-3 text-[10px] text-gray-500 italic">⚕️ This AI-assisted analysis is based on CDC criteria. It does NOT replace evaluation by your surgeon.</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// ===== STATE =====
+var profile = null;
+var activePreopTab = 'overview';
+var activeWoundTab = 'dashboard';
+var checkinWizardStep = 1;
+var checkinAnswers = {};
+var checkinPhoto = null;
+var lastSSIResult = null;
+var quizStep = 1;
+var quizAnswers = {};
+var ssiAnalyzing = false;
+
+// ===== HELPERS =====
+function getProfile() { try { return JSON.parse(localStorage.getItem(KEYS.profile)); } catch(e) { return null; } }
+function getCheckins() { try { return JSON.parse(localStorage.getItem(KEYS.checkins)) || []; } catch(e) { return []; } }
+function getSimpleCheckins() { try { return JSON.parse(localStorage.getItem(KEYS.simpleCheckins)) || []; } catch(e) { return []; } }
+function getClChecks() { try { return JSON.parse(localStorage.getItem(KEYS.clChecks)) || {}; } catch(e) { return {}; } }
+function getVisited() { try { return JSON.parse(localStorage.getItem(KEYS.visitedTabs)) || []; } catch(e) { return []; } }
+function getMeds() { try { return JSON.parse(localStorage.getItem(KEYS.medList)) || []; } catch(e) { return []; } }
+function getQuiz() { try { return JSON.parse(localStorage.getItem(KEYS.quizResult)); } catch(e) { return null; } }
+function getChatHistory() { try { return JSON.parse(localStorage.getItem(KEYS.chatHistory)) || []; } catch(e) { return []; } }
+function getSpecialty() { return profile ? (SURGERY_TO_SPECIALTY[profile.surgery] || 'General Surgery') : 'General Surgery'; }
+function getSpecData() { return SPECIALTIES[getSpecialty()] || SPECIALTIES['General Surgery']; }
+function daysDiff(d1, d2) { return Math.round((new Date(d1) - new Date(d2)) / 86400000); }
+function fmtDate(d) { return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function fmtTime(ts) { var d = new Date(ts); var h = d.getHours(), m = d.getMinutes(); return (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
+function markVisited(tabId) { var v = getVisited(); if (!v.includes(tabId)) { v.push(tabId); localStorage.setItem(KEYS.visitedTabs, JSON.stringify(v)); } }
+
+function todayFormatted() {
+  var d = new Date();
+  return d.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  var toast = document.getElementById('success-toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(function() { toast.classList.remove('show'); }, 3500);
+}
+
+// ===== SCORING =====
+function computeReadiness() {
+  var quiz = getQuiz();
+  var checks = getClChecks();
+  var totalItems = Object.values(CHECKLIST_ITEMS).flat().length;
+  var checkedCount = Object.values(checks).filter(Boolean).length;
+  var clPct = totalItems > 0 ? (checkedCount / totalItems) * 100 : 0;
+  var quizPct = quiz ? (quiz.score / 150) * 100 : 0;
+  return Math.round(quizPct * 0.6 + clPct * 0.4);
+}
+function getEscalationTier(score) {
+  if (score >= 41 || score === 100) return { tier:'red', label:'🚨 Seek Immediate Care', color:'#dc2626', bg:'#fff1f2' };
+  if (score >= 21) return { tier:'orange', label:'🔶 Call Surgeon Today', color:'#ea580c', bg:'#fff7ed' };
+  if (score >= 11) return { tier:'yellow', label:'⚠️ Monitor Closely', color:'#ca8a04', bg:'#fefce8' };
+  return { tier:'green', label:'✅ Healing Well', color:'#16a34a', bg:'#f0fdf4' };
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', function() {
+  profile = getProfile();
+  if (profile) { showMainApp(); } else { document.getElementById('setup-screen').classList.add('active'); }
+  initEvents();
+  initModalEvents();
+  lucide.createIcons();
+});
+
+function initEvents() {
+  document.getElementById('setup-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    profile = { name: document.getElementById('s-name').value.trim(), dob: document.getElementById('s-dob').value, surgery: document.getElementById('s-surgery').value, surgeryDate: document.getElementById('s-date').value, surgeon: document.getElementById('s-surgeon').value.trim(), hospital: document.getElementById('s-hospital').value.trim(), surgPhone: document.getElementById('s-surgphone').value.trim(), emName: document.getElementById('s-emname').value.trim(), emPhone: document.getElementById('s-emphone').value.trim() };
+    localStorage.setItem(KEYS.profile, JSON.stringify(profile));
+    showMainApp();
+  });
+  document.getElementById('mode-preop').addEventListener('click', function() { setMode('preop'); });
+  document.getElementById('mode-wound').addEventListener('click', function() { setMode('wound'); });
+  document.getElementById('hdr-settings').addEventListener('click', openSettings);
+  document.getElementById('settings-close').addEventListener('click', function() { document.getElementById('settings-modal').classList.remove('open'); });
+  document.getElementById('settings-save').addEventListener('click', saveSettings);
+  document.getElementById('settings-reset').addEventListener('click', function() { if (confirm('Reset all data? This cannot be undone.')) { localStorage.clear(); location.reload(); } });
+  document.getElementById('hdr-print').addEventListener('click', openPrintPreview);
+  document.getElementById('print-close').addEventListener('click', function() { document.getElementById('print-modal').classList.remove('open'); });
+  document.getElementById('print-now').addEventListener('click', function() { window.print(); });
+  document.getElementById('wound-emergency-btn').addEventListener('click', function() { showEmergencyModal(); });
+  document.getElementById('emergency-close').addEventListener('click', function() { document.getElementById('emergency-modal').classList.remove('open'); });
+  document.getElementById('ssi-detail-close').addEventListener('click', function() { document.getElementById('ssi-detail-modal').classList.remove('open'); });
+  document.getElementById('mobile-sidebar-btn').addEventListener('click', function() { document.getElementById('preop-sidebar').classList.add('mobile-open'); });
+  document.getElementById('mobile-sidebar-close').addEventListener('click', function() { document.getElementById('preop-sidebar').classList.remove('mobile-open'); });
+  document.getElementById('ai-fab').addEventListener('click', function() { document.getElementById('askai-modal').classList.add('open'); });
+  document.querySelectorAll('.wound-tab-btn').forEach(function(btn) { btn.addEventListener('click', function() { switchWoundTab(btn.dataset.wtab); }); });
+}
+
+// ===== NEW MODAL EVENTS =====
+function initModalEvents() {
+  // Check-In Modal
+  var checkinModal = document.getElementById('checkin-modal');
+  var checkinCloseBtn = document.getElementById('checkin-modal-close');
+  var checkinCancelBtn = document.getElementById('ci-cancel');
+  var checkinSubmitBtn = document.getElementById('ci-submit');
+
+  checkinCloseBtn.addEventListener('click', function() { checkinModal.classList.remove('open'); });
+  checkinCancelBtn.addEventListener('click', function() { checkinModal.classList.remove('open'); });
+  checkinModal.addEventListener('click', function(e) { if (e.target === checkinModal) checkinModal.classList.remove('open'); });
+
+  checkinSubmitBtn.addEventListener('click', function() {
+    var look = document.getElementById('ci-look').value;
+    var pain = document.getElementById('ci-pain').value;
+    var fever = document.getElementById('ci-fever').value;
+    var notes = document.getElementById('ci-notes').value.trim();
+    if (!look || pain === '' || !fever) { alert('Please fill in all required fields.'); return; }
+    var entry = { date: today(), dateFormatted: fmtDate(new Date()), look: look, pain: pain, fever: fever, notes: notes, timestamp: Date.now() };
+    var arr = getSimpleCheckins(); arr.push(entry); localStorage.setItem(KEYS.simpleCheckins, JSON.stringify(arr));
+    // Reset form
+    document.getElementById('ci-look').value = '';
+    document.getElementById('ci-pain').value = '';
+    document.getElementById('ci-fever').value = '';
+    document.getElementById('ci-notes').value = '';
+    checkinModal.classList.remove('open');
+    showToast('✓ Check-in logged for ' + fmtDate(new Date()));
+    // If we're on the wound dashboard, re-render it
+    if (activeWoundTab === 'dashboard') renderWoundTab();
+  });
+
+  // Ask AI Modal
+  var askaiModal = document.getElementById('askai-modal');
+  var askaiCloseBtn = document.getElementById('askai-modal-close');
+  var askaiSendBtn = document.getElementById('askai-send');
+  var askaiInput = document.getElementById('askai-input');
+
+  askaiCloseBtn.addEventListener('click', function() { askaiModal.classList.remove('open'); });
+  askaiModal.addEventListener('click', function(e) { if (e.target === askaiModal) askaiModal.classList.remove('open'); });
+
+  function sendModalAI() {
+    var msg = askaiInput.value.trim();
+    if (!msg) return;
+    askaiInput.value = '';
+    var messagesDiv = document.getElementById('askai-messages');
+    // User bubble
+    var userDiv = document.createElement('div');
+    userDiv.className = 'flex justify-end';
+    userDiv.innerHTML = '<div class="chat-user-bubble"><div class="text-sm">' + msg.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>';
+    messagesDiv.appendChild(userDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // AI typing indicator
+    var typingDiv = document.createElement('div');
+    typingDiv.className = 'flex gap-2';
+    typingDiv.id = 'modal-typing';
+    typingDiv.innerHTML = '<div class="chat-ai-bubble"><div class="text-[10px] text-primary-500 font-semibold mb-1">🤖 Wound Care AI</div><div class="flex items-center gap-1"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>';
+    messagesDiv.appendChild(typingDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    setTimeout(function() {
+      var response = getModalAIResponse(msg);
+      var typing = document.getElementById('modal-typing');
+      if (typing) typing.remove();
+      var aiDiv = document.createElement('div');
+      aiDiv.className = 'flex gap-2';
+      aiDiv.innerHTML = '<div class="chat-ai-bubble"><div class="text-[10px] text-primary-500 font-semibold mb-1">🤖 Wound Care AI</div><div class="text-sm">' + response.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>';
+      messagesDiv.appendChild(aiDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }, 1000);
+  }
+
+  askaiSendBtn.addEventListener('click', sendModalAI);
+  askaiInput.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendModalAI(); } });
+
+  // Call Surgeon Modal
+  var callModal = document.getElementById('call-modal');
+  var callCloseBtn = document.getElementById('call-modal-close');
+  var callCloseBtnBottom = document.getElementById('call-modal-close-btn');
+
+  callCloseBtn.addEventListener('click', function() { callModal.classList.remove('open'); });
+  callCloseBtnBottom.addEventListener('click', function() { callModal.classList.remove('open'); });
+  callModal.addEventListener('click', function(e) { if (e.target === callModal) callModal.classList.remove('open'); });
+}
+
+function setMode(mode) {
+  var preBtn = document.getElementById('mode-preop');
+  var wndBtn = document.getElementById('mode-wound');
+  var fab = document.getElementById('ai-fab');
+  if (mode === 'wound') {
+    document.body.classList.add('wound-active');
+    preBtn.classList.remove('bg-white','text-primary-700'); preBtn.classList.add('text-primary-200');
+    wndBtn.classList.add('bg-white','text-primary-700'); wndBtn.classList.remove('text-primary-200');
+    document.getElementById('readiness-badge').classList.add('hidden');
+    fab.style.display = 'none';
+    renderWoundTab();
+  } else {
+    document.body.classList.remove('wound-active');
+    wndBtn.classList.remove('bg-white','text-primary-700'); wndBtn.classList.add('text-primary-200');
+    preBtn.classList.add('bg-white','text-primary-700'); preBtn.classList.remove('text-primary-200');
+    fab.style.display = 'flex';
+    updateReadinessBadge();
+  }
+}
+
+function showMainApp() {
+  document.getElementById('setup-screen').classList.remove('active');
+  document.getElementById('main-app').classList.add('active');
+  document.getElementById('hdr-patient').textContent = profile.name;
+  document.getElementById('hdr-patient').classList.remove('hidden');
+  updateDaysBadge(); buildSidebar(); switchPreopTab('overview'); buildWoundContent();
+  var dUntil = daysDiff(profile.surgeryDate, today());
+  if (dUntil <= 0) { setMode('wound'); } else { setMode('preop'); }
+  updateReadinessBadge(); updateWoundSubHeader(); lucide.createIcons();
+}
+
+function updateDaysBadge() {
+  var d = daysDiff(profile.surgeryDate, today());
+  var el = document.getElementById('hdr-days');
+  if (d > 0) el.textContent = d + ' day' + (d!==1?'s':'') + ' until surgery';
+  else if (d === 0) el.textContent = '🔴 Surgery Today';
+  else el.textContent = Math.abs(d) + ' day' + (Math.abs(d)!==1?'s':'') + ' post-op';
+}
+
+function updateWoundSubHeader() {
+  var d = daysDiff(today(), profile.surgeryDate);
+  document.getElementById('wound-days-badge').textContent = (d >= 0 ? d : 0) + ' days post-op';
+  var checkins = getCheckins();
+  var badge = document.getElementById('wound-nwat-badge');
+  if (checkins.length > 0) {
+    var last = checkins[checkins.length - 1];
+    var tier = getEscalationTier(last.score);
+    badge.textContent = 'NWAT: ' + last.score;
+    badge.style.background = tier.bg; badge.style.color = tier.color; badge.classList.remove('hidden');
+  }
+}
+
+// ===== SIDEBAR =====
+function buildSidebar() {
+  var container = document.getElementById('sidebar-links');
+  var visited = getVisited();
+  container.innerHTML = SIDEBAR_TABS.map(function(tab) {
+    var isVisited = visited.includes(tab.id);
+    return '<div class="sidebar-link flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-primary-800' + (tab.id === activePreopTab ? ' active' : '') + '" data-tab="' + tab.id + '"><span>' + tab.icon + '</span><span class="flex-1">' + tab.label + '</span>' + (isVisited ? '<span class="text-green-600 text-xs">✓</span>' : '') + '</div>';
+  }).join('');
+  container.querySelectorAll('.sidebar-link').forEach(function(link) {
+    link.addEventListener('click', function() { switchPreopTab(link.dataset.tab); document.getElementById('preop-sidebar').classList.remove('mobile-open'); });
+  });
+}
+
+function switchPreopTab(tabId) { activePreopTab = tabId; markVisited(tabId); buildSidebar(); renderPreopSection(tabId); updateReadinessBadge(); }
+
+// ===== PRE-OP SECTIONS =====
+function renderPreopSection(tabId) {
+  var content = document.getElementById('preop-content');
+  var sd = getSpecData(); var spec = getSpecialty(); var dUntil = daysDiff(profile.surgeryDate, today());
+  var html = '';
+  switch(tabId) {
+    case 'overview': html = renderOverview(sd, dUntil); break;
+    case 'surgery-guide': html = renderSurgeryGuide(spec, sd); break;
+    case 'fasting': html = renderFasting(sd); break;
+    case 'medications': html = renderMedications(sd); break;
+    case 'hygiene': html = renderHygiene(sd); break;
+    case 'day-of': html = renderDayOf(); break;
+    case 'anesthesia': html = renderAnesthesia(sd); break;
+    case 'recovery': html = renderRecovery(sd); break;
+    case 'warning': html = renderWarning(sd); break;
+    case 'checklist': html = renderChecklist(); break;
+    case 'readiness': html = renderReadiness(); break;
+  }
+  content.innerHTML = '<div class="preop-section active">' + html + '</div>';
+  initAccordions();
+  if (tabId === 'checklist') initChecklistEvents();
+  if (tabId === 'medications') initMedTracker();
+  if (tabId === 'readiness') initQuiz();
+  lucide.createIcons();
+}
+
+function renderOverview(sd, dUntil) {
+  var phases = ['Today','2 Weeks Before','1 Week Before','3 Days Before','Night Before','Surgery Day','Recovery'];
+  var phaseIdx = 6;
+  if (dUntil > 14) phaseIdx = 0; else if (dUntil > 7) phaseIdx = 1; else if (dUntil > 3) phaseIdx = 2; else if (dUntil > 1) phaseIdx = 3; else if (dUntil === 1) phaseIdx = 4; else if (dUntil === 0) phaseIdx = 5;
+  var timeline = phases.map(function(p, i) { var cls = 'future'; if (i < phaseIdx) cls = 'past'; if (i === phaseIdx) cls = 'current'; return '<span class="timeline-pill ' + cls + '">' + p + '</span>'; }).join('<span class="text-primary-300 mx-1">→</span>');
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">📋 Overview & Timeline</h2><div class="bg-white rounded-2xl card-shadow p-5 mb-6"><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div><div class="text-xs text-gray-500 uppercase font-medium">Surgery</div><div class="font-semibold text-primary-700 text-sm mt-1">'+profile.surgery+'</div></div><div><div class="text-xs text-gray-500 uppercase font-medium">Date</div><div class="font-semibold text-primary-700 text-sm mt-1">'+fmtDate(profile.surgeryDate)+'</div></div><div><div class="text-xs text-gray-500 uppercase font-medium">Surgeon</div><div class="font-semibold text-primary-700 text-sm mt-1">'+(profile.surgeon||'—')+'</div></div><div><div class="text-xs text-gray-500 uppercase font-medium">Days Until</div><div class="font-bold text-3xl text-primary-500 mt-1">'+(dUntil>0?dUntil:(dUntil===0?'TODAY':Math.abs(dUntil)+' post'))+'</div></div></div></div><div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-3">Your Timeline</h3><div class="flex flex-wrap items-center gap-1">'+timeline+'</div></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div class="bg-blue-50 rounded-2xl p-5 border-l-4 border-blue-400"><h4 class="font-semibold text-blue-800 mb-2">Before Surgery</h4><p class="text-sm text-blue-700">Complete education, checklists, and fasting preparation.</p></div><div class="bg-primary-50 rounded-2xl p-5 border-l-4 border-primary-400"><h4 class="font-semibold text-primary-800 mb-2">During Surgery</h4><p class="text-sm text-primary-700">Your surgical team handles everything. Trust the process.</p></div><div class="bg-purple-100 rounded-2xl p-5 border-l-4 border-purple-400"><h4 class="font-semibold text-purple-800 mb-2">After Surgery</h4><p class="text-sm text-purple-700">Track your wound healing with the Wound Monitor.</p></div></div>';
+}
+
+function renderSurgeryGuide(spec, sd) {
+  var bgMap = {'Spine Surgery':'bg-primary-50 border-primary-400','Neurological Surgery':'bg-purple-100 border-purple-400','Orthopedic Surgery':'bg-green-100 border-green-400','Cardiac Surgery':'bg-red-100 border-red-400','General Surgery':'bg-yellow-100 border-yellow-400'};
+  var textMap = {'Spine Surgery':'text-primary-700','Neurological Surgery':'text-purple-700','Orthopedic Surgery':'text-green-700','Cardiac Surgery':'text-red-700','General Surgery':'text-yellow-700'};
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">🔬 My Surgery Guide</h2><div class="'+(bgMap[spec]||bgMap['General Surgery'])+' border-l-4 rounded-2xl p-5 mb-6"><div class="flex items-center gap-3 mb-2"><span class="text-3xl">'+sd.icon+'</span><div><h3 class="font-bold text-lg '+(textMap[spec]||'text-primary-700')+'">'+spec+'</h3><p class="text-sm opacity-80">'+sd.tagline+'</p></div></div></div><div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-4">Key Facts</h3><div class="grid grid-cols-1 md:grid-cols-3 gap-3">'+sd.keyFacts.map(function(f){return '<div class="bg-primary-50 rounded-xl p-3 text-sm text-primary-800 font-medium">'+f+'</div>';}).join('')+'</div></div><div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-3">Preparation Tips</h3><ul class="space-y-2">'+sd.prepTips.map(function(t){return '<li class="flex items-start gap-2 text-sm"><span class="text-primary-500 mt-0.5"><i data-lucide="check-circle-2" class="w-4 h-4"></i></span>'+t+'</li>';}).join('')+'</ul></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-3">Anesthesia Type</h3><p class="text-sm text-gray-700">'+sd.anesthesia+'</p></div><div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-3">Recovery Milestones</h3><ul class="space-y-1.5">'+sd.recovery.map(function(r){return '<li class="text-sm text-gray-700 flex items-start gap-2"><span class="text-primary-400">→</span>'+r+'</li>';}).join('')+'</ul></div></div>';
+}
+
+function renderFasting(sd) {
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">🍽️ Fasting & Diet</h2><div class="bg-red-100 border border-red-300 rounded-2xl p-4 mb-6 flex items-start gap-3"><span class="text-2xl">🚫</span><div><h3 class="font-bold text-red-700">Nothing by Mouth (NPO)</h3><p class="text-sm text-red-700">Failure to follow fasting instructions may cancel your surgery.</p></div></div><div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-4">NPO Timeline</h3><div class="flex flex-col md:flex-row items-stretch gap-3"><div class="flex-1 bg-red-50 rounded-xl p-4 text-center border-l-4 border-red-400"><div class="text-2xl mb-1">🍖</div><div class="font-bold text-red-700">8 Hours Before</div><div class="text-sm text-red-600">Stop ALL solid foods</div></div><div class="flex items-center text-primary-300 text-2xl hidden md:flex">→</div><div class="flex-1 bg-yellow-100 rounded-xl p-4 text-center border-l-4 border-yellow-400"><div class="text-2xl mb-1">💧</div><div class="font-bold text-yellow-700">2 Hours Before</div><div class="text-sm text-yellow-600">Stop clear liquids</div></div><div class="flex items-center text-primary-300 text-2xl hidden md:flex">→</div><div class="flex-1 bg-primary-50 rounded-xl p-4 text-center border-l-4 border-primary-400"><div class="text-2xl mb-1">⏰</div><div class="font-bold text-primary-700">Surgery Time</div><div class="text-sm text-primary-600">Absolutely nothing</div></div></div></div><div class="bg-white rounded-2xl card-shadow p-5 mb-6">'+makeAccordion('Clear Liquids — Allowed','Water, apple juice (no pulp), black coffee, tea (no milk/cream), Gatorade, clear broth, Jell-O (not red/purple)')+makeAccordion('Clear Liquids — NOT Allowed','Milk, cream, orange juice, smoothies, protein shakes, alcohol, anything you cannot see through')+makeAccordion('Diabetes Special Instructions','Check with your surgeon about diabetes medications. Typically: reduce or hold long-acting insulin the night before. Hold oral diabetes meds morning of surgery.')+'</div>';
+}
+
+function renderMedications(sd) {
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">💊 Medications</h2><div class="bg-orange-100 border border-orange-300 rounded-2xl p-4 mb-6 flex items-start gap-3"><span class="text-xl">⚠️</span><div><p class="text-sm text-orange-800 font-medium">Always confirm with your surgeon or anesthesiologist which medications to continue or stop.</p></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div class="bg-green-100 rounded-2xl p-5"><h3 class="font-bold text-green-700 mb-3 flex items-center gap-2">✅ Usually Continue</h3><ul class="space-y-1.5 text-sm text-green-800">'+['Blood pressure medications','Thyroid medications','Seizure medications','Inhalers for asthma/COPD','Eye drops (glaucoma)','Cardiac medications (unless told otherwise)'].map(function(m){return '<li>• '+m+'</li>';}).join('')+'</ul></div><div class="bg-red-100 rounded-2xl p-5"><h3 class="font-bold text-red-700 mb-3 flex items-center gap-2">🚫 Usually Stop</h3><ul class="space-y-1.5 text-sm text-red-800">'+['Blood thinners (Coumadin, Eliquis, Xarelto) — 5–7 days','NSAIDs (ibuprofen, naproxen) — 5–7 days','Diabetes medications — day of surgery','Herbal supplements — 2 weeks','Aspirin — as directed by surgeon','Metformin — typically hold 48hrs'].map(function(m){return '<li>• '+m+'</li>';}).join('')+'</ul></div></div><div class="bg-primary-50 rounded-2xl p-4 mb-6 border-l-4 border-primary-400"><h4 class="font-semibold text-primary-700 mb-1">Specialty Note</h4><p class="text-sm text-primary-800">'+sd.medNote+'</p></div><div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-4">My Medication Tracker</h3><div id="med-tracker"><div class="flex gap-2 mb-4"><input id="med-name" type="text" placeholder="Medication name" class="flex-1 rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 text-sm" /><input id="med-dose" type="text" placeholder="Dosage" class="w-24 rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 text-sm" /><select id="med-status" class="rounded-lg border border-primary-100 bg-primary-50 px-2 py-2 text-sm"><option value="continue">Continue</option><option value="stop">Stop</option><option value="confirm">Confirm</option></select><button id="med-add" class="bg-primary-500 hover:bg-primary-600 text-white px-3 py-2 rounded-lg text-sm font-medium">Add</button></div><div id="med-list"></div></div></div>';
+}
+
+function renderHygiene(sd) {
+  var specSteps = {'Spine Surgery':'Shave surgical site only if instructed. Do NOT shave your own back.','Neurological Surgery':'Shampoo with CHG if instructed. No hair products day of surgery.','Cardiac Surgery':'Apply nasal mupirocin if prescribed. Full body CHG bath including chest area.'};
+  var extra = specSteps[getSpecialty()] || 'Follow your surgeon\'s specific prep instructions.';
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">🛁 Hygiene & Prep</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div class="bg-white rounded-2xl card-shadow p-5 border-t-4 border-primary-400"><h3 class="font-semibold text-primary-700 mb-3">Night Before — CHG Shower #1</h3><ul class="space-y-1.5 text-sm text-gray-700"><li>1. Shower with CHG antiseptic soap</li><li>2. Wash from neck down (avoid face, eyes, ears)</li><li>3. Let CHG sit on skin 2+ minutes</li><li>4. Rinse thoroughly</li><li>5. Pat dry with clean towel</li><li>6. Put on clean clothes, sleep in clean sheets</li></ul></div><div class="bg-white rounded-2xl card-shadow p-5 border-t-4 border-primary-500"><h3 class="font-semibold text-primary-700 mb-3">Morning Of — CHG Shower #2</h3><ul class="space-y-1.5 text-sm text-gray-700"><li>1. Repeat CHG antiseptic shower</li><li>2. Same technique as night before</li><li>3. Do NOT apply lotion, deodorant, or powder</li><li>4. Do NOT apply makeup or perfume</li><li>5. Dress in loose, clean clothing</li></ul></div></div><div class="bg-primary-50 rounded-2xl p-4 border-l-4 border-primary-400"><h4 class="font-semibold text-primary-700 mb-1">Specialty-Specific Prep</h4><p class="text-sm text-primary-800">'+extra+'</p></div>';
+}
+
+function renderDayOf() {
+  var bringItems = ['Photo ID & insurance card','List of current medications','Advance directive / living will (if applicable)','Loose, comfortable clothing','Slip-on shoes (no laces)','Phone charger','Small amount of cash','CPAP machine (if you use one)','Glasses (leave contacts at home)'];
+  var checks = getClChecks();
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">🧳 Day of Surgery</h2><div class="bg-orange-100 border border-orange-300 rounded-2xl p-4 mb-6 flex items-start gap-3"><span class="text-2xl">🚗</span><div><h3 class="font-bold text-orange-800">You CANNOT Drive Yourself Home</h3><p class="text-sm text-orange-700">You must arrange a responsible adult to drive you home AND stay with you for the first 24 hours.</p></div></div><div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-4">What to BRING ✅</h3><div class="space-y-2">'+bringItems.map(function(item,i){var key='bring_'+i;return '<label class="checklist-item flex items-center gap-3 p-2 rounded-lg hover:bg-primary-50 cursor-pointer"><input type="checkbox" data-cl="'+key+'" '+(checks[key]?'checked':'')+' /><span class="text-sm">'+item+'</span></label>';}).join('')+'</div></div><div class="bg-primary-50 rounded-2xl p-4"><h4 class="font-semibold text-primary-700 mb-1">⏰ Arrive 1–2 Hours Early</h4><p class="text-sm text-primary-800">Arrive at the time instructed by your hospital.</p></div>';
+}
+
+function renderAnesthesia(sd) {
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">😴 Anesthesia Explained</h2><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div class="bg-white rounded-2xl card-shadow p-5"><div class="text-2xl mb-2">😴</div><h3 class="font-bold text-primary-700 mb-2">General Anesthesia</h3><p class="text-sm text-gray-600">Completely asleep. Breathing tube placed. Most common for major surgery.</p></div><div class="bg-white rounded-2xl card-shadow p-5"><div class="text-2xl mb-2">💉</div><h3 class="font-bold text-primary-700 mb-2">Regional Anesthesia</h3><p class="text-sm text-gray-600">Spinal or epidural block. Numb from waist down. Awake but sedated.</p></div><div class="bg-white rounded-2xl card-shadow p-5"><div class="text-2xl mb-2">🌙</div><h3 class="font-bold text-primary-700 mb-2">Local + Sedation (MAC)</h3><p class="text-sm text-gray-600">Area is numbed locally. IV sedation keeps you relaxed.</p></div></div><div class="bg-white rounded-2xl card-shadow p-5 mb-6">'+makeAccordion('Will I feel pain during surgery?','No. Anesthesia ensures you feel nothing during the procedure.')+makeAccordion('What if I wake up during surgery?','Extremely rare (<0.1%). Modern monitoring makes this nearly impossible.')+makeAccordion('What are the risks?','Modern anesthesia is very safe. Risks include nausea, sore throat, temporary confusion. Serious complications are rare.')+'</div><div class="bg-primary-50 rounded-2xl p-4 border-l-4 border-primary-400"><h4 class="font-semibold text-primary-700 mb-1">Your Anesthesia Type</h4><p class="text-sm text-primary-800">'+sd.anesthesia+'</p></div>';
+}
+
+function renderRecovery(sd) {
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">🩺 Post-Op Recovery</h2><div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-4">Recovery Timeline</h3><div class="space-y-3">'+sd.recovery.map(function(r){return '<div class="flex items-start gap-3 text-sm"><span class="bg-primary-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs flex-shrink-0">→</span><span>'+r+'</span></div>';}).join('')+'</div></div><div class="bg-white rounded-2xl card-shadow p-5">'+makeAccordion('Pain Management','Take pain medications as prescribed. Don\'t wait until pain is severe. Ice as instructed. Wean off narcotics as pain improves.')+makeAccordion('Activity','Walk early and often — prevents blood clots. Follow weight-bearing and activity restrictions.')+makeAccordion('Diet','Start with clear liquids, advance to regular diet as tolerated. Stay hydrated. Take stool softeners.')+'</div>';
+}
+
+function renderWarning(sd) {
+  return '<h2 class="text-2xl font-bold text-primary-700 mb-6">⚠️ Warning Signs</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div class="bg-orange-100 border-2 border-orange-400 rounded-2xl p-5"><h3 class="font-bold text-orange-800 mb-3">📞 Call Surgeon\'s Office</h3><ul class="space-y-2 text-sm text-orange-800">'+['Fever above 101°F','Spreading redness around incision','Pus or foul-smelling drainage','Worsening pain not controlled by medication'].map(function(s){return '<li class="flex items-start gap-2"><span>⚠️</span>'+s+'</li>';}).join('')+'</ul></div><div class="bg-red-100 border-2 border-red-400 rounded-2xl p-5"><h3 class="font-bold text-red-700 mb-3">🚨 Call 911 / Go to ER</h3><ul class="space-y-2 text-sm text-red-800">'+['Chest pain or difficulty breathing','Calf pain with leg swelling (DVT/PE)','Sudden confusion or difficulty speaking','Uncontrolled bleeding from wound'].map(function(s){return '<li class="flex items-start gap-2"><span>🚨</span>'+s+'</li>';}).join('')+'</ul></div></div><div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-3">Specialty-Specific Warnings — '+getSpecialty()+'</h3><ul class="space-y-2">'+sd.warnSigns.map(function(w){return '<li class="text-sm bg-yellow-100 rounded-xl p-3 flex items-start gap-2"><span>⚠️</span>'+w+'</li>';}).join('')+'</ul></div>';
+}
+
+function renderChecklist() {
+  var checks = getClChecks(); var allItems = Object.values(CHECKLIST_ITEMS).flat();
+  var totalItems = allItems.length;
+  var checkedCount = Object.keys(checks).filter(function(k){return k.startsWith('cl_')&&checks[k];}).length;
+  var pct = totalItems > 0 ? Math.round((checkedCount/totalItems)*100) : 0;
+  var html = '<h2 class="text-2xl font-bold text-primary-700 mb-4">✅ Pre-Op Checklist</h2><div class="bg-white rounded-2xl card-shadow p-4 mb-6"><div class="flex items-center justify-between mb-2"><span class="text-sm font-medium text-primary-700">'+checkedCount+' of '+totalItems+' completed</span><span class="text-sm font-bold text-primary-500">'+pct+'%</span></div><div class="w-full bg-primary-100 rounded-full h-3"><div class="bg-primary-500 h-3 rounded-full transition-all" style="width:'+pct+'%"></div></div></div>';
+  var idx = 0;
+  Object.keys(CHECKLIST_ITEMS).forEach(function(group) {
+    html += '<div class="bg-white rounded-2xl card-shadow p-5 mb-4"><h3 class="font-semibold text-primary-700 mb-3">'+group+'</h3><div class="space-y-2">';
+    CHECKLIST_ITEMS[group].forEach(function(item) { var key='cl_'+idx; html += '<label class="checklist-item flex items-center gap-3 p-2 rounded-lg hover:bg-primary-50 cursor-pointer"><input type="checkbox" data-cl="'+key+'" '+(checks[key]?'checked':'')+' /><span class="text-sm">'+item+'</span></label>'; idx++; });
+    html += '</div></div>';
+  });
+  return html;
+}
+
+function renderReadiness() { var quiz = getQuiz(); if (quiz && quizStep > 4) return renderQuizResults(quiz); return renderQuizWizard(); }
+
+function renderQuizWizard() {
+  var knowledgeQs = [{q:'Stop eating solids how many hours before surgery?',opts:['2 hours','4 hours','8 hours','12 hours'],correct:2},{q:'Which medication should you typically STOP before surgery?',opts:['Blood pressure medication','Thyroid medication','Ibuprofen (NSAID)','Seizure medication'],correct:2},{q:'Clear liquids are OK until when before surgery?',opts:['Right up to surgery','4 hours before','2 hours before','6 hours before'],correct:2},{q:'Which symptom needs an immediate call to the surgeon?',opts:['Mild fatigue','Fever above 101°F','Slight bruising at IV site','Mild nausea on Day 1'],correct:1},{q:'Who should drive you home after surgery?',opts:['A taxi (alone)','A responsible adult','Public transit','Drive yourself'],correct:1}];
+  var logisticsQs = ['Arranged adult driver and companion for going home?','Confirmed surgery date and arrival time?','Filled post-op prescriptions?','Prepared home recovery area?','Stopped or adjusted medications as instructed?'];
+  var confidenceQs = ['Understand what to expect on surgery day?','Someone staying with you for first 24 hours post-op?','Know the warning signs needing immediate attention?','Written down questions for your surgeon?','Emotionally ready and feel prepared?'];
+  var html = '<h2 class="text-2xl font-bold text-primary-700 mb-4">🎯 Readiness Assessment</h2><div class="flex items-center gap-2 mb-6">';
+  for (var i=1;i<=4;i++) html += '<div class="flex-1 h-2 rounded-full '+(i<=quizStep?'bg-primary-500':'bg-primary-100')+'"></div>';
+  html += '<span class="text-xs text-primary-700 font-medium whitespace-nowrap ml-2">Step '+quizStep+' of 4</span></div>';
+  if (quizStep===1) { html += '<div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-4">Knowledge Check</h3>'; knowledgeQs.forEach(function(q,qi){html+='<div class="mb-5"><p class="text-sm font-medium text-primary-800 mb-2">'+(qi+1)+'. '+q.q+'</p><div class="grid grid-cols-1 md:grid-cols-2 gap-2">';q.opts.forEach(function(opt,oi){html+='<div class="quiz-opt rounded-xl p-3 text-sm'+(quizAnswers['k'+qi]===oi?' selected':'')+'" data-qtype="k" data-qi="'+qi+'" data-oi="'+oi+'">'+opt+'</div>';});html+='</div></div>';}); html+='</div>'; }
+  else if (quizStep===2) { html += '<div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-4">Logistics Check</h3>'; logisticsQs.forEach(function(q,qi){html+='<div class="mb-4"><p class="text-sm font-medium text-primary-800 mb-2">'+(qi+6)+'. '+q+'</p><div class="flex gap-2 flex-wrap">';['Yes','Partially','No'].forEach(function(opt,oi){html+='<div class="quiz-opt rounded-xl px-4 py-2 text-sm'+(quizAnswers['l'+qi]===oi?' selected':'')+'" data-qtype="l" data-qi="'+qi+'" data-oi="'+oi+'">'+opt+'</div>';});html+='</div></div>';}); html+='</div>'; }
+  else if (quizStep===3) { html += '<div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-4">Confidence Check</h3>'; confidenceQs.forEach(function(q,qi){html+='<div class="mb-4"><p class="text-sm font-medium text-primary-800 mb-2">'+(qi+11)+'. '+q+'</p><div class="flex gap-2 flex-wrap">';['Yes','Partially','No'].forEach(function(opt,oi){html+='<div class="quiz-opt rounded-xl px-4 py-2 text-sm'+(quizAnswers['c'+qi]===oi?' selected':'')+'" data-qtype="c" data-qi="'+qi+'" data-oi="'+oi+'">'+opt+'</div>';});html+='</div></div>';}); html+='</div>'; }
+  else if (quizStep===4) { var result=scoreQuiz(); localStorage.setItem(KEYS.quizResult,JSON.stringify(result)); quizStep=5; return renderQuizResults(result); }
+  html += '<div class="flex justify-between mt-6">'; if (quizStep>1) html+='<button id="quiz-back" class="bg-primary-100 text-primary-700 font-medium rounded-xl px-6 py-2.5 text-sm">← Back</button>'; else html+='<div></div>';
+  html += '<button id="quiz-next" class="bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-xl px-6 py-2.5 text-sm">Next →</button></div>';
+  return html;
+}
+
+function scoreQuiz() { var ca=[2,2,2,1,1],k=0; for(var i=0;i<5;i++)if(quizAnswers['k'+i]===ca[i])k+=10; var l=0;for(var i=0;i<5;i++){var a=quizAnswers['l'+i];l+=(a===0?10:a===1?5:0);} var c=0;for(var i=0;i<5;i++){var a=quizAnswers['c'+i];c+=(a===0?10:a===1?5:0);} return{score:k+l+c,knowledge:k,logistics:l,confidence:c}; }
+
+function renderQuizResults(result) {
+  var pct=Math.round((result.score/150)*100);var color='#dc2626',label='Not Ready',bg='#fff1f2';if(pct>=90){color='#16a34a';label='Surgical Ready! ✅';bg='#f0fdf4';}else if(pct>=75){color='#ca8a04';label='Almost Ready';bg='#fefce8';}else if(pct>=50){color='#ea580c';label='Needs Attention';bg='#fff7ed';}
+  var r=20,cx=26,cy=26,circ=2*Math.PI*r,offset=circ-(pct/100)*circ;
+  var html='<h2 class="text-2xl font-bold text-primary-700 mb-6">🎯 Readiness Results</h2><div class="bg-white rounded-2xl card-shadow p-6 text-center mb-6" style="background:'+bg+'"><svg width="120" height="120" viewBox="0 0 52 52" class="mx-auto mb-3"><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#e0f1f5" stroke-width="4"/><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linecap="round" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'" transform="rotate(-90 '+cx+' '+cy+')"/><text x="'+cx+'" y="'+cy+'" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="'+color+'">'+pct+'%</text></svg><div class="text-xl font-bold" style="color:'+color+'">'+label+'</div><div class="text-sm text-gray-600 mt-1">Score: '+result.score+' / 150</div></div>';
+  html+='<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">';[{l:'Knowledge',v:result.knowledge,m:50},{l:'Logistics',v:result.logistics,m:50},{l:'Confidence',v:result.confidence,m:50}].forEach(function(s){var sp=Math.round((s.v/s.m)*100);html+='<div class="bg-white rounded-2xl card-shadow p-4"><div class="text-xs text-gray-500 uppercase font-medium">'+s.l+'</div><div class="text-xl font-bold text-primary-700 mt-1">'+s.v+'/'+s.m+'</div><div class="w-full bg-primary-100 rounded-full h-2 mt-2"><div class="bg-primary-500 h-2 rounded-full" style="width:'+sp+'%"></div></div></div>';});
+  html+='</div><button id="quiz-retake" class="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl py-3 text-sm">🔄 Retake Assessment</button>';
+  return html;
+}
+
+// ===== WOUND MONITOR =====
+function buildWoundContent() { renderWoundTab(); }
+
+function switchWoundTab(tab) {
+  activeWoundTab = tab;
+  document.querySelectorAll('.wound-tab-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.wtab === tab); });
+  renderWoundTab();
+}
+
+function renderWoundTab() {
+  var container = document.getElementById('wound-content');
+  var html = '';
+  switch(activeWoundTab) {
+    case 'dashboard': html = renderWoundDashboard(); break;
+    case 'checkin': html = renderCheckinWizard(); break;
+    case 'history': html = renderWoundHistory(); break;
+    case 'escalation': html = renderEscalationGuide(); break;
+    case 'education': html = renderWoundEducation(); break;
+    case 'askai': html = renderAskAITab(); break;
+  }
+  container.innerHTML = '<div class="wound-tab-panel active">' + html + '</div>';
+  if (activeWoundTab === 'checkin') initCheckinWizardEvents();
+  if (activeWoundTab === 'history') initHistoryEvents();
+  if (activeWoundTab === 'askai') initChatEvents();
+  if (activeWoundTab === 'dashboard') initDashboardEvents();
+  initAccordions(); lucide.createIcons();
+}
+
+function renderWoundDashboard() {
+  var checkins = getCheckins(); var dPost = Math.max(0, daysDiff(today(), profile.surgeryDate));
+  var statusCard = '';
+  if (checkins.length === 0) {
+    statusCard = '<div class="bg-primary-50 border-2 border-primary-200 rounded-2xl p-6 text-center mb-6"><div class="text-3xl mb-2">📋</div><h3 class="font-bold text-primary-700">Welcome to Wound Monitor</h3><p class="text-sm text-primary-600 mt-1">Start your first wound check-in to track your healing progress.</p></div>';
+  } else {
+    var last = checkins[checkins.length - 1]; var tier = getEscalationTier(last.score);
+    statusCard = '<div class="rounded-2xl p-6 mb-6 text-center" style="background:'+tier.bg+';border:2px solid '+tier.color+'"><div class="text-3xl mb-2">'+(tier.tier==='green'?'✅':tier.tier==='yellow'?'⚠️':tier.tier==='orange'?'🔶':'🚨')+'</div><h3 class="text-xl font-bold" style="color:'+tier.color+'">'+tier.label+'</h3><p class="text-sm mt-1 opacity-80" style="color:'+tier.color+'">NWAT Score: '+last.score+'/100 — '+fmtDate(last.timestamp)+'</p></div>';
+  }
+
+  // CSF banner
+  var csfBanner = '';
+  var spec = getSpecialty();
+  var showCSF = spec === 'Spine Surgery' || profile.surgery === 'Craniotomy — Infratentorial / Posterior Fossa';
+  if (showCSF && !localStorage.getItem(KEYS.csfDismissed)) {
+    csfBanner = '<div id="csf-banner" class="bg-yellow-100 border border-yellow-400 rounded-2xl p-4 mb-6 flex items-start gap-3"><span class="text-xl" style="animation:pulse 2s infinite">🚨</span><div class="flex-1"><h4 class="font-bold text-yellow-800">CSF Leak Watch</h4><p class="text-sm text-yellow-700 mt-1">Clear watery fluid from wound • Headache worse when upright → <strong>CALL SURGEON IMMEDIATELY</strong></p></div><button id="csf-dismiss" class="text-yellow-600 hover:text-yellow-800 p-1"><i data-lucide="x" class="w-4 h-4"></i></button></div>';
+  }
+
+  // Quick action buttons — these open modals
+  var quickActions = '<div class="grid grid-cols-2 gap-3 mb-6">' +
+    '<button class="dash-action bg-white rounded-2xl card-shadow p-4 text-center hover:bg-primary-50 transition-colors" data-action="checkin"><div class="text-2xl mb-1">📸</div><div class="text-xs font-medium text-primary-700">New Check-In</div></button>' +
+    '<button class="dash-action bg-white rounded-2xl card-shadow p-4 text-center hover:bg-primary-50 transition-colors" data-action="askai"><div class="text-2xl mb-1">💬</div><div class="text-xs font-medium text-primary-700">Ask AI</div></button>' +
+    '<button class="dash-action bg-white rounded-2xl card-shadow p-4 text-center hover:bg-primary-50 transition-colors" data-action="call"><div class="text-2xl mb-1">📞</div><div class="text-xs font-medium text-primary-700">Call Surgeon</div></button>' +
+    '<button class="dash-action bg-white rounded-2xl card-shadow p-4 text-center hover:bg-primary-50 transition-colors" data-action="education"><div class="text-2xl mb-1">📖</div><div class="text-xs font-medium text-primary-700">Wound Care</div></button>' +
+    '</div>';
+
+  // Simple check-in log table
+  var simpleCheckins = getSimpleCheckins();
+  var logTable = '<div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-3 flex items-center gap-2"><i data-lucide="list" class="w-4 h-4"></i> Check-In Log</h3>';
+  if (simpleCheckins.length === 0) {
+    logTable += '<div class="text-center py-6 text-gray-400"><i data-lucide="clipboard" class="w-8 h-8 mx-auto mb-2 opacity-40"></i><p class="text-sm">No check-ins yet</p><p class="text-xs mt-1">Tap "New Check-In" above to log your first entry.</p></div>';
+  } else {
+    logTable += '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b-2 border-primary-100"><th class="text-left py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Date</th><th class="text-left py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Wound Status</th><th class="text-center py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Pain</th><th class="text-center py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Fever</th></tr></thead><tbody>';
+    simpleCheckins.slice().reverse().forEach(function(c) {
+      var statusColor = c.look === 'Healing well' ? 'text-green-700 bg-green-50' : (c.look === 'Mild redness' ? 'text-yellow-700 bg-yellow-50' : 'text-orange-700 bg-orange-50');
+      var painColor = parseInt(c.pain) <= 3 ? 'text-green-700' : (parseInt(c.pain) <= 6 ? 'text-yellow-700' : 'text-red-700');
+      var feverColor = c.fever === 'No' ? 'text-green-700' : 'text-red-700';
+      logTable += '<tr class="border-b border-primary-50 hover:bg-primary-50"><td class="py-2.5 px-2 text-gray-700 whitespace-nowrap">' + fmtDate(c.timestamp) + '</td><td class="py-2.5 px-2"><span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium ' + statusColor + '">' + c.look + '</span></td><td class="py-2.5 px-2 text-center font-bold ' + painColor + '">' + c.pain + '/10</td><td class="py-2.5 px-2 text-center font-medium ' + feverColor + '">' + c.fever + '</td></tr>';
+    });
+    logTable += '</tbody></table></div>';
+  }
+  logTable += '</div>';
+
+  return '<h2 class="text-xl font-bold text-primary-700 mb-4">🏠 Dashboard</h2>' + statusCard + csfBanner + quickActions + logTable;
+}
+
+function initDashboardEvents() {
+  document.querySelectorAll('.dash-action').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var action = btn.dataset.action;
+      if (action === 'checkin') {
+        document.getElementById('ci-date').value = todayFormatted();
+        document.getElementById('checkin-modal').classList.add('open');
+      } else if (action === 'askai') {
+        document.getElementById('askai-modal').classList.add('open');
+      } else if (action === 'call') {
+        document.getElementById('call-modal').classList.add('open');
+      } else if (action === 'education') {
+        switchWoundTab('education');
+      }
+    });
+  });
+  var csfDismiss = document.getElementById('csf-dismiss');
+  if (csfDismiss) csfDismiss.addEventListener('click', function() { localStorage.setItem(KEYS.csfDismissed, '1'); var b=document.getElementById('csf-banner'); if(b) b.remove(); });
+}
+
+// ===== ADVANCED CHECK-IN WIZARD (bottom tab "Log") =====
+var CHECKIN_TOTAL_STEPS = 5;
+function renderCheckinWizard() {
+  var html = '<h2 class="text-xl font-bold text-primary-700 mb-4">📸 Log Check-In (Advanced)</h2>';
+  html += '<div class="flex items-center gap-2 mb-6">';
+  for (var i=1;i<=CHECKIN_TOTAL_STEPS;i++) html += '<div class="flex-1 h-2 rounded-full '+(i<=checkinWizardStep?'bg-primary-500':'bg-primary-100')+'"></div>';
+  html += '<span class="text-xs text-primary-700 font-medium whitespace-nowrap ml-2">Step '+checkinWizardStep+' of '+CHECKIN_TOTAL_STEPS+'</span></div>';
+
+  if (checkinWizardStep === 1) {
+    html += '<div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-3">Step 1: Wound Photo</h3><div id="photo-preview-area" class="border-2 border-dashed border-primary-200 rounded-xl p-8 text-center mb-4 bg-primary-50">'+(checkinPhoto?'<img src="'+checkinPhoto+'" class="max-w-full max-h-48 rounded-xl mx-auto" alt="Wound photo"/>':'<div class="text-3xl mb-2">📷</div><p class="text-sm text-gray-500">Take or upload a photo of your wound</p>')+'</div><input type="file" id="photo-input" accept="image/*" capture="environment" class="hidden" /><div class="flex gap-2 mb-3"><button id="photo-take" class="flex-1 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-xl py-2.5 text-sm">📷 Take Photo</button><button id="photo-upload" class="flex-1 bg-primary-100 hover:bg-primary-200 text-primary-700 font-medium rounded-xl py-2.5 text-sm">🖼️ Upload</button></div><label class="flex items-center gap-2 text-sm text-gray-500 cursor-pointer"><input type="checkbox" id="skip-photo" '+(!checkinPhoto&&checkinAnswers.skipPhoto?'checked':'')+' /> Continue without photo</label></div>';
+  } else if (checkinWizardStep === 2) {
+    var questions = [
+      {id:'q1',q:'Incision Closure',opts:[{l:'Intact ✅',s:0,c:'green'},{l:'Minor gap <5mm ⚠️',s:5,c:'yellow'},{l:'Moderate gap >5mm 🔶',s:15,c:'orange'},{l:'Large opening 🚨',s:40,c:'red'}]},
+      {id:'q2',q:'Drainage',opts:[{l:'None ✅',s:0,c:'green'},{l:'Clear/straw serous 🟡',s:3,c:'yellow'},{l:'Cloudy/milky 🔶',s:10,c:'orange'},{l:'Pus thick/foul 🚨',s:25,c:'red'},{l:'Clear watery (CSF?) 🚨',s:40,c:'red'},{l:'Fresh blood 🩸',s:20,c:'orange'}]},
+      {id:'q3',q:'Redness',opts:[{l:'None ✅',s:0,c:'green'},{l:'Pink at edges 🟡',s:2,c:'yellow'},{l:'Spreading >1 inch 🔶',s:8,c:'orange'},{l:'Bright red/spreading 🚨',s:20,c:'red'}]},
+      {id:'q4',q:'Swelling',opts:[{l:'None ✅',s:0,c:'green'},{l:'Mild puffiness 🟡',s:2,c:'yellow'},{l:'Beyond wound 🔶',s:8,c:'orange'},{l:'Firm/fluctuant bulge 🚨',s:25,c:'red'}]},
+      {id:'q5',q:'Warmth',opts:[{l:'Normal ✅',s:0,c:'green'},{l:'Slightly warm 🟡',s:2,c:'yellow'},{l:'Noticeably hot 🔶',s:8,c:'orange'}]},
+      {id:'q6',q:'Odor',opts:[{l:'None ✅',s:0,c:'green'},{l:'Mild odor 🟡',s:3,c:'yellow'},{l:'Foul/bad smell 🚨',s:15,c:'red'}]},
+      {id:'q7',q:'Pain vs. Yesterday',opts:[{l:'Improving/same ✅',s:0,c:'green'},{l:'Slightly worse 🟡',s:3,c:'yellow'},{l:'Significantly worse 🔶',s:10,c:'orange'},{l:'Severe sudden 🚨',s:20,c:'red'}]}
+    ];
+    html += '<div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-4">Step 2: Wound Appearance</h3>';
+    questions.forEach(function(q) {
+      html += '<div class="mb-5"><p class="text-sm font-medium text-primary-800 mb-2">'+q.q+'</p><div class="grid grid-cols-1 md:grid-cols-2 gap-2">';
+      q.opts.forEach(function(opt,oi) {
+        var sel = checkinAnswers[q.id]===oi; var bc={'green':'#16a34a','yellow':'#ca8a04','orange':'#ea580c','red':'#dc2626'}[opt.c];
+        html += '<div class="ans-btn rounded-xl p-3 text-sm'+(sel?' selected-'+opt.c:'')+'" data-qid="'+q.id+'" data-oi="'+oi+'" data-score="'+opt.s+'" style="border-left:4px solid '+bc+'">'+opt.l+'</div>';
+      }); html += '</div></div>';
+    }); html += '</div>';
+  } else if (checkinWizardStep === 3) {
+    if (ssiAnalyzing) {
+      html += '<div class="bg-white rounded-2xl card-shadow p-8 text-center"><div class="mb-4"><div class="inline-block" style="animation:pulse 1.5s infinite"><span class="text-4xl">🤖</span></div></div><h3 class="font-semibold text-primary-700 mb-2">AI Wound Analysis</h3><p class="text-sm text-gray-500">Analyzing...</p><div class="mt-4 flex justify-center gap-1"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>';
+    } else if (lastSSIResult) {
+      html += '<h3 class="font-semibold text-primary-700 mb-4">🤖 AI Wound Analysis</h3>';
+      html += renderSSIResultCard(lastSSIResult, false);
+    } else {
+      ssiAnalyzing = true;
+      setTimeout(function() { lastSSIResult = classifySSI(checkinAnswers); ssiAnalyzing = false; renderWoundTab(); }, 2000);
+      html += '<div class="bg-white rounded-2xl card-shadow p-8 text-center"><div class="mb-4"><div class="inline-block" style="animation:pulse 1.5s infinite"><span class="text-4xl">🤖</span></div></div><h3 class="font-semibold text-primary-700 mb-2">AI Wound Analysis</h3><p class="text-sm text-gray-500">Analyzing...</p><div class="mt-4 flex justify-center gap-1"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div>';
+    }
+  } else if (checkinWizardStep === 4) {
+    var spec = getSpecialty();
+    html += '<div class="bg-white rounded-2xl card-shadow p-5"><h3 class="font-semibold text-primary-700 mb-4">Step 4: How Are You Feeling?</h3>';
+    html += '<div class="mb-5"><p class="text-sm font-medium text-primary-800 mb-2">Temperature</p><div class="grid grid-cols-1 md:grid-cols-2 gap-2">';
+    [{l:'Normal <99.5°F ✅',s:0,c:'green'},{l:'Low-grade 99.5–100.9°F 🟡',s:5,c:'yellow'},{l:'Moderate 101–102.9°F 🔶',s:15,c:'orange'},{l:'High ≥103°F 🚨',s:30,c:'red'},{l:'Not checked',s:0,c:'green'}].forEach(function(opt,oi){
+      var sel=checkinAnswers.q8===oi; var bc={'green':'#16a34a','yellow':'#ca8a04','orange':'#ea580c','red':'#dc2626'}[opt.c];
+      html += '<div class="ans-btn rounded-xl p-3 text-sm'+(sel?' selected-'+opt.c:'')+'" data-qid="q8" data-oi="'+oi+'" data-score="'+opt.s+'" style="border-left:4px solid '+bc+'">'+opt.l+'</div>';
+    }); html += '</div></div>';
+    html += '<div class="mb-5"><p class="text-sm font-medium text-primary-800 mb-2">Specialty Red Flags — '+spec+'</p><div class="space-y-2">';
+    var flags = [];
+    if (spec==='Spine Surgery') flags=[{l:'Headache WORSE when sitting/standing',s:20},{l:'Clear watery fluid leaking from wound',s:100,force:true},{l:'Soft squishy bulge under wound',s:20},{l:'New numbness/tingling in arms/legs',s:15},{l:'New weakness in arms or legs',s:15},{l:'Loss of bladder or bowel control',s:100,force:true},{l:'None of the above',s:0,none:true}];
+    else if (spec==='Neurological Surgery') flags=[{l:'Clear fluid from scalp wound, ear, or nose',s:100,force:true},{l:'Bone flap feels like it is moving',s:100,force:true},{l:'Growing soft bulge on scalp',s:20},{l:'Sudden worsening headache',s:100,force:true},{l:'New confusion, difficulty speaking',s:20},{l:'New seizure or convulsions',s:100,force:true},{l:'None of the above',s:0,none:true}];
+    else flags=[{l:'Calf pain with leg swelling',s:100,force:true},{l:'Chest pain or shortness of breath',s:100,force:true},{l:'Significant wound opening',s:20},{l:'None of the above',s:0,none:true}];
+    flags.forEach(function(f,fi){var checked=checkinAnswers['flag_'+fi]; html+='<label class="flex items-start gap-3 p-3 rounded-xl border-2 '+(checked?(f.force?'border-red-400 bg-red-50':f.none?'border-green-400 bg-green-50':'border-orange-400 bg-orange-50'):'border-primary-100')+' cursor-pointer"><input type="checkbox" class="flag-cb mt-0.5" data-fi="'+fi+'" data-score="'+f.s+'" '+(f.force?'data-force="1"':'')+(f.none?'data-none="1"':'')+' '+(checked?'checked':'')+' /><span class="text-sm">'+f.l+'</span></label>';});
+    html += '</div></div>';
+    html += '<div class="mb-4"><p class="text-sm font-medium text-primary-800 mb-2">Overall Wellbeing</p><div class="grid grid-cols-2 md:grid-cols-4 gap-2">';
+    [{l:'😊 Great',s:0},{l:'😐 Same',s:0},{l:'😟 A bit worse',s:5},{l:'😰 Much worse',s:10}].forEach(function(opt,oi){var sel=checkinAnswers.q10===oi;html+='<div class="ans-btn rounded-xl p-3 text-sm text-center'+(sel?' selected':'')+'" data-qid="q10" data-oi="'+oi+'" data-score="'+opt.s+'">'+opt.l+'</div>';});
+    html += '</div></div></div>';
+  } else if (checkinWizardStep === 5) {
+    var result = computeNWAT();
+    var tier = getEscalationTier(result.score);
+    html += '<div class="rounded-2xl p-6 text-center mb-6" style="background:'+tier.bg+';border:2px solid '+tier.color+'">';
+    html += '<div class="text-4xl mb-2">'+(tier.tier==='green'?'✅':tier.tier==='yellow'?'⚠️':tier.tier==='orange'?'🔶':'🚨')+'</div>';
+    html += '<h3 class="text-xl font-bold" style="color:'+tier.color+'">'+tier.label+'</h3>';
+    html += '<div class="text-3xl font-bold mt-2" style="color:'+tier.color+'">'+result.score+'<span class="text-lg">/100</span></div>';
+    html += '</div>';
+    if (tier.tier==='red') html += '<a href="tel:911" class="block bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl py-4 text-center text-xl mb-3">🚨 Call 911</a>';
+    html += '<button id="save-checkin" class="w-full bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl py-3 text-sm">💾 Save Check-In</button>';
+    return html;
+  }
+
+  html += '<div class="flex justify-between mt-6">';
+  if (checkinWizardStep > 1) html += '<button id="ci-wiz-back" class="bg-primary-100 text-primary-700 font-medium rounded-xl px-6 py-2.5 text-sm">← Back</button>'; else html += '<div></div>';
+  if (checkinWizardStep !== 3 || lastSSIResult) html += '<button id="ci-wiz-next" class="bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-xl px-6 py-2.5 text-sm">Next →</button>';
+  html += '</div>';
+  return html;
+}
+
+function computeNWAT() {
+  var score=0,flags=[],forceRed=false;
+  var qScores={q1:[0,5,15,40],q2:[0,3,10,25,40,20],q3:[0,2,8,20],q4:[0,2,8,25],q5:[0,2,8],q6:[0,3,15],q7:[0,3,10,20]};
+  var qLabels={q1:['Intact','Minor gap','Moderate gap','Large opening'],q2:['None','Clear serous','Cloudy','Pus','CSF?','Fresh blood'],q3:['None','Pink edges','Spreading','Bright red'],q4:['None','Mild puffiness','Beyond wound','Firm bulge'],q5:['Normal','Slightly warm','Hot'],q6:['None','Mild odor','Foul smell'],q7:['Improving','Slightly worse','Significantly worse','Severe sudden']};
+  Object.keys(qScores).forEach(function(qid){var a=checkinAnswers[qid];if(a!==undefined){score+=qScores[qid][a];if(qScores[qid][a]>=8)flags.push(qLabels[qid][a]);}});
+  var tempScores=[0,5,15,30,0]; if(checkinAnswers.q8!==undefined)score+=tempScores[checkinAnswers.q8]; if(checkinAnswers.q8===2||checkinAnswers.q8===3)flags.push('Fever');
+  Object.keys(checkinAnswers).forEach(function(k){if(k.startsWith('flag_')&&checkinAnswers[k]){var fi=parseInt(k.split('_')[1]);var flagEl=document.querySelector('.flag-cb[data-fi="'+fi+'"]');if(flagEl&&!flagEl.dataset.none){score+=parseInt(flagEl.dataset.score||0);if(flagEl.dataset.force)forceRed=true;flags.push(flagEl.parentElement.querySelector('span').textContent);}}});
+  var wellbeingScores=[0,0,5,10]; if(checkinAnswers.q10!==undefined)score+=wellbeingScores[checkinAnswers.q10];
+  if(forceRed)score=100;
+  return {score:Math.min(score,100),flags:flags};
+}
+
+function initCheckinWizardEvents() {
+  var photoInput = document.getElementById('photo-input');
+  var takeBtn = document.getElementById('photo-take'); var uploadBtn = document.getElementById('photo-upload');
+  if (takeBtn) takeBtn.addEventListener('click', function() { photoInput.click(); });
+  if (uploadBtn) uploadBtn.addEventListener('click', function() { photoInput.click(); });
+  if (photoInput) photoInput.addEventListener('change', function(e) { if (e.target.files && e.target.files[0]) { compressPhoto(e.target.files[0], function(dataURL) { checkinPhoto = dataURL; renderWoundTab(); }); } });
+  var skipPhoto = document.getElementById('skip-photo');
+  if (skipPhoto) skipPhoto.addEventListener('change', function() { checkinAnswers.skipPhoto = skipPhoto.checked; });
+  document.querySelectorAll('.ans-btn').forEach(function(btn) { btn.addEventListener('click', function() { checkinAnswers[btn.dataset.qid]=parseInt(btn.dataset.oi); renderWoundTab(); }); });
+  document.querySelectorAll('.flag-cb').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      if (cb.dataset.none && cb.checked) { document.querySelectorAll('.flag-cb').forEach(function(other) { if (other !== cb) { other.checked = false; delete checkinAnswers['flag_' + other.dataset.fi]; } }); }
+      else if (!cb.dataset.none && cb.checked) { document.querySelectorAll('.flag-cb[data-none]').forEach(function(n) { n.checked = false; delete checkinAnswers['flag_' + n.dataset.fi]; }); }
+      checkinAnswers['flag_' + cb.dataset.fi] = cb.checked; if (!cb.checked) delete checkinAnswers['flag_' + cb.dataset.fi];
+    });
+  });
+  var nextBtn = document.getElementById('ci-wiz-next');
+  if (nextBtn) nextBtn.addEventListener('click', function() {
+    if (checkinWizardStep === 2) { lastSSIResult = null; ssiAnalyzing = false; }
+    checkinWizardStep++; renderWoundTab();
+  });
+  var backBtn = document.getElementById('ci-wiz-back');
+  if (backBtn) backBtn.addEventListener('click', function() { checkinWizardStep--; if (checkinWizardStep===3) lastSSIResult = null; renderWoundTab(); });
+  var saveBtn = document.getElementById('save-checkin');
+  if (saveBtn) saveBtn.addEventListener('click', function() {
+    var result = computeNWAT();
+    var data = { timestamp: Date.now(), photo: checkinPhoto, score: result.score, tier: getEscalationTier(result.score).tier, answers: Object.assign({}, checkinAnswers), flags: result.flags, ssiClassification: lastSSIResult ? { classification: lastSSIResult.classification, icon: lastSSIResult.icon, color: lastSSIResult.color, confidence: lastSSIResult.confidence, urgency: lastSSIResult.urgency } : null };
+    var arr = getCheckins(); arr.push(data); localStorage.setItem(KEYS.checkins, JSON.stringify(arr));
+    checkinWizardStep=1; checkinAnswers={}; checkinPhoto=null; lastSSIResult=null;
+    updateWoundSubHeader(); switchWoundTab('dashboard');
+  });
+}
+
+// ===== WOUND HISTORY =====
+function renderWoundHistory() {
+  var checkins = getCheckins();
+  var simpleCheckins = getSimpleCheckins();
+  var html = '<h2 class="text-xl font-bold text-primary-700 mb-4">📅 History</h2>';
+  if (checkins.length === 0 && simpleCheckins.length === 0) return html + '<div class="bg-white rounded-2xl card-shadow p-8 text-center"><div class="text-4xl mb-3">📋</div><h3 class="font-semibold text-primary-700">No check-ins yet</h3></div>';
+
+  // Simple check-ins
+  if (simpleCheckins.length > 0) {
+    html += '<div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-3">Quick Check-Ins</h3><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b-2 border-primary-100"><th class="text-left py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Date</th><th class="text-left py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Status</th><th class="text-center py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Pain</th><th class="text-center py-2 px-2 text-xs font-semibold text-primary-700 uppercase">Fever</th></tr></thead><tbody>';
+    simpleCheckins.slice().reverse().forEach(function(c) {
+      html += '<tr class="border-b border-primary-50"><td class="py-2 px-2">' + fmtDate(c.timestamp) + '</td><td class="py-2 px-2">' + c.look + '</td><td class="py-2 px-2 text-center">' + c.pain + '/10</td><td class="py-2 px-2 text-center">' + c.fever + '</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // Advanced check-ins
+  if (checkins.length > 0) {
+    html += '<div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-3">Advanced NWAT Check-Ins</h3><div class="space-y-3">';
+    checkins.slice().reverse().forEach(function(c) {
+      var tier = getEscalationTier(c.score);
+      html += '<div class="flex items-start gap-3 border-b border-primary-50 pb-3">';
+      html += '<div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1 flex-wrap"><span class="text-sm font-semibold text-primary-700">'+fmtDate(c.timestamp)+'</span>';
+      html += '<span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background:'+tier.bg+';color:'+tier.color+'">NWAT: '+c.score+'</span>';
+      html += '</div></div></div>';
+    });
+    html += '</div></div>';
+  }
+  return html;
+}
+
+// ===== ESCALATION GUIDE =====
+function renderEscalationGuide() {
+  var html = '<h2 class="text-xl font-bold text-primary-700 mb-4">⚠️ Escalation Guide</h2>';
+  var tiers = [{tier:'green',label:'Healing Well',color:'#16a34a',bg:'#f0fdf4',icon:'✅',what:'Score 0–10. Wound looks healthy.',action:'Continue home wound care. Log daily.',who:'No call needed.'},{tier:'yellow',label:'Monitor Closely',color:'#ca8a04',bg:'#fefce8',icon:'⚠️',what:'Score 11–20. Minor findings.',action:'Watch closely. Call surgeon if worsens.',who:'Surgeon if worsening.'},{tier:'orange',label:'Call Surgeon Today',color:'#ea580c',bg:'#fff7ed',icon:'🔶',what:'Score 21–40. Concerning findings.',action:'Call surgeon today. Do not wait.',who:'Surgeon — do not delay.'},{tier:'red',label:'Seek Immediate Care',color:'#dc2626',bg:'#fff1f2',icon:'🚨',what:'Score 41+ or critical flag.',action:'Go to ER or call 911.',who:'911 or nearest ER.'}];
+  tiers.forEach(function(t){html+='<div class="rounded-2xl p-4 mb-3" style="background:'+t.bg+';border-left:4px solid '+t.color+'"><div class="accordion-toggle flex items-center justify-between"><div class="flex items-center gap-2"><span>'+t.icon+'</span><span class="font-semibold" style="color:'+t.color+'">'+t.label+'</span></div><i data-lucide="chevron-down" class="w-4 h-4 transition-transform"></i></div><div class="accordion-body"><div class="pt-3 space-y-2 text-sm" style="color:'+t.color+'"><p><strong>What:</strong> '+t.what+'</p><p><strong>Action:</strong> '+t.action+'</p><p><strong>Contact:</strong> '+t.who+'</p></div></div></div>';});
+  html += '<div class="bg-white rounded-2xl card-shadow p-5 mt-6"><h3 class="font-semibold text-primary-700 mb-3">Emergency Contacts</h3><div class="space-y-2">';
+  if (profile.surgPhone) html += '<a href="tel:'+profile.surgPhone+'" class="flex items-center gap-3 bg-primary-50 rounded-xl p-3 text-sm hover:bg-primary-100"><span>📞</span><div><div class="font-medium text-primary-700">Surgeon / Nurse Line</div><div class="text-primary-500">'+profile.surgPhone+'</div></div></a>';
+  html += '<a href="tel:911" class="flex items-center gap-3 bg-red-50 rounded-xl p-3 text-sm hover:bg-red-100"><span>🚨</span><div><div class="font-bold text-red-700">911 Emergency</div></div></a></div></div>';
+  return html;
+}
+
+// ===== WOUND EDUCATION =====
+function renderWoundEducation() {
+  var spec = getSpecialty();
+  var html = '<h2 class="text-xl font-bold text-primary-700 mb-4">📚 Wound Care Education</h2>';
+  html += '<div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-3">Wound Care Instructions — '+spec+'</h3>';
+  html += makeAccordion('1. Dressing Care','Keep dressing clean and dry for 48 hours. Change as instructed. Wash hands before touching wound area.');
+  html += makeAccordion('2. Showering','Usually OK 48–72 hours post-op if cleared by surgeon. Pat dry gently. No pools, baths, or hot tubs until fully healed.');
+  html += makeAccordion('3. Staple/Suture Removal','Typically removed at 10–14 days at follow-up. Do NOT remove yourself.');
+  html += '</div>';
+  html += '<div class="bg-white rounded-2xl card-shadow p-5 mb-6"><h3 class="font-semibold text-primary-700 mb-3">Normal Healing Timeline</h3><div class="space-y-3 text-sm">';
+  [{t:'Days 1–3',d:'Swelling and bruising normal. Wound may feel tight.'},{t:'Days 4–7',d:'Swelling peaks then subsides. Itching = healing.'},{t:'Days 7–14',d:'Staple/suture removal. Incision continues closing.'},{t:'Weeks 2–4',d:'Scar formation. Pink/red color is normal.'},{t:'Months 1–3',d:'Scar matures, softens, fades. Protect from sun.'}].forEach(function(p){html+='<div class="flex items-start gap-3"><div class="bg-primary-500 text-white text-xs font-bold rounded-lg px-2.5 py-1 flex-shrink-0 w-20 text-center">'+p.t+'</div><p class="text-gray-700">'+p.d+'</p></div>';});
+  html += '</div></div>';
+  return html;
+}
+
+// ===== ASK AI TAB (bottom tab) =====
+function renderAskAITab() {
+  var history = getChatHistory();
+  var html = '<div class="flex flex-col" style="height:calc(100vh - 200px);min-height:400px">';
+  html += '<div class="flex items-center justify-between mb-3"><div><h2 class="text-lg font-bold text-primary-700">💬 Ask the SurgicalCare AI</h2></div>';
+  if (history.length > 0) html += '<button id="chat-clear" class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1">Clear Chat</button>';
+  html += '</div>';
+  html += '<div id="chat-messages" class="flex-1 overflow-y-auto space-y-3 mb-3 pr-1">';
+  if (history.length === 0) {
+    html += '<div class="flex gap-2"><div class="chat-ai"><div class="text-[10px] text-primary-500 font-medium mb-1">🤖 AI</div><div class="text-sm">'+formatAIText('👋 Hi '+(profile?profile.name:'there')+'! I can answer questions about your recovery, wound care, medications, and more.')+'</div></div></div>';
+  } else {
+    history.forEach(function(msg) {
+      if (msg.role === 'user') {
+        html += '<div class="flex justify-end"><div class="chat-user"><div class="text-sm">'+msg.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div></div></div>';
+      } else {
+        html += '<div class="flex gap-2"><div class="chat-ai"><div class="text-[10px] text-primary-500 font-medium mb-1">🤖 AI</div><div class="text-sm">'+formatAIText(msg.text)+'</div></div></div>';
+      }
+    });
+  }
+  html += '</div>';
+  html += '<div class="flex gap-2 items-end"><textarea id="chat-input" rows="1" class="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Ask a question..." style="max-height:100px"></textarea><button id="chat-send" class="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-4 py-2.5 font-medium text-sm flex-shrink-0">Send</button></div>';
+  html += '</div>';
+  return html;
+}
+
+function initChatEvents() {
+  var input = document.getElementById('chat-input');
+  var sendBtn = document.getElementById('chat-send');
+  var clearBtn = document.getElementById('chat-clear');
+  var messagesDiv = document.getElementById('chat-messages');
+
+  if (sendBtn) sendBtn.addEventListener('click', function() { sendChatMessage(); });
+  if (input) {
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } });
+    input.addEventListener('input', function() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 100) + 'px'; });
+  }
+  if (clearBtn) clearBtn.addEventListener('click', function() { if (confirm('Clear chat history?')) { localStorage.removeItem(KEYS.chatHistory); renderWoundTab(); } });
+  if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function sendChatMessage() {
+  var input = document.getElementById('chat-input');
+  var msg = input ? input.value.trim() : '';
+  if (!msg) return;
+  input.value = ''; input.style.height = 'auto';
+  var history = getChatHistory();
+  history.push({ role: 'user', text: msg, timestamp: Date.now() });
+  localStorage.setItem(KEYS.chatHistory, JSON.stringify(history));
+  var messagesDiv = document.getElementById('chat-messages');
+  messagesDiv.innerHTML += '<div class="flex justify-end"><div class="chat-user"><div class="text-sm">'+msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div></div></div>';
+  messagesDiv.innerHTML += '<div id="typing-indicator" class="flex gap-2"><div class="chat-ai"><div class="text-[10px] text-primary-500 font-medium mb-1">🤖 AI</div><div class="flex items-center gap-1"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div></div></div>';
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  setTimeout(function() {
+    var response = findAIResponse(msg);
+    history.push({ role: 'ai', text: response, timestamp: Date.now() });
+    localStorage.setItem(KEYS.chatHistory, JSON.stringify(history));
+    var indicator = document.getElementById('typing-indicator');
+    if (indicator) indicator.remove();
+    messagesDiv.innerHTML += '<div class="flex gap-2"><div class="chat-ai"><div class="text-[10px] text-primary-500 font-medium mb-1">🤖 AI</div><div class="text-sm">'+formatAIText(response)+'</div></div></div>';
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }, 800);
+}
+
+// ===== UTILITIES =====
+function makeAccordion(title, body) {
+  return '<div class="border-b border-primary-100 last:border-0"><div class="accordion-toggle flex items-center justify-between py-3 px-1"><span class="text-sm font-medium text-primary-700 pr-4">'+title+'</span><i data-lucide="chevron-down" class="w-4 h-4 text-primary-400 flex-shrink-0 transition-transform"></i></div><div class="accordion-body"><div class="pb-3 px-1 text-sm text-gray-600">'+body+'</div></div></div>';
+}
+
+function initAccordions() {
+  document.querySelectorAll('.accordion-toggle').forEach(function(toggle) {
+    toggle.addEventListener('click', function() {
+      var body = toggle.nextElementSibling;
+      if (body && body.classList.contains('accordion-body')) { body.classList.toggle('open'); var icon = toggle.querySelector('[data-lucide]'); if (icon) icon.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : ''; }
+    });
+  });
+}
+
+function initChecklistEvents() {
+  document.querySelectorAll('.checklist-item input[type="checkbox"]').forEach(function(cb) {
+    cb.addEventListener('change', function() { var checks = getClChecks(); checks[cb.dataset.cl] = cb.checked; localStorage.setItem(KEYS.clChecks, JSON.stringify(checks)); updateReadinessBadge(); });
+  });
+}
+
+function initMedTracker() {
+  var addBtn = document.getElementById('med-add');
+  if (addBtn) addBtn.addEventListener('click', function() {
+    var name = document.getElementById('med-name').value.trim(); var dose = document.getElementById('med-dose').value.trim(); var status = document.getElementById('med-status').value;
+    if (!name) return; var meds = getMeds(); meds.push({name:name,dose:dose,status:status}); localStorage.setItem(KEYS.medList, JSON.stringify(meds)); document.getElementById('med-name').value=''; document.getElementById('med-dose').value=''; renderMedList();
+  });
+  renderMedList();
+}
+
+function renderMedList() {
+  var container = document.getElementById('med-list'); if (!container) return;
+  var meds = getMeds();
+  if (meds.length === 0) { container.innerHTML = '<p class="text-sm text-gray-400">No medications added yet.</p>'; return; }
+  container.innerHTML = '<div class="space-y-2">' + meds.map(function(m, i) {
+    var colors = {continue:'bg-green-100 text-green-700',stop:'bg-red-100 text-red-700',confirm:'bg-yellow-100 text-yellow-700'};
+    return '<div class="flex items-center justify-between bg-primary-50 rounded-xl p-3"><div><span class="text-sm font-medium">'+m.name+'</span>'+(m.dose?' <span class="text-xs text-gray-500">('+m.dose+')</span>':'')+'</div><div class="flex items-center gap-2"><span class="text-xs px-2 py-0.5 rounded-full '+colors[m.status]+'">'+m.status+'</span><button class="med-del text-red-400 hover:text-red-600" data-mi="'+i+'"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div></div>';
+  }).join('') + '</div>';
+  container.querySelectorAll('.med-del').forEach(function(btn) { btn.addEventListener('click', function() { var meds = getMeds(); meds.splice(parseInt(btn.dataset.mi), 1); localStorage.setItem(KEYS.medList, JSON.stringify(meds)); renderMedList(); lucide.createIcons(); }); });
+  lucide.createIcons();
+}
+
+function initQuiz() {
+  document.querySelectorAll('.quiz-opt').forEach(function(opt) { opt.addEventListener('click', function() { quizAnswers[opt.dataset.qtype+opt.dataset.qi]=parseInt(opt.dataset.oi); renderPreopSection('readiness'); }); });
+  var nextBtn = document.getElementById('quiz-next'); if (nextBtn) nextBtn.addEventListener('click', function() { quizStep++; renderPreopSection('readiness'); });
+  var backBtn = document.getElementById('quiz-back'); if (backBtn) backBtn.addEventListener('click', function() { quizStep--; renderPreopSection('readiness'); });
+  var retakeBtn = document.getElementById('quiz-retake'); if (retakeBtn) retakeBtn.addEventListener('click', function() { quizStep=1; quizAnswers={}; localStorage.removeItem(KEYS.quizResult); renderPreopSection('readiness'); });
+}
+
+function initHistoryEvents() {
+  var exportBtn = document.getElementById('export-wound-log');
+  if (exportBtn) exportBtn.addEventListener('click', function() { openWoundLogPrint(); });
+}
+
+function compressPhoto(file, cb) {
+  var reader = new FileReader();
+  reader.onload = function(e) { var img = new Image(); img.onload = function() { var canvas = document.createElement('canvas'); var maxSize=800; var w=img.width,h=img.height; if(w>h){if(w>maxSize){h*=maxSize/w;w=maxSize;}}else{if(h>maxSize){w*=maxSize/h;h=maxSize;}} canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);cb(canvas.toDataURL('image/jpeg',0.7));}; img.src=e.target.result; };
+  reader.readAsDataURL(file);
+}
+
+// ===== READINESS BADGE =====
+function updateReadinessBadge() {
+  if (document.body.classList.contains('wound-active')) return;
+  var badge = document.getElementById('readiness-badge');
+  var pct = computeReadiness();
+  var color = '#dc2626', label = 'Not Started';
+  if (pct >= 90) { color = '#16a34a'; label = 'Surgical Ready ✅'; }
+  else if (pct >= 75) { color = '#ca8a04'; label = 'Almost Ready'; }
+  else if (pct >= 50) { color = '#ea580c'; label = 'Needs Work'; }
+  var r=20,cx=26,cy=26,circ=2*Math.PI*r,offset=circ-(pct/100)*circ;
+  document.getElementById('readiness-donut').innerHTML='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#e0f1f5" stroke-width="4"/><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="4" stroke-linecap="round" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'" transform="rotate(-90 '+cx+' '+cy+')" style="transition:stroke-dashoffset 0.8s ease"/>';
+  document.getElementById('readiness-pct').textContent=pct+'%'; document.getElementById('readiness-pct').style.color=color;
+  document.getElementById('readiness-label').textContent=label; badge.classList.remove('hidden');
+}
+
+// ===== MODALS =====
+function showEmergencyModal() {
+  var container = document.getElementById('emergency-contacts'); container.innerHTML = '';
+  if (profile.surgPhone) container.innerHTML += '<a href="tel:'+profile.surgPhone+'" class="block bg-primary-50 rounded-xl p-3 text-center hover:bg-primary-100"><div class="text-sm font-medium text-primary-700">📞 Surgeon / Nurse Line</div><div class="text-primary-500 font-bold">'+profile.surgPhone+'</div></a>';
+  if (profile.emName) container.innerHTML += '<div class="bg-primary-50 rounded-xl p-3 text-center"><div class="text-sm font-medium text-primary-700">👤 '+profile.emName+'</div>'+(profile.emPhone?'<a href="tel:'+profile.emPhone+'" class="text-primary-500 font-bold">'+profile.emPhone+'</a>':'')+'</div>';
+  document.getElementById('emergency-modal').classList.add('open');
+}
+
+function openSettings() {
+  var fields = [{id:'se-name',label:'Patient Name',val:profile.name,type:'text'},{id:'se-surgery',label:'Surgery Type',val:profile.surgery,type:'select'},{id:'se-date',label:'Surgery Date',val:profile.surgeryDate,type:'date'},{id:'se-surgeon',label:'Surgeon',val:profile.surgeon,type:'text'},{id:'se-hospital',label:'Hospital',val:profile.hospital,type:'text'},{id:'se-surgphone',label:'Surgeon Phone',val:profile.surgPhone,type:'tel'},{id:'se-emname',label:'Emergency Contact',val:profile.emName,type:'text'},{id:'se-emphone',label:'Emergency Phone',val:profile.emPhone,type:'tel'}];
+  var container = document.getElementById('settings-fields');
+  container.innerHTML = fields.map(function(f) {
+    if (f.type === 'select') { var surgeries=Object.keys(SURGERY_TO_SPECIALTY); return '<div><label class="block text-xs font-medium text-primary-700 mb-1">'+f.label+'</label><select id="'+f.id+'" class="w-full rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 text-sm">'+surgeries.map(function(s){return '<option'+(s===f.val?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'; }
+    return '<div><label class="block text-xs font-medium text-primary-700 mb-1">'+f.label+'</label><input id="'+f.id+'" type="'+f.type+'" value="'+(f.val||'')+'" class="w-full rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 text-sm" /></div>';
+  }).join('');
+  document.getElementById('settings-modal').classList.add('open');
+}
+
+function saveSettings() {
+  profile.name=document.getElementById('se-name').value.trim(); profile.surgery=document.getElementById('se-surgery').value; profile.surgeryDate=document.getElementById('se-date').value; profile.surgeon=document.getElementById('se-surgeon').value.trim(); profile.hospital=document.getElementById('se-hospital').value.trim(); profile.surgPhone=document.getElementById('se-surgphone').value.trim(); profile.emName=document.getElementById('se-emname').value.trim(); profile.emPhone=document.getElementById('se-emphone').value.trim();
+  localStorage.setItem(KEYS.profile, JSON.stringify(profile));
+  document.getElementById('settings-modal').classList.remove('open');
+  document.getElementById('hdr-patient').textContent=profile.name; updateDaysBadge(); switchPreopTab(activePreopTab);
+}
+
+// ===== PRINT =====
+function openPrintPreview() {
+  var sd = getSpecData(); var dUntil = daysDiff(profile.surgeryDate, today());
+  var checks = getClChecks(); var quiz = getQuiz(); var readiness = computeReadiness();
+  var h = '<div style="font-family:Inter,sans-serif;color:#0a2c36;max-width:800px;margin:0 auto;font-size:12px;line-height:1.5">';
+  h += '<div style="text-align:center;border-bottom:2px solid #1a9bb5;padding-bottom:12px;margin-bottom:16px"><div style="font-size:24px">🏥</div><div style="font-size:18px;font-weight:700;color:#0f3d4a">PRE-OPERATIVE PATIENT SUMMARY</div><div style="font-size:11px;color:#888">SurgicalCare™ Platform • Generated '+fmtDate(Date.now())+'</div></div>';
+  h += '<div style="background:#e0f1f5;border:1px solid #1a9bb5;border-radius:8px;padding:12px;margin-bottom:16px"><div style="display:flex;flex-wrap:wrap;gap:16px"><div><strong>Patient:</strong> '+profile.name+'</div><div><strong>Surgery:</strong> '+profile.surgery+'</div><div><strong>Date:</strong> '+fmtDate(profile.surgeryDate)+'</div><div><strong>Surgeon:</strong> '+(profile.surgeon||'—')+'</div></div></div>';
+  h += '<div style="border:2px solid #dc2626;border-radius:8px;padding:12px;margin-bottom:16px;background:#fff1f2"><div style="font-weight:700;color:#dc2626;margin-bottom:4px">⚠️ Critical Reminders</div><ul style="margin:0;padding-left:16px;color:#b91c1c"><li>NPO: No food 8hrs before, no clear liquids 2hrs before</li><li>'+sd.medNote+'</li><li>CHG antiseptic shower: night before AND morning of surgery</li><li>You CANNOT drive yourself home</li></ul></div>';
+  h += '<div style="margin-bottom:16px"><div style="font-weight:700;color:#0f3d4a;margin-bottom:8px">Checklist Status</div>';
+  var idx = 0;
+  Object.keys(CHECKLIST_ITEMS).forEach(function(group) { h += '<div style="font-weight:600;margin-top:8px;font-size:11px;text-transform:uppercase;color:#1a9bb5">'+group+'</div>'; CHECKLIST_ITEMS[group].forEach(function(item) { var key='cl_'+idx; h += '<div style="padding:2px 0">'+(checks[key]?'✓':'□')+' '+item+'</div>'; idx++; }); });
+  h += '</div>';
+  h += '<div style="border-top:1px solid #e0f1f5;padding-top:8px;margin-top:16px;font-size:10px;color:#999;text-align:center">MultiCare NeuroScience Institute — SurgicalCare™ Patient Platform</div>';
+  h += '</div>';
+  document.getElementById('printSummary').innerHTML = h;
+  document.getElementById('print-modal').classList.add('open');
+}
+
+function openWoundLogPrint() {
+  var checkins = getCheckins();
+  var h = '<div style="font-family:Inter,sans-serif;color:#0a2c36;max-width:800px;margin:0 auto;font-size:12px;line-height:1.5">';
+  h += '<div style="text-align:center;border-bottom:2px solid #1a9bb5;padding-bottom:12px;margin-bottom:16px"><div style="font-size:24px">🩹</div><div style="font-size:18px;font-weight:700;color:#0f3d4a">WOUND MONITORING LOG</div><div style="font-size:11px;color:#888">Patient: '+profile.name+' • Surgery: '+profile.surgery+'</div></div>';
+  h += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px"><thead><tr style="background:#e0f1f5"><th style="padding:6px;text-align:left;border:1px solid #b8e0ea">Date</th><th style="padding:6px;text-align:center;border:1px solid #b8e0ea">NWAT</th><th style="padding:6px;text-align:center;border:1px solid #b8e0ea">Tier</th></tr></thead><tbody>';
+  checkins.forEach(function(c) { var tier=getEscalationTier(c.score); h+='<tr><td style="padding:4px 6px;border:1px solid #e0f1f5">'+fmtDate(c.timestamp)+'</td><td style="padding:4px 6px;border:1px solid #e0f1f5;text-align:center;font-weight:700">'+c.score+'</td><td style="padding:4px 6px;border:1px solid #e0f1f5;text-align:center;color:'+tier.color+'">'+tier.label+'</td></tr>'; });
+  h += '</tbody></table></div>';
+  document.getElementById('printSummary').innerHTML = h;
+  document.getElementById('print-modal').classList.add('open');
+}
+
+lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SurgCode Pro - Operative Report Coding Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      colors: {
+        navy: { 50:'#f0f4f8', 100:'#d9e2ec', 200:'#bcccdc', 300:'#9fb3c8', 400:'#829ab1', 500:'#627d98', 600:'#486581', 700:'#334e68', 800:'#243b53', 900:'#1e293b', 950:'#102a43' },
+        brand: { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a5f' },
+        surface: { 50:'#ffffff', 100:'#f8fafc', 200:'#f1f5f9', 300:'#e2e8f0', 400:'#cbd5e1' },
+        success: { 50:'#f0fdf4', 100:'#dcfce7', 500:'#22c55e', 600:'#16a34a', 700:'#15803d' },
+        warn: { 50:'#fffbeb', 100:'#fef3c7', 500:'#f59e0b', 600:'#d97706', 700:'#b45309' },
+        danger: { 50:'#fef2f2', 100:'#fee2e2', 500:'#ef4444', 600:'#dc2626' },
+        orange: { 50:'#fff7ed', 100:'#ffedd5', 500:'#f97316', 600:'#ea580c' },
+        purple: { 50:'#faf5ff', 100:'#f3e8ff', 500:'#a855f7', 600:'#9333ea' },
+        teal: { 50:'#f0fdfa', 100:'#ccfbf1', 500:'#14b8a6', 600:'#0d9488' },
+      }
+    }
+  }
+};
+</script>
+<style>
+:root { --navy: #1e293b; --blue: #3b82f6; --blue-dark: #2563eb; --white: #ffffff; }
+* { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #f1f5f9; color: #1e293b; margin: 0; }
+.fade-in { animation: fadeIn .4s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes pulse-bar { 0%,100% { opacity:.4; } 50% { opacity:1; } }
+.pulse-bar { animation: pulse-bar 1.2s ease-in-out infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin .8s linear infinite; }
+.confidence-bar { transition: width .6s ease; }
+.section-collapse { overflow: hidden; transition: max-height .3s ease; }
+textarea:focus, select:focus, input:focus { outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,.25); }
+.modifier-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:600; cursor:help; }
+.matched-term { display:inline-block; padding:1px 8px; border-radius:9999px; font-size:11px; font-weight:500; background:#dbeafe; color:#1d4ed8; margin:2px; }
+@media print { .no-print{display:none!important;} }
+</style>
+</head>
+<body data-id="0" class="min-h-screen flex flex-col">
+<app-icon data-id="1" hidden data-icon="heart-pulse" data-palette="Blue"></app-icon>
+<app-disclaimer data-id="2" intent="medical"></app-disclaimer>
+
+<!-- HEADER -->
+<header data-id="3" id="header-nav-kx9a" class="bg-navy-900 text-white sticky top-0 z-50 no-print">
+  <div data-id="4" class="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+    <div data-id="5" class="flex items-center gap-3">
+      <svg data-id="6" id="logo-icon-m2f4" width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect data-id="7" width="36" height="36" rx="8" fill="#3b82f6"/>
+        <rect data-id="8" x="15" y="8" width="6" height="20" rx="1.5" fill="white"/>
+        <rect data-id="9" x="8" y="15" width="20" height="6" rx="1.5" fill="white"/>
+      </svg>
+      <div data-id="10">
+        <h1 data-id="11" class="text-lg md:text-xl font-bold leading-tight tracking-tight">SurgCode Pro</h1>
+        <p data-id="12" class="text-xs text-navy-300 hidden sm:block">Operative Report Coding Assistant</p>
+      </div>
+    </div>
+    <div data-id="13" class="hidden md:flex items-center gap-4 text-sm">
+      <span data-id="14" class="text-navy-300 flex items-center gap-1.5"><i data-id="15" data-lucide="user" class="w-4 h-4"></i> Alex</span>
+      <span data-id="16" class="text-navy-400">|</span>
+      <span data-id="17" class="text-navy-300 flex items-center gap-1.5"><i data-id="18" data-lucide="clock" class="w-4 h-4"></i> <span data-id="19" id="clock-r8m1">--</span></span>
+    </div>
+    <button data-id="20" id="mobile-menu-btn-v3x7" class="md:hidden p-2 rounded-lg hover:bg-navy-800 transition">
+      <i data-id="21" data-lucide="menu" class="w-6 h-6"></i>
+    </button>
+  </div>
+  <!-- Mobile menu -->
+  <nav data-id="22" id="mobile-menu-z4k2" class="hidden md:hidden bg-navy-800 border-t border-navy-700 px-4 py-3">
+    <div data-id="23" class="flex items-center justify-between text-sm text-navy-300">
+      <span data-id="24" class="flex items-center gap-1.5"><i data-id="25" data-lucide="user" class="w-4 h-4"></i> Alex</span>
+      <span data-id="26" class="flex items-center gap-1.5"><i data-id="27" data-lucide="clock" class="w-4 h-4"></i> <span data-id="28" id="clock-mobile-f2a1">--</span></span>
+      <button data-id="29" id="mobile-menu-close-q8r3" class="p-1"><i data-id="30" data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section data-id="31" id="hero-section-p3m9" class="bg-navy-900 text-white pb-8 pt-4 no-print">
+  <div data-id="32" class="max-w-4xl mx-auto px-4 md:px-6 text-center">
+    <p data-id="33" class="text-navy-300 text-sm mb-1">Paste or upload an operative report below</p>
+    <p data-id="34" class="text-navy-400 text-xs">Client-side analysis — your data never leaves your browser</p>
+  </div>
+</section>
+
+<!-- MAIN -->
+<main data-id="35" class="flex-1 max-w-5xl w-full mx-auto px-4 md:px-6 -mt-2 pb-12">
+
+  <!-- INPUT CARD -->
+  <div data-id="36" id="input-card-a7b2" class="bg-white rounded-2xl shadow-sm border border-surface-300/60 p-5 md:p-7 mb-6 fade-in">
+    <div data-id="37" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+      <h2 data-id="38" class="text-base font-semibold text-navy-900 flex items-center gap-2">
+        <i data-id="39" data-lucide="file-text" class="w-5 h-5 text-brand-500"></i> Operative Report
+      </h2>
+      <div data-id="40" class="flex items-center gap-2">
+        <!-- Specialty filter -->
+        <div data-id="41" class="relative">
+          <select data-id="42" id="specialty-filter-d4e1" class="appearance-none bg-surface-200 border border-surface-300 rounded-xl text-sm text-navy-800 pl-3 pr-9 py-2 font-medium cursor-pointer hover:bg-surface-300 transition">
+            <option data-id="43" value="all">All Specialties</option>
+            <option data-id="44" value="Neurosurgery">Neurosurgery</option>
+            <option data-id="45" value="Spine Surgery">Spine Surgery</option>
+            <option data-id="46" value="Orthopedic Surgery">Orthopedic Surgery</option>
+            <option data-id="47" value="General Surgery">General Surgery</option>
+            <option data-id="48" value="Cardiothoracic Surgery">Cardiothoracic Surgery</option>
+            <option data-id="49" value="Vascular Surgery">Vascular Surgery</option>
+            <option data-id="50" value="Urology">Urology</option>
+            <option data-id="51" value="Gynecologic Surgery">Gynecologic Surgery</option>
+            <option data-id="52" value="ENT / Head & Neck">ENT / Head & Neck</option>
+            <option data-id="53" value="Plastic & Reconstructive Surgery">Plastic & Reconstructive Surgery</option>
+            <option data-id="54" value="Ophthalmology">Ophthalmology</option>
+            <option data-id="55" value="Colorectal Surgery">Colorectal Surgery</option>
+            <option data-id="56" value="Pediatric Surgery">Pediatric Surgery</option>
+            <option data-id="57" value="Transplant Surgery">Transplant Surgery</option>
+          </select>
+          <i data-id="58" data-lucide="chevron-down" class="w-4 h-4 text-navy-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Textarea -->
+    <textarea data-id="59" id="report-textarea-k8m2" rows="14" class="w-full bg-surface-100 border border-surface-300 rounded-xl px-4 py-3 text-sm text-navy-900 leading-relaxed resize-y placeholder:text-navy-400 transition" placeholder="PREOPERATIVE DIAGNOSIS: L4-5 herniated nucleus pulposus with left lower extremity radiculopathy.
+
+POSTOPERATIVE DIAGNOSIS: Same.
+
+PROCEDURE PERFORMED: Left L4-5 microdiscectomy.
+
+DESCRIPTION OF PROCEDURE: The patient was brought to the operating room and placed in the prone position on the Jackson table. After general anesthesia was induced, the lumbar spine was prepped and draped in the usual sterile fashion. A midline incision was made over the L4-5 level. Fluoroscopy confirmed the correct level. A left-sided laminotomy was performed using Kerrison rongeurs. The ligamentum flavum was removed. The traversing L5 nerve root was identified and retracted medially. A large extruded disc fragment was identified and removed. The disc space was entered and additional loose fragments were removed. Hemostasis was obtained. The wound was irrigated and closed in layers.
+
+ESTIMATED BLOOD LOSS: 50 mL
+COMPLICATIONS: None"></textarea>
+
+    <!-- Controls row -->
+    <div data-id="60" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+      <div data-id="61" class="flex items-center gap-3">
+        <!-- File upload -->
+        <label data-id="62" id="file-upload-label-t5v2" class="flex items-center gap-2 px-4 py-2.5 bg-surface-200 hover:bg-surface-300 border border-surface-300 rounded-xl text-sm font-medium text-navy-700 cursor-pointer transition min-h-[44px]">
+          <i data-id="63" data-lucide="upload" class="w-4 h-4"></i> Upload .txt
+          <input data-id="64" type="file" id="file-upload-input-g3h7" accept=".txt" class="hidden" />
+        </label>
+        <!-- Clear -->
+        <button data-id="65" id="clear-btn-r2s8" class="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-navy-500 hover:text-danger-600 hover:bg-danger-50 rounded-xl transition min-h-[44px]">
+          <i data-id="66" data-lucide="trash-2" class="w-4 h-4"></i> Clear
+        </button>
+        <!-- Word count -->
+        <span data-id="67" id="word-count-e1k4" class="text-xs text-navy-400 tabular-nums">0 words</span>
+      </div>
+      <button data-id="68" id="analyze-btn-w9p5" class="flex items-center justify-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl shadow-sm hover:shadow transition min-h-[44px] text-sm">
+        <i data-id="69" data-lucide="search" class="w-4 h-4"></i> Analyze Report
+      </button>
+    </div>
+    <p data-id="70" id="file-msg-x5j3" class="text-xs text-warn-600 mt-2 hidden"></p>
+  </div>
+
+  <!-- PROCESSING INDICATOR -->
+  <div data-id="71" id="processing-indicator-b4c1" class="hidden mb-6">
+    <div data-id="72" class="bg-white rounded-2xl shadow-sm border border-surface-300/60 p-6 text-center">
+      <div data-id="73" class="flex items-center justify-center gap-3 mb-3">
+        <svg data-id="74" class="spinner w-6 h-6 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle data-id="75" cx="12" cy="12" r="10" stroke-opacity=".2"/><path data-id="76" d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>
+        <span data-id="77" class="text-sm font-semibold text-navy-800">Analyzing operative report…</span>
+      </div>
+      <div data-id="78" class="flex gap-1 justify-center">
+        <div data-id="79" class="w-2 h-2 rounded-full bg-brand-400 pulse-bar" style="animation-delay:0s"></div>
+        <div data-id="80" class="w-2 h-2 rounded-full bg-brand-400 pulse-bar" style="animation-delay:.2s"></div>
+        <div data-id="81" class="w-2 h-2 rounded-full bg-brand-400 pulse-bar" style="animation-delay:.4s"></div>
+      </div>
+      <p data-id="82" class="text-xs text-navy-400 mt-2">Running NLP pipeline, synonym expansion, TF-IDF scoring…</p>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div data-id="83" id="results-container-m3n7" class="hidden space-y-5 fade-in">
+    <!-- Summary bar -->
+    <div data-id="84" id="results-summary-q2w8" class="bg-white rounded-2xl shadow-sm border border-surface-300/60 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div data-id="85" class="flex items-center gap-4 flex-wrap">
+        <div data-id="86" class="flex items-center gap-2">
+          <i data-id="87" data-lucide="bar-chart-3" class="w-5 h-5 text-brand-500"></i>
+          <span data-id="88" class="text-sm font-semibold text-navy-900">Results</span>
+        </div>
+        <span data-id="89" id="total-codes-z8x1" class="text-xs bg-brand-100 text-brand-700 px-3 py-1 rounded-full font-semibold tabular-nums">0 codes found</span>
+        <span data-id="90" id="analysis-time-v2b9" class="text-xs text-navy-400 tabular-nums"></span>
+      </div>
+      <button data-id="91" id="copy-all-btn-j5f2" class="flex items-center gap-1.5 px-4 py-2 bg-navy-900 hover:bg-navy-800 text-white text-sm font-medium rounded-xl transition min-h-[44px]">
+        <i data-id="92" data-lucide="copy" class="w-4 h-4"></i> Copy All Codes
+      </button>
+    </div>
+
+    <!-- Results list -->
+    <div data-id="93" id="results-list-h4g6" class="space-y-4"></div>
+  </div>
+
+  <!-- EMPTY STATE (shown when no results) -->
+  <div data-id="94" id="no-results-y1t5" class="hidden">
+    <div data-id="95" class="bg-white rounded-2xl shadow-sm border border-surface-300/60 p-10 text-center">
+      <i data-id="96" data-lucide="search-x" class="w-10 h-10 text-navy-300 mx-auto mb-3"></i>
+      <p data-id="97" class="text-sm font-semibold text-navy-700 mb-1">No matching codes found</p>
+      <p data-id="98" class="text-xs text-navy-400">Try adding more detail to the operative report or changing the specialty filter.</p>
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer data-id="99" id="footer-d9k3" class="bg-navy-900 text-center py-6 px-4 mt-auto no-print">
+  <p data-id="100" class="text-xs text-navy-400 max-w-2xl mx-auto leading-relaxed mb-2">This tool provides coding suggestions only. All codes should be verified by a certified medical coder before submission.</p>
+  <p data-id="101" class="text-xs text-navy-500">Made by Copilot</p>
+</footer>
+
+<script>
+// ======================= CLOCK =======================
+function updateClock(){const d=new Date();const s=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'});document.getElementById('clock-r8m1').textContent=s;const m=document.getElementById('clock-mobile-f2a1');if(m)m.textContent=s;}
+updateClock();setInterval(updateClock,30000);
+
+// ======================= MOBILE MENU =======================
+document.getElementById('mobile-menu-btn-v3x7').addEventListener('click',()=>{document.getElementById('mobile-menu-z4k2').classList.toggle('hidden');});
+document.getElementById('mobile-menu-close-q8r3').addEventListener('click',()=>{document.getElementById('mobile-menu-z4k2').classList.add('hidden');});
+
+// ======================= FILE UPLOAD =======================
+document.getElementById('file-upload-input-g3h7').addEventListener('change',function(e){
+  const f=e.target.files[0];if(!f)return;
+  const msg=document.getElementById('file-msg-x5j3');
+  if(f.name.toLowerCase().endsWith('.pdf')){msg.textContent='PDF files are not supported. Please copy-paste the text from your PDF instead.';msg.classList.remove('hidden');return;}
+  if(!f.name.toLowerCase().endsWith('.txt')){msg.textContent='Only .txt files are supported. Please copy-paste for other formats.';msg.classList.remove('hidden');return;}
+  msg.classList.add('hidden');
+  const r=new FileReader();r.onload=function(ev){document.getElementById('report-textarea-k8m2').value=ev.target.result;updateWordCount();};r.readAsText(f);
+});
+
+// ======================= WORD COUNT =======================
+function updateWordCount(){const t=document.getElementById('report-textarea-k8m2').value.trim();const c=t?t.split(/\s+/).length:0;document.getElementById('word-count-e1k4').textContent=c+' word'+(c!==1?'s':'');}
+document.getElementById('report-textarea-k8m2').addEventListener('input',updateWordCount);
+
+// ======================= CLEAR =======================
+document.getElementById('clear-btn-r2s8').addEventListener('click',()=>{
+  document.getElementById('report-textarea-k8m2').value='';updateWordCount();
+  document.getElementById('results-container-m3n7').classList.add('hidden');
+  document.getElementById('no-results-y1t5').classList.add('hidden');
+  document.getElementById('file-msg-x5j3').classList.add('hidden');
+});
+
+// ======================= MEDICAL SYNONYM DICTIONARY =======================
+const SYNONYMS={"lap":"laparoscopic","acdf":"anterior cervical discectomy fusion","tlif":"transforaminal lumbar interbody fusion","plif":"posterior lumbar interbody fusion","alif":"anterior lumbar interbody fusion","xlif":"lateral lumbar interbody fusion","llif":"lateral lumbar interbody fusion","olif":"oblique lateral interbody fusion","tka":"total knee arthroplasty","tha":"total hip arthroplasty","orif":"open reduction internal fixation","hnp":"herniated nucleus pulposus","ddd":"degenerative disc disease","acl":"anterior cruciate ligament","pcl":"posterior cruciate ligament","ctr":"carpal tunnel release","cts":"carpal tunnel syndrome","cabg":"coronary artery bypass graft","turp":"transurethral resection prostate","turbt":"transurethral resection bladder tumor","tah":"total abdominal hysterectomy","bso":"bilateral salpingo-oophorectomy","cea":"carotid endarterectomy","evar":"endovascular aneurysm repair","vp":"ventriculoperitoneal","evd":"external ventricular drain","dbs":"deep brain stimulation","scs":"spinal cord stimulator","vns":"vagus nerve stimulator","etv":"endoscopic third ventriculostomy","icp":"intracranial pressure","avm":"arteriovenous malformation","sah":"subarachnoid hemorrhage","sdh":"subdural hematoma","edh":"epidural hematoma","tbi":"traumatic brain injury","srs":"stereotactic radiosurgery","ecog":"electrocorticography","fess":"functional endoscopic sinus surgery","ioc":"intraoperative cholangiogram","egd":"esophagogastroduodenoscopy","rygb":"roux-en-y gastric bypass","vsg":"vertical sleeve gastrectomy","sbo":"small bowel obstruction","lar":"low anterior resection","apr":"abdominoperineal resection","vats":"video-assisted thoracoscopic surgery","pso":"pedicle subtraction osteotomy","peek":"polyetheretherketone","pmma":"polymethylmethacrylate","gbm":"glioblastoma multiforme","mca":"middle cerebral artery","rtsa":"reverse total shoulder arthroplasty","tsa":"total shoulder arthroplasty","uka":"unicompartmental knee arthroplasty","rcr":"rotator cuff repair","mis":"minimally invasive","bmp":"bone morphogenetic protein","dbm":"demineralized bone matrix","csdh":"chronic subdural hematoma","mua":"manipulation under anesthesia","si":"sacroiliac","ipg":"implantable pulse generator","crps":"complex regional pain syndrome","avr":"aortic valve replacement","mvr":"mitral valve replacement","icd":"implantable cardioverter defibrillator","tep":"totally extraperitoneal","tapp":"transabdominal preperitoneal","tlh":"total laparoscopic hysterectomy","uppp":"uvulopalatopharyngoplasty","stsg":"split-thickness skin graft","ftsg":"full-thickness skin graft","iol":"intraocular lens","dcr":"dacryocystorhinostomy","i&d":"incision and drainage","d&c":"dilation and curettage"};
+
+// ======================= STOPWORDS =======================
+const STOPWORDS=new Set(["the","a","an","and","or","but","in","on","at","to","for","of","with","by","from","is","was","were","are","been","be","have","has","had","do","does","did","will","would","shall","should","may","might","can","could","that","this","these","those","it","its","i","we","he","she","they","them","their","my","your","our","his","her","not","no","nor","so","if","then","than","too","very","just","also","about","after","before","into","through","during","each","some","such","only","other","over","under","between","out","up","down","off","again","further","once","here","there","when","where","how","all","both","any","few","more","most","own","same","as","until","while","per","via","vs","etc","ie","eg","ml","cc","cm","mm","mg","kg","am","pm"]);
+
+// ======================= CODE DATABASE =======================
+const CODE_DB=[
+// ===== NEUROSURGERY =====
+{cptCode:"61510",cptDescription:"Craniotomy for excision of supratentorial brain tumor",icd10:[{code:"C71.9",desc:"Malignant neoplasm of brain, unspecified"},{code:"D33.0",desc:"Benign neoplasm of brain, supratentorial"},{code:"D32.0",desc:"Benign neoplasm of cerebral meninges"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","resection","excision","removal","tumor"],anatomyTerms:["brain","cerebral","supratentorial","frontal","parietal","temporal","occipital","cortex","hemisphere"],approachTerms:["open","craniotomy"],diagnosisTerms:["tumor","glioma","meningioma","astrocytoma","glioblastoma","neoplasm","mass","lesion","gbm"],instrumentTerms:["cusa","ultrasonic","aspirator","cottonoids","bipolar","microscope"],phraseMatches:["brain tumor resection","craniotomy for tumor","brain tumor","supratentorial tumor"]}},
+{cptCode:"61518",cptDescription:"Craniotomy for excision of infratentorial brain tumor",icd10:[{code:"C71.6",desc:"Malignant neoplasm of cerebellum"},{code:"D33.1",desc:"Benign neoplasm of brain, infratentorial"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","resection","excision","removal"],anatomyTerms:["posterior fossa","infratentorial","cerebellum","brainstem","fourth ventricle","cerebellar"],approachTerms:["suboccipital","midline","retrosigmoid"],diagnosisTerms:["acoustic neuroma","vestibular schwannoma","cerebellar tumor","hemangioblastoma","medulloblastoma","ependymoma"],instrumentTerms:["microscope","cusa","ultrasonic"],phraseMatches:["posterior fossa craniotomy","cerebellar tumor","infratentorial tumor","acoustic neuroma"]}},
+{cptCode:"61512",cptDescription:"Craniotomy for excision of meningioma",icd10:[{code:"D32.0",desc:"Benign neoplasm of cerebral meninges"},{code:"C70.0",desc:"Malignant neoplasm of cerebral meninges"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","resection","excision","removal"],anatomyTerms:["meninges","dura","falx","convexity","parasagittal","sphenoid wing","skull base","sagittal sinus","tentorium"],approachTerms:["craniotomy","open"],diagnosisTerms:["meningioma","dural-based","dural","en plaque","simpson"],instrumentTerms:["bipolar","drill","microscope","cusa"],phraseMatches:["meningioma resection","dural-based tumor","simpson grade","convexity meningioma"]}},
+{cptCode:"61546",cptDescription:"Craniotomy for craniopharyngioma or pituitary tumor, intracranial approach",icd10:[{code:"D35.2",desc:"Benign neoplasm of pituitary gland"},{code:"C75.1",desc:"Malignant neoplasm of pituitary gland"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","resection","excision"],anatomyTerms:["pituitary","sella","sellar","suprasellar","diaphragma"],approachTerms:["transcranial","subfrontal","pterional"],diagnosisTerms:["pituitary adenoma","craniopharyngioma","pituitary tumor","macroadenoma"],instrumentTerms:["microscope"],phraseMatches:["pituitary tumor","transcranial approach","pituitary adenoma"]}},
+{cptCode:"62165",cptDescription:"Neuroendoscopy, transsphenoidal removal of pituitary tumor",icd10:[{code:"D35.2",desc:"Benign neoplasm of pituitary gland"},{code:"E22.0",desc:"Acromegaly and pituitary gigantism"},{code:"E24.0",desc:"Pituitary-dependent Cushing disease"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["endoscopic","transsphenoidal","endonasal","resection","removal"],anatomyTerms:["pituitary","sella","sellar","sphenoid sinus","nasoseptal","cavernous sinus","suprasellar"],approachTerms:["endoscopic","transsphenoidal","endonasal","transnasal"],diagnosisTerms:["pituitary adenoma","adenoma","acromegaly","cushing","prolactinoma","macroadenoma"],instrumentTerms:["nasoseptal flap","endoscope","ring curette","image guidance"],phraseMatches:["endoscopic transsphenoidal","pituitary adenoma","nasoseptal flap","endoscopic endonasal","transsphenoidal approach"]}},
+{cptCode:"61760",cptDescription:"Stereotactic biopsy of intracranial lesion",icd10:[{code:"C71.9",desc:"Malignant neoplasm of brain, unspecified"},{code:"D49.6",desc:"Neoplasm of unspecified behavior of brain"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["biopsy","stereotactic","needle biopsy"],anatomyTerms:["brain","intracranial","cerebral","thalamic","basal ganglia","deep"],approachTerms:["stereotactic","frameless","frame-based","image-guided"],diagnosisTerms:["lesion","mass","tumor","lymphoma","glioma"],instrumentTerms:["navigation","biopsy needle","stealth"],phraseMatches:["stereotactic brain biopsy","needle biopsy","image-guided biopsy","stereotactic biopsy"]}},
+{cptCode:"61863",cptDescription:"Stereotactic radiosurgery, 1 simple cranial lesion",icd10:[{code:"C79.31",desc:"Secondary malignant neoplasm of brain"},{code:"C71.9",desc:"Malignant neoplasm of brain, unspecified"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["radiosurgery","stereotactic","irradiation","treatment"],anatomyTerms:["brain","cranial","intracranial"],approachTerms:["stereotactic","gamma knife","cyberknife","linac"],diagnosisTerms:["brain metastasis","metastatic","tumor","srs","schwannoma"],instrumentTerms:["gamma knife","cyberknife"],phraseMatches:["stereotactic radiosurgery","gamma knife","brain metastasis"]}},
+{cptCode:"61700",cptDescription:"Craniotomy for clipping of intracranial aneurysm",icd10:[{code:"I67.1",desc:"Cerebral aneurysm, nonruptured"},{code:"I60.9",desc:"Nontraumatic subarachnoid hemorrhage, unspecified"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","clipping","clip ligation","clip application"],anatomyTerms:["aneurysm","cerebral","intracranial","circle of willis","anterior communicating","posterior communicating","middle cerebral artery","basilar"],approachTerms:["pterional","craniotomy","open"],diagnosisTerms:["aneurysm","subarachnoid hemorrhage","sah","berry aneurysm","ruptured"],instrumentTerms:["clip","aneurysm clip","temporary clip","microscope","indocyanine green"],phraseMatches:["aneurysm clipping","subarachnoid hemorrhage","clip ligation","intracranial aneurysm"]}},
+{cptCode:"61624",cptDescription:"Endovascular embolization, intracranial",icd10:[{code:"I67.1",desc:"Cerebral aneurysm, nonruptured"},{code:"Q28.2",desc:"Arteriovenous malformation of cerebral vessels"},{code:"I60.9",desc:"Nontraumatic subarachnoid hemorrhage"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["embolization","coiling","endovascular","flow diversion"],anatomyTerms:["aneurysm","intracranial","cerebral","arteriovenous"],approachTerms:["endovascular","transfemoral","catheter"],diagnosisTerms:["aneurysm","avm","arteriovenous malformation","fistula"],instrumentTerms:["coil","pipeline","flow diverter","microcatheter","stent"],phraseMatches:["endovascular embolization","coil embolization","flow diverter","pipeline embolization"]}},
+{cptCode:"61680",cptDescription:"Surgery of intracranial AVM, supratentorial, simple",icd10:[{code:"Q28.2",desc:"Arteriovenous malformation of cerebral vessels"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["excision","resection","removal","surgery"],anatomyTerms:["avm","arteriovenous malformation","nidus","feeding artery","draining vein","supratentorial"],approachTerms:["craniotomy","open"],diagnosisTerms:["arteriovenous malformation","avm","spetzler-martin","vascular malformation"],instrumentTerms:["bipolar","microscope","indocyanine green"],phraseMatches:["avm resection","arteriovenous malformation","spetzler-martin"]}},
+{cptCode:"61312",cptDescription:"Craniotomy for evacuation of hematoma, supratentorial, extradural or subdural",icd10:[{code:"I62.00",desc:"Nontraumatic subdural hemorrhage, unspecified"},{code:"S06.5X0A",desc:"Traumatic subdural hemorrhage"},{code:"S06.4X0A",desc:"Epidural hemorrhage"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","evacuation","drainage","removal"],anatomyTerms:["hematoma","subdural","epidural","supratentorial","extradural"],approachTerms:["craniotomy","open"],diagnosisTerms:["subdural hematoma","epidural hematoma","hemorrhage","traumatic","acute subdural","edh","sdh","tbi"],instrumentTerms:["suction","irrigation","drain"],phraseMatches:["hematoma evacuation","subdural hematoma","epidural hematoma","acute subdural"]}},
+{cptCode:"61314",cptDescription:"Craniotomy for evacuation of chronic subdural hematoma",icd10:[{code:"I62.00",desc:"Nontraumatic subdural hemorrhage, unspecified"},{code:"I62.03",desc:"Chronic subdural hemorrhage"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","evacuation","drainage"],anatomyTerms:["subdural","hematoma","membrane","chronic"],approachTerms:["craniotomy","open"],diagnosisTerms:["chronic subdural hematoma","chronic subdural","csdh","recurrent subdural"],instrumentTerms:["drain","jp drain","suction"],phraseMatches:["chronic subdural hematoma","subdural evacuation","chronic subdural"]}},
+{cptCode:"61156",cptDescription:"Burr hole(s) for aspiration of hematoma or cyst",icd10:[{code:"I62.00",desc:"Nontraumatic subdural hemorrhage"},{code:"I62.03",desc:"Chronic subdural hemorrhage"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["burr hole","aspiration","drainage","trephination"],anatomyTerms:["subdural","hematoma","cyst","cerebral"],approachTerms:["burr hole","percutaneous"],diagnosisTerms:["subdural","hematoma","chronic subdural","hygroma"],instrumentTerms:["drill","perforator","drain","twist drill"],phraseMatches:["burr hole drainage","subdural aspiration","burr hole"]}},
+{cptCode:"61107",cptDescription:"Twist drill hole for subdural drainage",icd10:[{code:"I62.03",desc:"Chronic subdural hemorrhage"},{code:"I62.00",desc:"Nontraumatic subdural hemorrhage"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["twist drill","drainage","craniostomy"],anatomyTerms:["subdural","hematoma"],approachTerms:["twist drill","bedside","percutaneous"],diagnosisTerms:["chronic subdural","subdural hematoma","csdh"],instrumentTerms:["twist drill","drain","catheter"],phraseMatches:["twist drill craniostomy","bedside drainage","twist drill"]}},
+{cptCode:"61320",cptDescription:"Decompressive craniectomy",icd10:[{code:"G93.6",desc:"Cerebral edema"},{code:"I63.9",desc:"Cerebral infarction, unspecified"},{code:"S06.9",desc:"Unspecified intracranial injury"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniectomy","decompression","decompressive","hemicraniectomy"],anatomyTerms:["skull","brain","hemisphere","dura","cerebral"],approachTerms:["decompressive","hemicraniectomy"],diagnosisTerms:["malignant edema","herniation","brain swelling","cerebral edema","malignant mca stroke","increased intracranial pressure","refractory icp"],instrumentTerms:["craniotome","dural patch","duraplasty"],phraseMatches:["decompressive craniectomy","hemicraniectomy","malignant edema","brain herniation"]}},
+{cptCode:"62223",cptDescription:"Ventriculoperitoneal shunt creation",icd10:[{code:"G91.1",desc:"Obstructive hydrocephalus"},{code:"G91.9",desc:"Hydrocephalus, unspecified"},{code:"G91.0",desc:"Communicating hydrocephalus"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["shunt","placement","creation","insertion","ventriculoperitoneal"],anatomyTerms:["ventricle","peritoneum","lateral ventricle","frontal horn","abdomen"],approachTerms:["ventriculoperitoneal","vp"],diagnosisTerms:["hydrocephalus","ventriculomegaly","obstructive","communicating","csf"],instrumentTerms:["programmable valve","catheter","reservoir","shunt valve","medtronic","strata"],phraseMatches:["vp shunt placement","ventriculoperitoneal shunt","csf diversion","vp shunt"]}},
+{cptCode:"62230",cptDescription:"VP shunt revision",icd10:[{code:"T85.01",desc:"Breakdown of ventricular intracranial shunt"},{code:"G91.1",desc:"Obstructive hydrocephalus"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["revision","replacement","repair","shunt revision"],anatomyTerms:["ventricle","shunt","catheter","proximal","distal"],approachTerms:["revision"],diagnosisTerms:["shunt malfunction","shunt failure","shunt obstruction","overdrainage","underdrainage"],instrumentTerms:["catheter","valve","reservoir"],phraseMatches:["shunt revision","shunt malfunction","vp shunt revision"]}},
+{cptCode:"62258",cptDescription:"Removal of complete shunt system",icd10:[{code:"T85.730A",desc:"Infection of ventricular shunt"},{code:"T85.01",desc:"Breakdown of ventricular intracranial shunt"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["removal","explant","extraction","externalization"],anatomyTerms:["shunt","catheter","valve","reservoir"],approachTerms:["removal"],diagnosisTerms:["shunt infection","infected shunt","shunt erosion"],instrumentTerms:[],phraseMatches:["shunt removal","shunt infection","shunt externalization"]}},
+{cptCode:"62190",cptDescription:"External ventricular drain placement",icd10:[{code:"G91.1",desc:"Obstructive hydrocephalus"},{code:"G93.2",desc:"Benign intracranial hypertension"},{code:"S06.9",desc:"Unspecified intracranial injury"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["evd","external ventricular drain","ventriculostomy","placement","insertion"],anatomyTerms:["ventricle","frontal horn","kocher","lateral ventricle"],approachTerms:["percutaneous","kocher point","frontal"],diagnosisTerms:["hydrocephalus","intracranial hemorrhage","icp","elevated icp","intraventricular hemorrhage"],instrumentTerms:["drain","catheter","bolt","transducer"],phraseMatches:["external ventricular drain","evd placement","kocher point","evd"]}},
+{cptCode:"62200",cptDescription:"Endoscopic third ventriculostomy",icd10:[{code:"G91.1",desc:"Obstructive hydrocephalus"},{code:"G91.0",desc:"Communicating hydrocephalus"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["ventriculostomy","endoscopic","fenestration","etv"],anatomyTerms:["third ventricle","floor","aqueduct","tuber cinereum","basilar artery"],approachTerms:["endoscopic","neuroendoscopic"],diagnosisTerms:["hydrocephalus","aqueductal stenosis","obstructive hydrocephalus"],instrumentTerms:["endoscope","balloon","neuroendoscope"],phraseMatches:["endoscopic third ventriculostomy","etv","aqueductal stenosis"]}},
+{cptCode:"61885",cptDescription:"Insertion of neurostimulator array, cranial",icd10:[{code:"G20",desc:"Parkinson disease"},{code:"G25.0",desc:"Essential tremor"},{code:"G24.1",desc:"Genetic torsion dystonia"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["implant","insertion","placement","deep brain stimulation","dbs"],anatomyTerms:["subthalamic","globus pallidus","gpi","stn","thalamus","vim","basal ganglia"],approachTerms:["stereotactic","bilateral","frame-based"],diagnosisTerms:["parkinson","tremor","dystonia","essential tremor","movement disorder"],instrumentTerms:["electrode","lead","neurostimulator","medtronic","boston scientific"],phraseMatches:["deep brain stimulation","dbs implant","dbs placement"]}},
+{cptCode:"61886",cptDescription:"Insertion of cranial neurostimulator pulse generator",icd10:[{code:"G20",desc:"Parkinson disease"},{code:"G25.0",desc:"Essential tremor"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["insertion","placement","implant","generator"],anatomyTerms:["subclavicular","chest","infraclavicular","subcutaneous pocket"],approachTerms:["subcutaneous"],diagnosisTerms:["parkinson","tremor","dystonia"],instrumentTerms:["pulse generator","ipg","neurostimulator","battery"],phraseMatches:["pulse generator","ipg placement","dbs generator"]}},
+{cptCode:"64568",cptDescription:"Vagus nerve stimulator implantation",icd10:[{code:"G40.909",desc:"Epilepsy, unspecified, not intractable"},{code:"G40.309",desc:"Generalized idiopathic epilepsy, not intractable"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["implantation","placement","insertion","vagus nerve stimulator"],anatomyTerms:["vagus nerve","carotid sheath","neck","chest"],approachTerms:["cervical","open"],diagnosisTerms:["epilepsy","seizure","refractory epilepsy","intractable seizures"],instrumentTerms:["vns","electrode","pulse generator","lead"],phraseMatches:["vagus nerve stimulator","vns implantation","vns"]}},
+{cptCode:"61533",cptDescription:"Craniotomy for epilepsy with electrocorticography",icd10:[{code:"G40.109",desc:"Localization-related epilepsy with simple partial seizures"},{code:"G40.209",desc:"Localization-related epilepsy with complex partial seizures"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","resection","epilepsy surgery","mapping"],anatomyTerms:["cortex","temporal","frontal","epileptic focus","seizure focus"],approachTerms:["craniotomy","open","awake"],diagnosisTerms:["epilepsy","seizure","refractory","intractable","focal"],instrumentTerms:["grid","strip","electrodes","ecog","electrocorticography"],phraseMatches:["epilepsy surgery","electrocorticography","seizure focus"]}},
+{cptCode:"61537",cptDescription:"Temporal lobectomy with electrocorticography",icd10:[{code:"G40.109",desc:"Localization-related epilepsy"},{code:"G40.209",desc:"Localization-related epilepsy, complex partial"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["lobectomy","temporal lobectomy","resection","amygdalohippocampectomy"],anatomyTerms:["temporal lobe","hippocampus","amygdala","mesial temporal"],approachTerms:["craniotomy","open"],diagnosisTerms:["epilepsy","mesial temporal sclerosis","hippocampal sclerosis","temporal lobe epilepsy"],instrumentTerms:["ecog","microscope","electrodes"],phraseMatches:["temporal lobectomy","mesial temporal sclerosis","amygdalohippocampectomy"]}},
+{cptCode:"62120",cptDescription:"Cranioplasty for skull defect repair",icd10:[{code:"M89.8X8",desc:"Other specified disorders of bone"},{code:"S02.91",desc:"Unspecified fracture of skull"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["cranioplasty","repair","reconstruction","replacement"],anatomyTerms:["skull","cranial","bone flap","cranial defect","calvarium"],approachTerms:["open"],diagnosisTerms:["skull defect","cranial defect","bone flap","craniectomy defect"],instrumentTerms:["titanium mesh","peek","custom implant","plate","screws","medpor"],phraseMatches:["cranioplasty repair","skull defect","bone flap replacement"]}},
+{cptCode:"62000",cptDescription:"Craniotomy for craniosynostosis",icd10:[{code:"Q75.0",desc:"Craniosynostosis"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","strip craniectomy","cranial vault remodeling","osteotomy"],anatomyTerms:["sagittal","metopic","coronal","lambdoid","cranial vault","suture"],approachTerms:["open","endoscopic"],diagnosisTerms:["craniosynostosis","premature fusion","scaphocephaly","trigonocephaly","plagiocephaly"],instrumentTerms:["craniotome","helmet","springs","distractor"],phraseMatches:["craniosynostosis repair","cranial vault remodeling","strip craniectomy"]}},
+{cptCode:"61316",cptDescription:"Placement of intracranial pressure monitoring device",icd10:[{code:"G93.2",desc:"Benign intracranial hypertension"},{code:"S06.9",desc:"Unspecified intracranial injury"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["placement","insertion","monitoring","icp monitor"],anatomyTerms:["intracranial","brain","parenchyma","frontal"],approachTerms:["percutaneous","twist drill","burr hole"],diagnosisTerms:["intracranial pressure","elevated icp","traumatic brain injury","tbi","cerebral edema"],instrumentTerms:["bolt","camino","fiberoptic","codman","transducer"],phraseMatches:["icp monitor","intracranial pressure monitoring","icp monitoring"]}},
+{cptCode:"61440",cptDescription:"Craniotomy for drainage of subdural empyema",icd10:[{code:"G06.0",desc:"Intracranial abscess and granuloma"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["craniotomy","drainage","evacuation","washout"],anatomyTerms:["subdural","intracranial","empyema"],approachTerms:["craniotomy","open"],diagnosisTerms:["subdural empyema","intracranial infection","empyema","abscess"],instrumentTerms:["irrigation","drain"],phraseMatches:["subdural empyema","intracranial infection"]}},
+{cptCode:"61154",cptDescription:"Burr hole(s) for drainage of brain abscess",icd10:[{code:"G06.0",desc:"Intracranial abscess and granuloma"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["burr hole","drainage","aspiration"],anatomyTerms:["brain","cerebral","intracranial","abscess"],approachTerms:["burr hole","stereotactic"],diagnosisTerms:["brain abscess","cerebral abscess","intracranial abscess"],instrumentTerms:["needle","catheter","drain"],phraseMatches:["brain abscess drainage","cerebral abscess","brain abscess"]}},
+{cptCode:"62161",cptDescription:"Neuroendoscopy for excision of colloid cyst",icd10:[{code:"D33.0",desc:"Benign neoplasm of brain, supratentorial"},{code:"G91.1",desc:"Obstructive hydrocephalus"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["neuroendoscopy","excision","removal","resection"],anatomyTerms:["colloid cyst","third ventricle","foramen of monro","intraventricular"],approachTerms:["endoscopic","neuroendoscopic","transventricular"],diagnosisTerms:["colloid cyst","intraventricular cyst","hydrocephalus"],instrumentTerms:["endoscope","grasping forceps"],phraseMatches:["colloid cyst excision","third ventricle cyst","colloid cyst"]}},
+{cptCode:"61781",cptDescription:"Stereotactic cranial computer-assisted navigation",icd10:[{code:"C71.9",desc:"Malignant neoplasm of brain"},{code:"D33.0",desc:"Benign neoplasm of brain"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["navigation","stereotactic","image-guided","computer-assisted"],anatomyTerms:["cranial","brain","intracranial"],approachTerms:["stereotactic","frameless"],diagnosisTerms:["tumor","lesion","mass"],instrumentTerms:["stealth","brainlab","o-arm","navigation","neuronavigation","fiducials"],phraseMatches:["stereotactic navigation","neuronavigation","image-guided surgery"]}},
+{cptCode:"64721",cptDescription:"Carpal tunnel release",icd10:[{code:"G56.00",desc:"Carpal tunnel syndrome, unspecified upper limb"},{code:"G56.01",desc:"Carpal tunnel syndrome, right upper limb"},{code:"G56.02",desc:"Carpal tunnel syndrome, left upper limb"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["release","decompression","carpal tunnel release"],anatomyTerms:["carpal tunnel","median nerve","transverse carpal ligament","wrist","hand"],approachTerms:["open","endoscopic","mini-open"],diagnosisTerms:["carpal tunnel syndrome","median neuropathy","cts","nerve compression"],instrumentTerms:["retractor","knife"],phraseMatches:["carpal tunnel release","median nerve decompression"]}},
+{cptCode:"64718",cptDescription:"Ulnar nerve transposition at elbow",icd10:[{code:"G56.20",desc:"Lesion of ulnar nerve, unspecified"},{code:"G56.21",desc:"Lesion of ulnar nerve, right"},{code:"G56.22",desc:"Lesion of ulnar nerve, left"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["transposition","decompression","neurolysis","release"],anatomyTerms:["ulnar nerve","cubital tunnel","elbow","medial epicondyle","olecranon groove"],approachTerms:["anterior","submuscular","subcutaneous","open"],diagnosisTerms:["cubital tunnel syndrome","ulnar neuropathy","ulnar nerve entrapment"],instrumentTerms:["vessel loop","retractor"],phraseMatches:["ulnar nerve transposition","cubital tunnel syndrome","ulnar nerve decompression"]}},
+{cptCode:"64708",cptDescription:"Neuroplasty, major peripheral nerve",icd10:[{code:"G56.90",desc:"Unspecified mononeuropathy of upper limb"},{code:"G57.90",desc:"Unspecified mononeuropathy of lower limb"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["neuroplasty","neurolysis","decompression","release","nerve exploration"],anatomyTerms:["peripheral nerve","brachial plexus","sciatic","peroneal","tibial"],approachTerms:["open","microsurgical"],diagnosisTerms:["nerve entrapment","neuropathy","nerve compression","nerve injury"],instrumentTerms:["microscope","vessel loop","nerve stimulator"],phraseMatches:["nerve decompression","neuroplasty","peripheral nerve"]}},
+{cptCode:"64885",cptDescription:"Nerve graft, head or neck, up to 4 cm",icd10:[{code:"S04.9",desc:"Injury of unspecified cranial nerve"},{code:"G51.0",desc:"Bell palsy"}],specialty:"Neurosurgery",keywordWeights:{procedureTerms:["nerve graft","grafting","interposition","repair"],anatomyTerms:["nerve","sural","facial nerve","head","neck","cable graft"],approachTerms:["microsurgical","open"],diagnosisTerms:["nerve gap","nerve injury","nerve transection","facial nerve injury"],instrumentTerms:["microscope","microsurgical","suture"],phraseMatches:["nerve graft","sural nerve graft","cable graft"]}},
+
+// ===== SPINE SURGERY =====
+{cptCode:"22551",cptDescription:"Anterior cervical discectomy and fusion (ACDF), single level",icd10:[{code:"M50.20",desc:"Other cervical disc displacement, unspecified"},{code:"M50.120",desc:"Cervical disc disorder with radiculopathy, unspecified"},{code:"M47.812",desc:"Spondylosis without myelopathy, cervical region"},{code:"M50.020",desc:"Cervical disc disorder with myelopathy, unspecified"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["discectomy","fusion","acdf","arthrodesis","anterior cervical"],anatomyTerms:["cervical","disc","vertebral body","endplate","c3-c4","c4-c5","c5-c6","c6-c7","c7-t1","interspace","intervertebral"],approachTerms:["anterior","smith-robinson","anteromedial"],diagnosisTerms:["cervical disc herniation","radiculopathy","myelopathy","spondylosis","stenosis","disc degeneration","foraminal stenosis"],instrumentTerms:["cervical plate","interbody cage","allograft","peek","caspar pins","retractor","fluoroscopy"],phraseMatches:["anterior cervical discectomy","acdf","cervical disc herniation","cervical plate","interbody cage","anterior cervical fusion"]}},
+{cptCode:"22552",cptDescription:"ACDF, each additional interspace",icd10:[{code:"M50.20",desc:"Other cervical disc displacement"},{code:"M50.120",desc:"Cervical disc disorder with radiculopathy"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["acdf","additional level","additional interspace","two-level","three-level","multi-level"],anatomyTerms:["cervical","disc","adjacent level","contiguous"],approachTerms:["anterior"],diagnosisTerms:["multi-level","two-level","adjacent","contiguous","cervical disc"],instrumentTerms:["plate","cage"],phraseMatches:["additional level","two-level acdf","multi-level fusion","additional interspace"]}},
+{cptCode:"22554",cptDescription:"Anterior cervical corpectomy",icd10:[{code:"M48.02",desc:"Spinal stenosis, cervical region"},{code:"M47.12",desc:"Other spondylosis with myelopathy, cervical"},{code:"S12.9",desc:"Fracture of neck, unspecified"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["corpectomy","vertebrectomy","anterior"],anatomyTerms:["cervical","vertebral body","cervical spine","spinal cord"],approachTerms:["anterior","smith-robinson"],diagnosisTerms:["opll","ossified posterior longitudinal ligament","stenosis","myelopathy","cervical fracture","burst fracture"],instrumentTerms:["expandable cage","strut graft","plate","fibula graft","titanium mesh cage"],phraseMatches:["cervical corpectomy","anterior cervical corpectomy","expandable cage","vertebral body removal"]}},
+{cptCode:"22856",cptDescription:"Cervical total disc arthroplasty",icd10:[{code:"M50.20",desc:"Other cervical disc displacement"},{code:"M50.120",desc:"Cervical disc disorder with radiculopathy"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["disc replacement","arthroplasty","artificial disc","disc arthroplasty"],anatomyTerms:["cervical","disc","intervertebral","endplate"],approachTerms:["anterior"],diagnosisTerms:["cervical disc herniation","radiculopathy","disc degeneration"],instrumentTerms:["mobi-c","prestige","prodisc-c","artificial disc","prosthesis","motion preservation"],phraseMatches:["cervical disc replacement","artificial disc","total disc arthroplasty","disc replacement"]}},
+{cptCode:"63020",cptDescription:"Cervical laminectomy",icd10:[{code:"M48.02",desc:"Spinal stenosis, cervical"},{code:"M47.12",desc:"Spondylosis with myelopathy, cervical"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["laminectomy","decompression","laminectomy posterior"],anatomyTerms:["cervical","lamina","spinal canal","spinal cord","cervical spine"],approachTerms:["posterior"],diagnosisTerms:["cervical stenosis","cervical myelopathy","csm","cervical spondylotic myelopathy","spinal cord compression"],instrumentTerms:["kerrison","rongeur","drill","burr"],phraseMatches:["cervical laminectomy","posterior cervical decompression","cervical myelopathy","cervical stenosis"]}},
+{cptCode:"63052",cptDescription:"Cervical laminoplasty",icd10:[{code:"M48.02",desc:"Spinal stenosis, cervical"},{code:"M47.12",desc:"Spondylosis with myelopathy, cervical"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["laminoplasty","open-door","french-door","canal expansion","hinge"],anatomyTerms:["cervical","lamina","spinal canal","hinge side","open side"],approachTerms:["posterior","open-door","french-door"],diagnosisTerms:["cervical myelopathy","cervical stenosis","opll","multilevel stenosis","spinal cord compression"],instrumentTerms:["plate","miniplate","allograft","spacer","suture"],phraseMatches:["cervical laminoplasty","open-door laminoplasty","canal expansion"]}},
+{cptCode:"22600",cptDescription:"Posterior cervical fusion",icd10:[{code:"M43.12",desc:"Spondylolisthesis, cervical"},{code:"M48.02",desc:"Spinal stenosis, cervical"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fusion","arthrodesis","posterior cervical fusion","fixation","instrumentation"],anatomyTerms:["cervical","lateral mass","cervical spine","facet","subaxial"],approachTerms:["posterior"],diagnosisTerms:["instability","cervical spondylolisthesis","fracture","dislocation"],instrumentTerms:["lateral mass screws","rods","cervical instrumentation","polyaxial screws"],phraseMatches:["posterior cervical fusion","lateral mass screws","posterior cervical instrumentation","cervical fixation"]}},
+{cptCode:"22595",cptDescription:"Posterior atlantoaxial arthrodesis",icd10:[{code:"M43.12",desc:"Spondylolisthesis, cervical"},{code:"S12.1",desc:"Fracture of second cervical vertebra"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fusion","arthrodesis","fixation","atlantoaxial fusion"],anatomyTerms:["atlantoaxial","c1","c2","atlas","axis","odontoid","dens","c1-c2"],approachTerms:["posterior"],diagnosisTerms:["atlantoaxial instability","odontoid fracture","dens fracture","rheumatoid","os odontoideum"],instrumentTerms:["screws","rods","goel-harms","magerl","transarticular","c1 lateral mass","c2 pars","c2 pedicle"],phraseMatches:["atlantoaxial fusion","c1-c2 fusion","odontoid fracture","goel-harms"]}},
+{cptCode:"22590",cptDescription:"Occipitocervical arthrodesis",icd10:[{code:"M43.12",desc:"Spondylolisthesis, cervical"},{code:"M48.02",desc:"Spinal stenosis, cervical"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fusion","arthrodesis","occipitocervical","fixation"],anatomyTerms:["occiput","occipital","craniovertebral junction","craniocervical","foramen magnum","c0","c1","c2"],approachTerms:["posterior"],diagnosisTerms:["basilar invagination","craniovertebral instability","chiari","occipital condyle fracture"],instrumentTerms:["occipital plate","screws","rods","bolt"],phraseMatches:["occipitocervical fusion","craniovertebral junction","basilar invagination"]}},
+{cptCode:"63040",cptDescription:"Posterior cervical foraminotomy",icd10:[{code:"M50.120",desc:"Cervical disc disorder with radiculopathy"},{code:"M47.22",desc:"Other spondylosis with radiculopathy, cervical"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["foraminotomy","decompression","keyhole","laminoforaminotomy"],anatomyTerms:["cervical","foramen","nerve root","facet","lamina"],approachTerms:["posterior","keyhole","minimally invasive"],diagnosisTerms:["radiculopathy","foraminal stenosis","nerve root compression","cervical disc"],instrumentTerms:["kerrison","drill","burr","tubular retractor","microscope"],phraseMatches:["posterior cervical foraminotomy","keyhole foraminotomy","nerve root decompression"]}},
+{cptCode:"22610",cptDescription:"Posterior thoracic arthrodesis",icd10:[{code:"M43.14",desc:"Spondylolisthesis, thoracic"},{code:"M48.04",desc:"Spinal stenosis, thoracic"},{code:"S22.0",desc:"Fracture of thoracic vertebra"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fusion","arthrodesis","fixation","instrumentation","posterior thoracic"],anatomyTerms:["thoracic","thoracolumbar","thoracic spine","pedicle","vertebral body"],approachTerms:["posterior"],diagnosisTerms:["thoracic fracture","kyphosis","instability","thoracic spondylosis"],instrumentTerms:["pedicle screws","rods","cross-connector","bone graft"],phraseMatches:["posterior thoracic fusion","thoracic instrumentation","thoracic fixation"]}},
+{cptCode:"63003",cptDescription:"Thoracic laminectomy",icd10:[{code:"M48.04",desc:"Spinal stenosis, thoracic"},{code:"M47.14",desc:"Spondylosis with myelopathy, thoracic"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["laminectomy","decompression"],anatomyTerms:["thoracic","thoracic spine","spinal cord","lamina"],approachTerms:["posterior"],diagnosisTerms:["thoracic stenosis","thoracic myelopathy","ossified ligamentum flavum","thoracic disc herniation"],instrumentTerms:["kerrison","rongeur","drill"],phraseMatches:["thoracic laminectomy","thoracic decompression"]}},
+{cptCode:"22800",cptDescription:"Posterior spinal fusion for scoliosis",icd10:[{code:"M41.20",desc:"Other idiopathic scoliosis, site unspecified"},{code:"M41.00",desc:"Infantile idiopathic scoliosis"},{code:"M41.119",desc:"Juvenile idiopathic scoliosis"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fusion","scoliosis correction","deformity correction","posterior spinal fusion"],anatomyTerms:["spine","thoracic","thoracolumbar","lumbar","vertebrae"],approachTerms:["posterior"],diagnosisTerms:["scoliosis","deformity","cobb angle","kyphoscoliosis","neuromuscular scoliosis","adolescent idiopathic"],instrumentTerms:["pedicle screws","rods","derotation","ponte osteotomy","set screws","cobalt chrome"],phraseMatches:["scoliosis surgery","deformity correction","cobb angle","adolescent idiopathic scoliosis"]}},
+{cptCode:"63005",cptDescription:"Lumbar laminectomy",icd10:[{code:"M48.06",desc:"Spinal stenosis, lumbar"},{code:"M48.07",desc:"Spinal stenosis, lumbosacral"},{code:"M47.816",desc:"Spondylosis without myelopathy, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["laminectomy","decompression","lumbar laminectomy"],anatomyTerms:["lumbar","lamina","spinal canal","cauda equina","thecal sac","nerve root","l1","l2","l3","l4","l5","s1","l3-l4","l4-l5","l5-s1","ligamentum flavum"],approachTerms:["posterior","midline","open"],diagnosisTerms:["spinal stenosis","lumbar stenosis","neurogenic claudication","cauda equina","central stenosis","lateral recess stenosis"],instrumentTerms:["kerrison","rongeur","curette","laminectomy","retractor"],phraseMatches:["lumbar laminectomy","lumbar decompression","spinal stenosis","neurogenic claudication","central canal stenosis"]}},
+{cptCode:"63030",cptDescription:"Lumbar microdiscectomy",icd10:[{code:"M51.16",desc:"Intervertebral disc disorders with radiculopathy, lumbar"},{code:"M51.26",desc:"Other intervertebral disc degeneration, lumbar"},{code:"M51.06",desc:"Intervertebral disc disorders with myelopathy, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["microdiscectomy","discectomy","disc removal","hemilaminotomy"],anatomyTerms:["lumbar","disc","nerve root","l4-l5","l5-s1","l3-l4","traversing nerve","thecal sac","annulus","disc space"],approachTerms:["posterior","microscopic","minimally invasive","tubular","microdiscectomy"],diagnosisTerms:["herniated disc","disc herniation","hnp","sciatica","radiculopathy","extruded disc","sequestered","disc protrusion","disc fragment"],instrumentTerms:["tubular retractor","microscope","kerrison","pituitary rongeur","bayonet","fluoroscopy"],phraseMatches:["lumbar microdiscectomy","disc herniation","herniated disc","disc fragment","extruded disc","sequestered fragment"]}},
+{cptCode:"22612",cptDescription:"Posterior lumbar interbody fusion with posterolateral fusion",icd10:[{code:"M43.16",desc:"Spondylolisthesis, lumbar"},{code:"M47.816",desc:"Spondylosis without myelopathy, lumbar"},{code:"M43.06",desc:"Spondylolysis, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fusion","posterior lumbar fusion","posterolateral fusion","arthrodesis","fixation","plf"],anatomyTerms:["lumbar","transverse process","facet","pedicle","l4-l5","l5-s1","gutter"],approachTerms:["posterior","midline","wiltse"],diagnosisTerms:["spondylolisthesis","degenerative","instability","listhesis","stenosis","spondylolysis"],instrumentTerms:["pedicle screws","rods","bone graft","allograft","autograft","decortication","bmp"],phraseMatches:["posterior lumbar fusion","posterolateral fusion","pedicle screw fixation","lumbar spondylolisthesis"]}},
+{cptCode:"22633",cptDescription:"Transforaminal lumbar interbody fusion (TLIF)",icd10:[{code:"M51.16",desc:"Intervertebral disc disorders with radiculopathy, lumbar"},{code:"M43.16",desc:"Spondylolisthesis, lumbar"},{code:"M47.816",desc:"Spondylosis without myelopathy, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["tlif","transforaminal","interbody fusion","cage placement","arthrodesis"],anatomyTerms:["lumbar","disc space","endplate","l4-l5","l5-s1","foramen","pedicle"],approachTerms:["transforaminal","posterior","minimally invasive","mis","percutaneous","open"],diagnosisTerms:["spondylolisthesis","disc herniation","stenosis","instability","degenerative","recurrent disc"],instrumentTerms:["interbody cage","pedicle screws","rods","expandable cage","bone graft","bmp","percutaneous screws","tubular retractor"],phraseMatches:["transforaminal lumbar interbody fusion","tlif","interbody cage","mis tlif","percutaneous pedicle screws"]}},
+{cptCode:"22630",cptDescription:"Posterior lumbar interbody fusion (PLIF)",icd10:[{code:"M51.16",desc:"Intervertebral disc disorders with radiculopathy, lumbar"},{code:"M43.16",desc:"Spondylolisthesis, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["plif","posterior interbody","interbody fusion","arthrodesis"],anatomyTerms:["lumbar","disc space","bilateral","pedicle","endplate"],approachTerms:["posterior","midline"],diagnosisTerms:["spondylolisthesis","stenosis","disc herniation","instability"],instrumentTerms:["bilateral cages","pedicle screws","rods","interbody cage","bone graft"],phraseMatches:["posterior lumbar interbody fusion","plif","bilateral cages"]}},
+{cptCode:"22558",cptDescription:"Anterior lumbar interbody fusion (ALIF)",icd10:[{code:"M51.16",desc:"Intervertebral disc disorders with radiculopathy, lumbar"},{code:"M43.16",desc:"Spondylolisthesis, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["alif","anterior lumbar","interbody fusion","arthrodesis","discectomy"],anatomyTerms:["lumbar","l5-s1","l4-l5","disc space","vertebral body","retroperitoneal"],approachTerms:["anterior","retroperitoneal","transperitoneal"],diagnosisTerms:["disc degeneration","spondylolisthesis","collapsed disc","loss of lordosis"],instrumentTerms:["lordotic cage","interbody cage","plate","screws","access surgeon","vascular surgeon"],phraseMatches:["anterior lumbar interbody fusion","alif","retroperitoneal approach","access surgeon"]}},
+{cptCode:"22532",cptDescription:"Lateral lumbar interbody fusion (LLIF/XLIF)",icd10:[{code:"M51.16",desc:"Intervertebral disc disorders with radiculopathy, lumbar"},{code:"M43.16",desc:"Spondylolisthesis, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["llif","xlif","olif","dlif","lateral fusion","interbody fusion","arthrodesis"],anatomyTerms:["lumbar","psoas","transpsoas","lateral","disc space","l2-l3","l3-l4","l4-l5","retroperitoneal"],approachTerms:["lateral","transpsoas","oblique","minimally invasive"],diagnosisTerms:["degenerative","stenosis","spondylolisthesis","deformity","scoliosis"],instrumentTerms:["neuromonitoring","emg","retractor","dilators","interbody cage","supplemental fixation"],phraseMatches:["lateral lumbar interbody fusion","xlif","llif","olif","transpsoas approach"]}},
+{cptCode:"22513",cptDescription:"Kyphoplasty / vertebral augmentation",icd10:[{code:"M80.08",desc:"Age-related osteoporosis with pathological fracture"},{code:"M48.50",desc:"Collapsed vertebra, not elsewhere classified"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["kyphoplasty","vertebroplasty","augmentation","balloon"],anatomyTerms:["vertebral body","vertebra","thoracic","lumbar","pedicle"],approachTerms:["percutaneous","transpedicular","bilateral"],diagnosisTerms:["compression fracture","vertebral fracture","osteoporotic fracture","pathologic fracture","vertebral collapse"],instrumentTerms:["balloon","cement","pmma","trocar","cannula"],phraseMatches:["balloon kyphoplasty","vertebral compression fracture","bone cement augmentation"]}},
+{cptCode:"22325",cptDescription:"Open treatment of vertebral fracture with fixation",icd10:[{code:"S22.0",desc:"Fracture of thoracic vertebra"},{code:"S32.0",desc:"Fracture of lumbar vertebra"},{code:"M48.50",desc:"Collapsed vertebra"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fixation","stabilization","orif","open treatment","reduction"],anatomyTerms:["vertebral","spine","thoracic","lumbar","vertebral body","pedicle"],approachTerms:["posterior","anterior","open"],diagnosisTerms:["vertebral fracture","burst fracture","spine fracture","chance fracture","flexion-distraction","compression fracture"],instrumentTerms:["pedicle screws","rods","set screws","cage"],phraseMatches:["vertebral fracture fixation","burst fracture","spine fracture","chance fracture"]}},
+{cptCode:"22206",cptDescription:"Osteotomy of spine, posterior, 3 column (PSO)",icd10:[{code:"M40.10",desc:"Other secondary kyphosis"},{code:"M96.3",desc:"Postlaminectomy kyphosis"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["osteotomy","pso","pedicle subtraction osteotomy","three-column osteotomy","closing wedge"],anatomyTerms:["spine","lumbar","vertebral body","pedicle"],approachTerms:["posterior"],diagnosisTerms:["sagittal imbalance","flat back","kyphosis","fixed sagittal imbalance","positive sagittal balance"],instrumentTerms:["osteotome","pedicle screws","rods","temporary rod"],phraseMatches:["pedicle subtraction osteotomy","pso","sagittal imbalance","flat back"]}},
+{cptCode:"22830",cptDescription:"Removal of spinal instrumentation",icd10:[{code:"Z47.2",desc:"Encounter for removal of internal fixation device"},{code:"T84.194A",desc:"Breakdown of internal fixation device, spine"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["removal","explantation","extraction","hardware removal"],anatomyTerms:["spine","spinal","pedicle screw","rod","plate","hardware","instrumentation"],approachTerms:["posterior","open"],diagnosisTerms:["hardware failure","prominent hardware","pain","malposition","broken hardware"],instrumentTerms:["screwdriver","wrench"],phraseMatches:["hardware removal","implant removal","spinal instrumentation removal"]}},
+{cptCode:"22010",cptDescription:"Incision and drainage, spinal deep abscess, posterior",icd10:[{code:"M46.20",desc:"Osteomyelitis of vertebra"},{code:"M46.30",desc:"Infection of intervertebral disc"},{code:"G06.1",desc:"Intraspinal abscess"},{code:"T84.7",desc:"Infection due to internal orthopedic prosthetic devices"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["incision","drainage","debridement","washout","irrigation"],anatomyTerms:["spine","spinal","epidural","disc space","wound","paraspinal"],approachTerms:["posterior","open"],diagnosisTerms:["spinal infection","discitis","osteomyelitis","epidural abscess","surgical site infection","wound infection","ssi"],instrumentTerms:["pulse lavage","irrigation","drain","cultures"],phraseMatches:["spinal infection","wound debridement","discitis osteomyelitis","epidural abscess"]}},
+{cptCode:"63650",cptDescription:"Percutaneous implantation of spinal neurostimulator electrode",icd10:[{code:"G89.4",desc:"Chronic pain syndrome"},{code:"G89.29",desc:"Other chronic pain"},{code:"M54.5",desc:"Low back pain"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["implantation","placement","insertion","spinal cord stimulator","trial"],anatomyTerms:["epidural","dorsal column","spinal cord","thoracic","percutaneous lead","paddle lead"],approachTerms:["percutaneous","fluoroscopic"],diagnosisTerms:["chronic pain","failed back surgery","fbss","crps","complex regional pain","neuropathic pain","radiculopathy"],instrumentTerms:["electrode","lead","scs","medtronic","boston scientific","nevro","stimulator","generator"],phraseMatches:["spinal cord stimulator","scs trial","dorsal column stimulation","scs placement"]}},
+{cptCode:"62350",cptDescription:"Intrathecal catheter and reservoir implantation for drug infusion",icd10:[{code:"G89.4",desc:"Chronic pain syndrome"},{code:"G89.29",desc:"Other chronic pain"},{code:"G80.0",desc:"Spastic quadriplegic cerebral palsy"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["implantation","placement","insertion","pump"],anatomyTerms:["intrathecal","subarachnoid","lumbar","subcutaneous pocket","abdomen"],approachTerms:["percutaneous","open"],diagnosisTerms:["chronic pain","spasticity","cancer pain","intractable pain"],instrumentTerms:["pump","catheter","baclofen","morphine","reservoir","programmable"],phraseMatches:["intrathecal pump","baclofen pump","intrathecal drug delivery"]}},
+{cptCode:"27279",cptDescription:"Arthrodesis, sacroiliac joint, percutaneous",icd10:[{code:"M53.3",desc:"Sacrococcygeal disorders"},{code:"M46.1",desc:"Sacroiliitis, not elsewhere classified"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["fusion","arthrodesis","fixation","si fusion"],anatomyTerms:["sacroiliac","si joint","sacrum","ilium","sacroiliac joint"],approachTerms:["percutaneous","lateral","minimally invasive"],diagnosisTerms:["sacroiliitis","si joint dysfunction","sacroiliac joint pain","si joint arthropathy"],instrumentTerms:["ifuse","implant","triangular titanium","fluoroscopy","navigation"],phraseMatches:["sacroiliac joint fusion","si joint fusion","percutaneous si fusion"]}},
+{cptCode:"61783",cptDescription:"Stereotactic computer-assisted navigation for spinal procedures",icd10:[{code:"M43.16",desc:"Spondylolisthesis, lumbar"},{code:"M48.06",desc:"Spinal stenosis, lumbar"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["navigation","computer-assisted","image-guided","robotic"],anatomyTerms:["spine","spinal","vertebra","pedicle"],approachTerms:["stereotactic","robotic","image-guided"],diagnosisTerms:[],instrumentTerms:["o-arm","stealth","brainlab","mazor","excelsiusgps","rosa","navigation","ct","robotic"],phraseMatches:["spinal navigation","o-arm navigation","robotic spine surgery","image-guided surgery"]}},
+{cptCode:"20660",cptDescription:"Application of cranial tongs/halo",icd10:[{code:"S12.9",desc:"Fracture of neck, unspecified"},{code:"S14.109A",desc:"Unspecified injury at unspecified level of cervical spinal cord"}],specialty:"Spine Surgery",keywordWeights:{procedureTerms:["application","halo","placement","traction","immobilization"],anatomyTerms:["cranial","skull","cervical","head","pins"],approachTerms:["percutaneous"],diagnosisTerms:["cervical fracture","cervical instability","spinal cord injury"],instrumentTerms:["halo","vest","skull pins","tongs","torque","wrench"],phraseMatches:["halo vest","cranial halo","cervical traction"]}},
+
+// ===== ORTHOPEDIC SURGERY =====
+{cptCode:"27447",cptDescription:"Total knee arthroplasty",icd10:[{code:"M17.11",desc:"Primary osteoarthritis, right knee"},{code:"M17.12",desc:"Primary osteoarthritis, left knee"},{code:"M17.9",desc:"Osteoarthritis of knee, unspecified"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["total knee replacement","arthroplasty","tka","knee replacement"],anatomyTerms:["knee","femoral","tibial","patellar","femoral component","tibial component","patella"],approachTerms:["medial parapatellar","midvastus","subvastus"],diagnosisTerms:["osteoarthritis","degenerative joint disease","bone-on-bone","tricompartmental","arthritis"],instrumentTerms:["polyethylene","bone cement","prosthesis","tibial tray","femoral component","trial","jig","cutting guide"],phraseMatches:["total knee arthroplasty","total knee replacement","femoral component","tibial component"]}},
+{cptCode:"27446",cptDescription:"Unicompartmental knee arthroplasty",icd10:[{code:"M17.11",desc:"Primary osteoarthritis, right knee"},{code:"M17.12",desc:"Primary osteoarthritis, left knee"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["partial knee replacement","unicompartmental","unicondylar","arthroplasty","uka"],anatomyTerms:["knee","medial compartment","lateral compartment","femoral condyle","tibial plateau"],approachTerms:["medial parapatellar","minimally invasive"],diagnosisTerms:["osteoarthritis","medial compartment","unicompartmental"],instrumentTerms:["polyethylene","mobile bearing","fixed bearing","oxford"],phraseMatches:["unicompartmental knee arthroplasty","partial knee replacement"]}},
+{cptCode:"29881",cptDescription:"Arthroscopy, knee, with meniscectomy",icd10:[{code:"M23.20",desc:"Derangement of meniscus due to old tear"},{code:"M23.30",desc:"Other meniscus derangements"},{code:"S83.20",desc:"Unspecified tear of meniscus, current injury"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["meniscectomy","arthroscopy","partial meniscectomy","debridement"],anatomyTerms:["knee","meniscus","medial meniscus","lateral meniscus","medial compartment","lateral compartment"],approachTerms:["arthroscopic","standard portals"],diagnosisTerms:["meniscal tear","meniscus tear","bucket handle","radial tear","complex tear","degenerative tear"],instrumentTerms:["shaver","basket punch","arthroscope","probe","camera"],phraseMatches:["arthroscopic meniscectomy","meniscal tear","partial meniscectomy"]}},
+{cptCode:"29882",cptDescription:"Arthroscopy, knee, with meniscus repair",icd10:[{code:"M23.20",desc:"Derangement of meniscus"},{code:"S83.20",desc:"Tear of meniscus, current"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["meniscus repair","meniscal repair","repair","suture"],anatomyTerms:["knee","meniscus","medial meniscus","lateral meniscus","red zone"],approachTerms:["arthroscopic","inside-out","outside-in","all-inside"],diagnosisTerms:["meniscal tear","meniscus tear","peripheral tear","longitudinal tear"],instrumentTerms:["suture","meniscal suture","fast-fix","all-inside device","needle"],phraseMatches:["meniscus repair","meniscal repair","all-inside repair"]}},
+{cptCode:"29888",cptDescription:"ACL reconstruction, arthroscopically aided",icd10:[{code:"S83.511A",desc:"Sprain of anterior cruciate ligament of right knee"},{code:"S83.512A",desc:"Sprain of anterior cruciate ligament of left knee"},{code:"M23.611",desc:"Other spontaneous disruption of ACL"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["acl reconstruction","reconstruction","graft","tunnel","acl repair"],anatomyTerms:["anterior cruciate ligament","acl","knee","femoral tunnel","tibial tunnel","intercondylar notch"],approachTerms:["arthroscopic","arthroscopically aided"],diagnosisTerms:["acl tear","acl rupture","anterior cruciate ligament tear","knee instability","pivot shift"],instrumentTerms:["graft","hamstring graft","patellar tendon graft","allograft","btb","interference screw","button","endobutton"],phraseMatches:["acl reconstruction","anterior cruciate ligament","patellar tendon graft","hamstring autograft"]}},
+{cptCode:"27570",cptDescription:"Manipulation of knee joint under anesthesia",icd10:[{code:"M25.661",desc:"Stiffness of right knee"},{code:"M25.662",desc:"Stiffness of left knee"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["manipulation","mua","lysis","mobilization"],anatomyTerms:["knee","joint","capsule","adhesions"],approachTerms:["closed","under anesthesia"],diagnosisTerms:["stiffness","arthrofibrosis","limited range of motion","contracture"],instrumentTerms:[],phraseMatches:["manipulation under anesthesia","knee arthrofibrosis","knee manipulation"]}},
+{cptCode:"27130",cptDescription:"Total hip arthroplasty",icd10:[{code:"M16.11",desc:"Primary osteoarthritis, right hip"},{code:"M16.12",desc:"Primary osteoarthritis, left hip"},{code:"M16.9",desc:"Osteoarthritis of hip, unspecified"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["total hip replacement","arthroplasty","tha","hip replacement"],anatomyTerms:["hip","acetabulum","femur","femoral","acetabular","greater trochanter","femoral head","femoral neck"],approachTerms:["posterolateral","anterior","direct anterior","lateral","anterolateral"],diagnosisTerms:["osteoarthritis","avascular necrosis","hip arthritis","degenerative joint disease","avn"],instrumentTerms:["acetabular component","femoral stem","cup","liner","head","prosthesis","bone cement","reamer","broach"],phraseMatches:["total hip arthroplasty","total hip replacement","acetabular component","femoral stem"]}},
+{cptCode:"27132",cptDescription:"Conversion of previous hip surgery to total hip arthroplasty",icd10:[{code:"M16.11",desc:"Primary osteoarthritis, right hip"},{code:"T84.010A",desc:"Broken internal right hip prosthesis"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["conversion","revision","hip replacement","arthroplasty"],anatomyTerms:["hip","acetabulum","femur","femoral"],approachTerms:["posterolateral","anterior"],diagnosisTerms:["failed fixation","nonunion","hardware failure","prior hemiarthroplasty"],instrumentTerms:["acetabular component","femoral stem","hardware removal"],phraseMatches:["conversion total hip","failed fixation","conversion tha"]}},
+{cptCode:"27236",cptDescription:"Open treatment of femoral neck fracture with internal fixation",icd10:[{code:"S72.001A",desc:"Fracture of unspecified part of neck of right femur"},{code:"S72.002A",desc:"Fracture of unspecified part of neck of left femur"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["open treatment","fixation","pinning","orif","hemiarthroplasty"],anatomyTerms:["femoral neck","hip","femur","subcapital","intracapsular","garden"],approachTerms:["open","lateral","anterolateral"],diagnosisTerms:["femoral neck fracture","hip fracture","subcapital fracture","garden classification","intracapsular fracture"],instrumentTerms:["cannulated screws","hip screw","plate","prosthesis","cemented"],phraseMatches:["femoral neck fracture","hip fracture fixation","cannulated screws"]}},
+{cptCode:"27244",cptDescription:"Treatment of intertrochanteric fracture with plate/screw or nail",icd10:[{code:"S72.101A",desc:"Unspecified trochanteric fracture of right femur"},{code:"S72.102A",desc:"Unspecified trochanteric fracture of left femur"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["fixation","nailing","open treatment","orif","intramedullary","reduction"],anatomyTerms:["intertrochanteric","hip","femur","trochanter","greater trochanter","lesser trochanter","subtrochanteric"],approachTerms:["lateral","percutaneous","open"],diagnosisTerms:["intertrochanteric fracture","hip fracture","trochanteric fracture","pertrochanteric"],instrumentTerms:["cephalomedullary nail","gamma nail","sliding hip screw","lag screw","intramedullary nail","tfn","trochanteric fixation nail"],phraseMatches:["intertrochanteric fracture","cephalomedullary nail","sliding hip screw","gamma nail","hip fracture fixation"]}},
+{cptCode:"29827",cptDescription:"Arthroscopy, shoulder, rotator cuff repair",icd10:[{code:"M75.10",desc:"Rotator cuff tear, unspecified shoulder"},{code:"M75.11",desc:"Incomplete rotator cuff tear of right shoulder"},{code:"M75.12",desc:"Incomplete rotator cuff tear of left shoulder"},{code:"S46.011A",desc:"Strain of muscle of rotator cuff of right shoulder"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["rotator cuff repair","repair","suture","reattachment"],anatomyTerms:["rotator cuff","supraspinatus","infraspinatus","subscapularis","shoulder","greater tuberosity","footprint"],approachTerms:["arthroscopic","shoulder arthroscopy"],diagnosisTerms:["rotator cuff tear","cuff tear","full-thickness tear","partial tear","tendon tear"],instrumentTerms:["suture anchor","anchor","double row","single row","speedbridge","knotless"],phraseMatches:["rotator cuff repair","suture anchor","supraspinatus tear","double row repair"]}},
+{cptCode:"29826",cptDescription:"Arthroscopy, shoulder, acromioplasty",icd10:[{code:"M75.40",desc:"Impingement syndrome of unspecified shoulder"},{code:"M75.41",desc:"Impingement syndrome of right shoulder"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["acromioplasty","decompression","subacromial decompression","bursectomy"],anatomyTerms:["acromion","subacromial","shoulder","bursa","subacromial space"],approachTerms:["arthroscopic"],diagnosisTerms:["impingement","subacromial impingement","bursitis"],instrumentTerms:["burr","shaver","electrocautery"],phraseMatches:["subacromial decompression","acromioplasty","shoulder impingement"]}},
+{cptCode:"29824",cptDescription:"Arthroscopy, shoulder, distal clavicle excision",icd10:[{code:"M75.40",desc:"Impingement syndrome"},{code:"M19.011",desc:"Primary osteoarthritis, right shoulder"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["excision","mumford","distal clavicle excision","resection"],anatomyTerms:["distal clavicle","ac joint","acromioclavicular","clavicle"],approachTerms:["arthroscopic"],diagnosisTerms:["ac joint arthritis","acromioclavicular arthritis","ac joint impingement"],instrumentTerms:["burr","shaver"],phraseMatches:["distal clavicle excision","mumford procedure","ac joint"]}},
+{cptCode:"23472",cptDescription:"Total shoulder arthroplasty (anatomic)",icd10:[{code:"M19.011",desc:"Primary osteoarthritis, right shoulder"},{code:"M19.012",desc:"Primary osteoarthritis, left shoulder"},{code:"M75.01",desc:"Adhesive capsulitis of right shoulder"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["shoulder replacement","total shoulder","arthroplasty","tsa"],anatomyTerms:["shoulder","glenoid","humeral","glenohumeral","humerus"],approachTerms:["deltopectoral","open"],diagnosisTerms:["osteoarthritis","shoulder arthritis","glenohumeral arthritis"],instrumentTerms:["glenoid component","humeral component","prosthesis","cement","stem","pegged glenoid"],phraseMatches:["total shoulder arthroplasty","shoulder replacement","anatomic total shoulder"]}},
+{cptCode:"23473",cptDescription:"Revision of total shoulder arthroplasty / reverse total shoulder",icd10:[{code:"M19.011",desc:"Primary osteoarthritis, right shoulder"},{code:"M75.01",desc:"Adhesive capsulitis"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["reverse shoulder","reverse total shoulder","rtsa","arthroplasty","reverse"],anatomyTerms:["shoulder","glenoid","glenosphere","baseplate","humeral","deltoid"],approachTerms:["deltopectoral","superolateral"],diagnosisTerms:["cuff tear arthropathy","rotator cuff arthropathy","massive rotator cuff tear","shoulder arthritis","pseudoparalysis"],instrumentTerms:["glenosphere","baseplate","humeral stem","polyethylene","prosthesis"],phraseMatches:["reverse total shoulder arthroplasty","rtsa","reverse shoulder","glenosphere"]}},
+{cptCode:"29806",cptDescription:"Arthroscopy, shoulder, Bankart repair",icd10:[{code:"S43.011A",desc:"Anterior dislocation of right shoulder"},{code:"M24.411",desc:"Recurrent dislocation, right shoulder"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["bankart repair","labral repair","stabilization","capsulorrhaphy"],anatomyTerms:["labrum","glenoid","anterior labral","shoulder","glenohumeral","inferior glenohumeral ligament"],approachTerms:["arthroscopic"],diagnosisTerms:["shoulder instability","anterior instability","bankart lesion","labral tear","dislocation","recurrent dislocation"],instrumentTerms:["suture anchor","anchor","cannula","grasper"],phraseMatches:["bankart repair","labral repair","shoulder instability","anterior labral tear"]}},
+{cptCode:"25607",cptDescription:"Open treatment of distal radius fracture with internal fixation",icd10:[{code:"S52.501A",desc:"Unspecified fracture of lower end of right radius"},{code:"S52.502A",desc:"Unspecified fracture of lower end of left radius"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["orif","open reduction","internal fixation","plating"],anatomyTerms:["distal radius","wrist","radius","volar","dorsal","radial styloid","articular surface"],approachTerms:["volar","henry","open"],diagnosisTerms:["distal radius fracture","wrist fracture","colles fracture","smith fracture","intra-articular fracture"],instrumentTerms:["volar plate","locking plate","screws","fluoroscopy","k-wire"],phraseMatches:["orif distal radius","volar plate fixation","distal radius fracture"]}},
+{cptCode:"27769",cptDescription:"Open treatment of tibial shaft fracture with fixation",icd10:[{code:"S82.201A",desc:"Unspecified fracture of shaft of right tibia"},{code:"S82.101A",desc:"Unspecified fracture of upper end of right tibia"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["orif","open reduction","nailing","fixation","intramedullary"],anatomyTerms:["tibia","tibial shaft","tibial plateau","proximal tibia","distal tibia"],approachTerms:["open","percutaneous"],diagnosisTerms:["tibial fracture","tibia fracture","plateau fracture","tibial shaft fracture"],instrumentTerms:["intramedullary nail","tibial nail","plate","screws","interlocking screws","reaming"],phraseMatches:["orif tibia","tibial nail","tibial fracture fixation","tibial plateau fracture"]}},
+{cptCode:"27792",cptDescription:"Open treatment of bimalleolar ankle fracture",icd10:[{code:"S82.891A",desc:"Other fracture of lower leg"},{code:"S82.51",desc:"Fracture of medial malleolus"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["orif","open reduction","fixation","plating"],anatomyTerms:["ankle","malleolus","lateral malleolus","medial malleolus","fibula","syndesmosis","posterior malleolus"],approachTerms:["lateral","medial","open"],diagnosisTerms:["ankle fracture","bimalleolar","trimalleolar","malleolar fracture","weber","se4"],instrumentTerms:["plate","screws","syndesmosis screw","suture button","lag screw","anti-glide plate"],phraseMatches:["orif ankle","bimalleolar fracture","trimalleolar fracture","syndesmosis fixation"]}},
+{cptCode:"24685",cptDescription:"Open treatment of Monteggia fracture-dislocation",icd10:[{code:"S52.001A",desc:"Unspecified fracture of upper end of right ulna"},{code:"S52.002A",desc:"Unspecified fracture of upper end of left ulna"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["orif","open reduction","fixation","plating"],anatomyTerms:["ulna","proximal ulna","radial head","elbow","olecranon"],approachTerms:["open","posterior"],diagnosisTerms:["monteggia","fracture-dislocation","ulna fracture","radial head dislocation"],instrumentTerms:["plate","screws","contoured plate"],phraseMatches:["monteggia fracture","orif ulna","radial head reduction"]}},
+{cptCode:"27524",cptDescription:"Open treatment of patellar fracture",icd10:[{code:"S82.001A",desc:"Unspecified fracture of right patella"},{code:"S82.002A",desc:"Unspecified fracture of left patella"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["orif","fixation","tension band","cerclage","open reduction"],anatomyTerms:["patella","patellar","knee","extensor mechanism"],approachTerms:["open","anterior"],diagnosisTerms:["patellar fracture","patella fracture","transverse fracture","comminuted fracture"],instrumentTerms:["k-wire","tension band wire","cerclage wire","screws"],phraseMatches:["patellar fracture fixation","tension band wiring","orif patella"]}},
+{cptCode:"26055",cptDescription:"Trigger finger release",icd10:[{code:"M65.30",desc:"Trigger finger, unspecified"},{code:"M65.31",desc:"Trigger thumb"},{code:"M65.32",desc:"Trigger finger, index finger"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["trigger finger release","release","division"],anatomyTerms:["finger","a1 pulley","flexor tendon","thumb","index","middle","ring","small"],approachTerms:["open","percutaneous"],diagnosisTerms:["trigger finger","stenosing tenosynovitis","triggering","locking"],instrumentTerms:["blade","knife","retractor"],phraseMatches:["trigger finger release","a1 pulley release","stenosing tenosynovitis"]}},
+{cptCode:"26735",cptDescription:"Open treatment of phalangeal shaft fracture",icd10:[{code:"S62.600A",desc:"Fracture of unspecified phalanx of right finger"},{code:"S62.601A",desc:"Fracture of unspecified phalanx of left finger"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["orif","fixation","open reduction","pinning"],anatomyTerms:["phalanx","finger","metacarpal","proximal phalanx","middle phalanx","distal phalanx"],approachTerms:["open","dorsal","lateral"],diagnosisTerms:["phalanx fracture","finger fracture","displaced fracture"],instrumentTerms:["k-wire","plate","screw","mini plate","mini screw"],phraseMatches:["phalanx fracture fixation","k-wire fixation","finger fracture"]}},
+{cptCode:"28296",cptDescription:"Bunionectomy with metatarsal osteotomy",icd10:[{code:"M20.10",desc:"Hallux valgus, unspecified foot"},{code:"M20.11",desc:"Hallux valgus, right foot"},{code:"M20.12",desc:"Hallux valgus, left foot"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["bunionectomy","osteotomy","correction","bunion correction"],anatomyTerms:["hallux","first metatarsal","great toe","metatarsophalangeal","first ray"],approachTerms:["medial","dorsal","open"],diagnosisTerms:["hallux valgus","bunion","bunion deformity","metatarsus primus varus"],instrumentTerms:["screw","k-wire","plate","saw","burr"],phraseMatches:["bunionectomy","hallux valgus correction","metatarsal osteotomy"]}},
+{cptCode:"28285",cptDescription:"Correction of hammertoe",icd10:[{code:"M20.40",desc:"Other hammer toe, unspecified foot"},{code:"M20.41",desc:"Other hammer toe, right foot"},{code:"M20.42",desc:"Other hammer toe, left foot"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["correction","arthroplasty","resection","hammertoe correction"],anatomyTerms:["toe","pip","proximal interphalangeal","phalanx","lesser toe"],approachTerms:["dorsal","open"],diagnosisTerms:["hammertoe","hammer toe","toe deformity","claw toe","mallet toe"],instrumentTerms:["k-wire","bone cutter","rongeur"],phraseMatches:["hammertoe correction","pip arthroplasty","toe deformity"]}},
+{cptCode:"20680",cptDescription:"Removal of implant, deep",icd10:[{code:"Z47.2",desc:"Encounter for removal of internal fixation device"},{code:"T84.194A",desc:"Broken internal fixation device"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["hardware removal","implant removal","removal","extraction","explantation"],anatomyTerms:["plate","screw","rod","nail","wire","metalwork"],approachTerms:["open"],diagnosisTerms:["healed fracture","hardware prominence","hardware failure","painful hardware"],instrumentTerms:["screwdriver","wrench","extraction tool"],phraseMatches:["hardware removal","implant removal","plate removal"]}},
+{cptCode:"20610",cptDescription:"Arthrocentesis, aspiration or injection, major joint",icd10:[{code:"M25.40",desc:"Effusion, unspecified joint"},{code:"M06.9",desc:"Rheumatoid arthritis, unspecified"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["arthrocentesis","aspiration","injection","joint injection"],anatomyTerms:["joint","knee","shoulder","hip","ankle","elbow"],approachTerms:["percutaneous","ultrasound-guided"],diagnosisTerms:["effusion","arthritis","bursitis","synovitis","gout","inflammatory"],instrumentTerms:["needle","syringe","steroid","cortisone","hyaluronic acid"],phraseMatches:["joint aspiration","arthrocentesis","steroid injection"]}},
+{cptCode:"29880",cptDescription:"Arthroscopy, knee, meniscectomy medial and lateral",icd10:[{code:"M23.20",desc:"Derangement of meniscus"},{code:"M23.30",desc:"Other meniscus derangements"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["meniscectomy","arthroscopy","bilateral meniscectomy","debridement"],anatomyTerms:["knee","medial meniscus","lateral meniscus","both compartments","medial","lateral"],approachTerms:["arthroscopic"],diagnosisTerms:["meniscal tear","bilateral meniscus tear","medial and lateral"],instrumentTerms:["shaver","arthroscope","probe","basket punch"],phraseMatches:["medial and lateral meniscectomy","both compartments"]}},
+{cptCode:"29879",cptDescription:"Arthroscopy, knee, abrasion arthroplasty/chondroplasty",icd10:[{code:"M94.261",desc:"Chondromalacia, right knee"},{code:"M94.262",desc:"Chondromalacia, left knee"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["chondroplasty","debridement","abrasion","shaving"],anatomyTerms:["knee","articular cartilage","chondral","femoral condyle","tibial plateau","trochlea","patella"],approachTerms:["arthroscopic"],diagnosisTerms:["chondromalacia","chondral lesion","cartilage damage","articular cartilage damage","grade 3","grade 4","outerbridge"],instrumentTerms:["shaver","curette","arthroscope"],phraseMatches:["arthroscopic chondroplasty","cartilage debridement","chondral lesion"]}},
+{cptCode:"29805",cptDescription:"Arthroscopy, shoulder, diagnostic",icd10:[{code:"M75.10",desc:"Rotator cuff tear"},{code:"M25.511",desc:"Pain in right shoulder"}],specialty:"Orthopedic Surgery",keywordWeights:{procedureTerms:["arthroscopy","diagnostic","examination","inspection"],anatomyTerms:["shoulder","glenohumeral","subacromial","labrum","rotator cuff","biceps"],approachTerms:["arthroscopic","posterior portal","anterior portal"],diagnosisTerms:["shoulder pain","rotator cuff tear","labral tear","instability"],instrumentTerms:["arthroscope","camera","probe","cannula","shaver"],phraseMatches:["diagnostic shoulder arthroscopy","glenohumeral joint"]}},
+
+// ===== GENERAL SURGERY =====
+{cptCode:"44970",cptDescription:"Laparoscopic appendectomy",icd10:[{code:"K35.80",desc:"Unspecified acute appendicitis"},{code:"K35.89",desc:"Other acute appendicitis"},{code:"K36",desc:"Other appendicitis"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["appendectomy","laparoscopic","removal","stapling"],anatomyTerms:["appendix","cecum","mesoappendix","right lower quadrant"],approachTerms:["laparoscopic","minimally invasive"],diagnosisTerms:["appendicitis","acute appendicitis","perforated","gangrenous"],instrumentTerms:["trocar","endoloop","stapler","grasper","camera"],phraseMatches:["laparoscopic appendectomy","acute appendicitis"]}},
+{cptCode:"44960",cptDescription:"Open appendectomy",icd10:[{code:"K35.80",desc:"Unspecified acute appendicitis"},{code:"K35.89",desc:"Other acute appendicitis"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["appendectomy","open","removal"],anatomyTerms:["appendix","cecum","mcburney"],approachTerms:["open","mcburney","right lower quadrant incision"],diagnosisTerms:["appendicitis","perforated","gangrenous","complicated appendicitis"],instrumentTerms:["clamp","tie","suture","purse string"],phraseMatches:["open appendectomy","perforated appendicitis"]}},
+{cptCode:"47562",cptDescription:"Laparoscopic cholecystectomy",icd10:[{code:"K80.20",desc:"Calculus of gallbladder without obstruction"},{code:"K81.0",desc:"Acute cholecystitis"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["cholecystectomy","laparoscopic","gallbladder removal"],anatomyTerms:["gallbladder","cystic duct","cystic artery","calot triangle","common bile duct","liver bed"],approachTerms:["laparoscopic","four-port","three-port"],diagnosisTerms:["cholelithiasis","gallstones","biliary colic","cholecystitis","biliary dyskinesia"],instrumentTerms:["trocar","clip","grasper","hook cautery","camera","endo bag"],phraseMatches:["laparoscopic cholecystectomy","gallbladder removal"]}},
+{cptCode:"47563",cptDescription:"Laparoscopic cholecystectomy with cholangiography",icd10:[{code:"K80.20",desc:"Calculus of gallbladder"},{code:"K80.50",desc:"Calculus of bile duct"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["cholecystectomy","cholangiogram","cholangiography","laparoscopic"],anatomyTerms:["gallbladder","bile duct","common bile duct","cystic duct"],approachTerms:["laparoscopic"],diagnosisTerms:["cholelithiasis","choledocholithiasis","common bile duct stones"],instrumentTerms:["cholangiogram catheter","fluoroscopy","contrast","clip"],phraseMatches:["cholecystectomy with cholangiogram","intraoperative cholangiogram"]}},
+{cptCode:"49505",cptDescription:"Inguinal hernia repair, initial",icd10:[{code:"K40.90",desc:"Unilateral inguinal hernia, not specified as recurrent"},{code:"K40.20",desc:"Bilateral inguinal hernia, not specified as recurrent"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["hernia repair","herniorrhaphy","mesh repair","lichtenstein"],anatomyTerms:["inguinal","groin","inguinal canal","spermatic cord","internal ring","external ring","floor"],approachTerms:["open","anterior","lichtenstein"],diagnosisTerms:["inguinal hernia","groin hernia","direct","indirect","incarcerated"],instrumentTerms:["mesh","plug","suture","prolene"],phraseMatches:["inguinal hernia repair","mesh repair","lichtenstein repair"]}},
+{cptCode:"49650",cptDescription:"Laparoscopic inguinal hernia repair",icd10:[{code:"K40.90",desc:"Unilateral inguinal hernia"},{code:"K40.20",desc:"Bilateral inguinal hernia"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["hernia repair","laparoscopic","tep","tapp"],anatomyTerms:["inguinal","groin","preperitoneal","peritoneum","myopectineal orifice"],approachTerms:["laparoscopic","tep","tapp","totally extraperitoneal","transabdominal preperitoneal"],diagnosisTerms:["inguinal hernia","groin hernia"],instrumentTerms:["mesh","tacker","trocar","balloon dissector"],phraseMatches:["laparoscopic inguinal hernia","tep repair","tapp repair"]}},
+{cptCode:"49652",cptDescription:"Laparoscopic ventral/incisional hernia repair",icd10:[{code:"K43.2",desc:"Incisional hernia without obstruction"},{code:"K43.9",desc:"Ventral hernia without obstruction"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["hernia repair","laparoscopic","mesh placement"],anatomyTerms:["ventral","incisional","abdominal wall","peritoneum","fascia","defect"],approachTerms:["laparoscopic","intraperitoneal","ipom"],diagnosisTerms:["ventral hernia","incisional hernia","recurrent hernia","abdominal wall hernia"],instrumentTerms:["mesh","tacker","suture passer","trocar","composite mesh"],phraseMatches:["laparoscopic ventral hernia","incisional hernia repair"]}},
+{cptCode:"49560",cptDescription:"Repair of incisional hernia, reducible",icd10:[{code:"K43.2",desc:"Incisional hernia without obstruction"},{code:"K43.0",desc:"Incisional hernia with obstruction"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["hernia repair","repair","mesh placement","component separation"],anatomyTerms:["incisional","ventral","abdominal wall","fascia","defect","rectus","linea alba"],approachTerms:["open","anterior","retrorectus","sublay","onlay"],diagnosisTerms:["incisional hernia","ventral hernia","recurrent hernia","abdominal wall defect"],instrumentTerms:["mesh","biologic mesh","suture","drain"],phraseMatches:["incisional hernia repair","ventral hernia repair","component separation"]}},
+{cptCode:"49585",cptDescription:"Umbilical hernia repair",icd10:[{code:"K42.9",desc:"Umbilical hernia without obstruction"},{code:"K42.0",desc:"Umbilical hernia with obstruction"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["hernia repair","umbilical","primary repair"],anatomyTerms:["umbilicus","umbilical","periumbilical","linea alba","fascial defect"],approachTerms:["open","infraumbilical"],diagnosisTerms:["umbilical hernia","periumbilical hernia"],instrumentTerms:["mesh","suture","absorbable suture"],phraseMatches:["umbilical hernia repair"]}},
+{cptCode:"44204",cptDescription:"Laparoscopic partial colectomy with anastomosis",icd10:[{code:"C18.9",desc:"Malignant neoplasm of colon, unspecified"},{code:"K57.20",desc:"Diverticulitis of large intestine without hemorrhage"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["colectomy","hemicolectomy","resection","laparoscopic","anastomosis"],anatomyTerms:["colon","sigmoid","right colon","left colon","ileocolic","mesentery","mesocolon"],approachTerms:["laparoscopic","minimally invasive","intracorporeal"],diagnosisTerms:["colon cancer","diverticulitis","adenocarcinoma","colon mass","polyp"],instrumentTerms:["stapler","trocar","grasper","endo gia","vessel sealer","energy device"],phraseMatches:["laparoscopic colectomy","laparoscopic hemicolectomy"]}},
+{cptCode:"44140",cptDescription:"Partial colectomy with anastomosis",icd10:[{code:"C18.9",desc:"Malignant neoplasm of colon"},{code:"K57.20",desc:"Diverticulitis of large intestine"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["colectomy","hemicolectomy","resection","anastomosis"],anatomyTerms:["colon","sigmoid","right colon","left colon","cecum","ascending","descending","transverse"],approachTerms:["open","midline","laparotomy"],diagnosisTerms:["colon cancer","diverticulitis","volvulus","obstruction","adenocarcinoma"],instrumentTerms:["stapler","gia","ta","bowel clamp","suture"],phraseMatches:["partial colectomy","right hemicolectomy","sigmoid colectomy"]}},
+{cptCode:"19301",cptDescription:"Partial mastectomy / lumpectomy",icd10:[{code:"C50.919",desc:"Malignant neoplasm of breast"},{code:"D24.9",desc:"Benign neoplasm of breast"},{code:"N63.0",desc:"Unspecified lump in breast"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["lumpectomy","partial mastectomy","excision","wide local excision","breast conservation"],anatomyTerms:["breast","mass","lesion","nipple","areola","axilla"],approachTerms:["open","periareolar","inframammary","incision"],diagnosisTerms:["breast cancer","breast mass","carcinoma","fibroadenoma","dcis"],instrumentTerms:["wire localization","seed localization","specimen","margin","bovie"],phraseMatches:["partial mastectomy","lumpectomy","breast conservation","breast excision"]}},
+{cptCode:"19303",cptDescription:"Simple mastectomy",icd10:[{code:"C50.919",desc:"Malignant neoplasm of breast"},{code:"C50.911",desc:"Malignant neoplasm of unspecified site of right female breast"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["mastectomy","simple mastectomy","total mastectomy","breast removal"],anatomyTerms:["breast","skin","nipple","areola","pectoralis","axilla","chest wall"],approachTerms:["open"],diagnosisTerms:["breast cancer","carcinoma","dcis","prophylactic","brca"],instrumentTerms:["bovie","flap","drain","specimen"],phraseMatches:["simple mastectomy","total mastectomy"]}},
+{cptCode:"60240",cptDescription:"Total thyroidectomy",icd10:[{code:"E04.1",desc:"Nontoxic single thyroid nodule"},{code:"C73",desc:"Malignant neoplasm of thyroid gland"},{code:"E05.00",desc:"Thyrotoxicosis with diffuse goiter without crisis"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["thyroidectomy","total thyroidectomy","removal"],anatomyTerms:["thyroid","thyroid gland","isthmus","recurrent laryngeal nerve","parathyroid","superior laryngeal nerve"],approachTerms:["cervical","kocher","open"],diagnosisTerms:["thyroid cancer","thyroid nodule","papillary carcinoma","goiter","graves","hyperthyroidism"],instrumentTerms:["harmonic","energy device","nerve monitor","nerve integrity monitor","vessel sealer"],phraseMatches:["total thyroidectomy","thyroid cancer"]}},
+{cptCode:"60220",cptDescription:"Thyroid lobectomy",icd10:[{code:"E04.1",desc:"Nontoxic single thyroid nodule"},{code:"D34",desc:"Benign neoplasm of thyroid"},{code:"C73",desc:"Malignant neoplasm of thyroid"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["thyroid lobectomy","hemithyroidectomy","lobectomy","isthmusectomy"],anatomyTerms:["thyroid","lobe","isthmus","recurrent laryngeal nerve","parathyroid"],approachTerms:["cervical","open"],diagnosisTerms:["thyroid nodule","follicular","bethesda","suspicious","indeterminate"],instrumentTerms:["harmonic","energy device","nerve monitor"],phraseMatches:["thyroid lobectomy","hemithyroidectomy"]}},
+{cptCode:"43239",cptDescription:"Upper GI endoscopy with biopsy",icd10:[{code:"K21.0",desc:"GERD with esophagitis"},{code:"K25.9",desc:"Gastric ulcer, unspecified"},{code:"K29.70",desc:"Gastritis, unspecified"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["endoscopy","egd","esophagogastroduodenoscopy","biopsy","upper endoscopy"],anatomyTerms:["esophagus","stomach","duodenum","gastroesophageal junction","antrum","fundus"],approachTerms:["endoscopic","per oral","transoral"],diagnosisTerms:["gerd","reflux","ulcer","gastritis","barrett","esophagitis","dysphagia"],instrumentTerms:["endoscope","forceps","biopsy forceps"],phraseMatches:["upper endoscopy with biopsy","egd"]}},
+{cptCode:"43280",cptDescription:"Laparoscopic fundoplication",icd10:[{code:"K21.0",desc:"GERD with esophagitis"},{code:"K44.9",desc:"Diaphragmatic hernia without obstruction"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["fundoplication","nissen","anti-reflux","wrap"],anatomyTerms:["esophagus","stomach","fundus","hiatus","diaphragm","crura","gastroesophageal junction"],approachTerms:["laparoscopic","minimally invasive"],diagnosisTerms:["gerd","reflux","hiatal hernia","paraesophageal hernia"],instrumentTerms:["trocar","grasper","suture","bougie","crural repair"],phraseMatches:["laparoscopic fundoplication","nissen fundoplication","hiatal hernia repair"]}},
+{cptCode:"43775",cptDescription:"Laparoscopic sleeve gastrectomy",icd10:[{code:"E66.01",desc:"Morbid obesity due to excess calories"},{code:"E66.09",desc:"Other obesity due to excess calories"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["sleeve gastrectomy","gastric sleeve","stapling","resection"],anatomyTerms:["stomach","greater curvature","fundus","antrum","pylorus","gastric"],approachTerms:["laparoscopic","minimally invasive"],diagnosisTerms:["morbid obesity","obesity","bmi","metabolic syndrome","bariatric"],instrumentTerms:["stapler","endo gia","bougie","trocar","omentum"],phraseMatches:["laparoscopic sleeve gastrectomy","gastric sleeve"]}},
+{cptCode:"43644",cptDescription:"Laparoscopic gastric bypass (Roux-en-Y)",icd10:[{code:"E66.01",desc:"Morbid obesity due to excess calories"},{code:"E66.09",desc:"Other obesity due to excess calories"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["gastric bypass","roux-en-y","rygb","anastomosis","bypass"],anatomyTerms:["stomach","pouch","roux limb","jejunum","gastrojejunostomy","biliopancreatic limb"],approachTerms:["laparoscopic","minimally invasive"],diagnosisTerms:["morbid obesity","obesity","bmi","metabolic syndrome","bariatric"],instrumentTerms:["stapler","endo gia","trocar","anvil","eea"],phraseMatches:["laparoscopic gastric bypass","roux-en-y gastric bypass"]}},
+{cptCode:"44005",cptDescription:"Enterolysis / lysis of intestinal adhesions",icd10:[{code:"K56.5",desc:"Intestinal adhesions with obstruction"},{code:"K66.0",desc:"Peritoneal adhesions"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["lysis","adhesiolysis","enterolysis","release","division"],anatomyTerms:["bowel","intestine","small bowel","adhesions","peritoneum","mesentery"],approachTerms:["open","laparoscopic","laparotomy"],diagnosisTerms:["adhesions","bowel obstruction","sbo","small bowel obstruction","intestinal obstruction"],instrumentTerms:["scissors","electrocautery","harmonic"],phraseMatches:["lysis of adhesions","adhesiolysis","bowel obstruction"]}},
+{cptCode:"49320",cptDescription:"Diagnostic laparoscopy",icd10:[{code:"R10.9",desc:"Unspecified abdominal pain"},{code:"K65.9",desc:"Peritonitis, unspecified"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["diagnostic laparoscopy","laparoscopy","exploration","diagnostic"],anatomyTerms:["abdomen","peritoneum","bowel","liver","appendix"],approachTerms:["laparoscopic"],diagnosisTerms:["abdominal pain","peritonitis","mass","unknown etiology"],instrumentTerms:["trocar","camera","grasper"],phraseMatches:["diagnostic laparoscopy","abdominal exploration"]}},
+{cptCode:"38720",cptDescription:"Splenectomy, total",icd10:[{code:"D69.3",desc:"Immune thrombocytopenic purpura"},{code:"D73.5",desc:"Infarction of spleen"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["splenectomy","removal","excision"],anatomyTerms:["spleen","splenic","hilum","splenic artery","splenic vein"],approachTerms:["open","laparoscopic"],diagnosisTerms:["itp","thrombocytopenia","splenomegaly","hypersplenism","splenic rupture","trauma"],instrumentTerms:["endo bag","energy device","stapler","clips"],phraseMatches:["total splenectomy","laparoscopic splenectomy"]}},
+{cptCode:"60500",cptDescription:"Parathyroidectomy",icd10:[{code:"E21.0",desc:"Primary hyperparathyroidism"},{code:"E21.3",desc:"Hyperparathyroidism, unspecified"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["parathyroidectomy","excision","removal","exploration"],anatomyTerms:["parathyroid","parathyroid gland","neck","thyroid"],approachTerms:["open","minimally invasive","focused","cervical"],diagnosisTerms:["hyperparathyroidism","parathyroid adenoma","hypercalcemia","elevated pth"],instrumentTerms:["gamma probe","intraoperative pth","nerve monitor","sestamibi"],phraseMatches:["parathyroidectomy","parathyroid adenoma"]}},
+{cptCode:"44120",cptDescription:"Enterectomy / small bowel resection",icd10:[{code:"K56.69",desc:"Other intestinal obstruction"},{code:"K63.1",desc:"Perforation of intestine"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["resection","enterectomy","bowel resection","anastomosis"],anatomyTerms:["small bowel","small intestine","jejunum","ileum","mesentery"],approachTerms:["open","laparoscopic","laparotomy"],diagnosisTerms:["obstruction","perforation","ischemia","necrosis","crohn","small bowel tumor","stricture"],instrumentTerms:["stapler","gia","ta","clamp","suture"],phraseMatches:["small bowel resection","small intestine resection"]}},
+{cptCode:"49000",cptDescription:"Exploratory laparotomy",icd10:[{code:"R10.9",desc:"Unspecified abdominal pain"},{code:"K56.60",desc:"Unspecified intestinal obstruction"}],specialty:"General Surgery",keywordWeights:{procedureTerms:["exploratory laparotomy","exploration","laparotomy"],anatomyTerms:["abdomen","peritoneal cavity","bowel","mesentery","omentum","liver"],approachTerms:["open","midline","laparotomy"],diagnosisTerms:["abdominal pain","obstruction","perforation","trauma","hemorrhage","peritonitis"],instrumentTerms:["retractor","bookwalter","balfour"],phraseMatches:["exploratory laparotomy","abdominal exploration"]}},
+
+// ===== CARDIOTHORACIC =====
+{cptCode:"33533",cptDescription:"Coronary artery bypass graft, arterial, single",icd10:[{code:"I25.10",desc:"Atherosclerotic heart disease of native coronary artery"},{code:"I25.110",desc:"Atherosclerotic heart disease of native coronary artery with unstable angina"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["cabg","coronary artery bypass","bypass graft","grafting","revascularization"],anatomyTerms:["coronary","lima","lad","left anterior descending","rca","circumflex","coronary artery","internal mammary","saphenous vein"],approachTerms:["sternotomy","median sternotomy","open","cardiopulmonary bypass","off-pump"],diagnosisTerms:["coronary artery disease","cad","angina","myocardial infarction","ischemia","triple vessel","left main"],instrumentTerms:["cardiopulmonary bypass","pump","cardioplegia","sternal saw","retractor","sternal wires"],phraseMatches:["coronary artery bypass graft","cabg","lima to lad","bypass grafting"]}},
+{cptCode:"33405",cptDescription:"Aortic valve replacement",icd10:[{code:"I35.0",desc:"Nonrheumatic aortic stenosis"},{code:"I35.1",desc:"Nonrheumatic aortic insufficiency"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["valve replacement","avr","aortic valve","replacement"],anatomyTerms:["aortic valve","aorta","annulus","aortic root","left ventricle"],approachTerms:["sternotomy","cardiopulmonary bypass","open"],diagnosisTerms:["aortic stenosis","aortic regurgitation","aortic insufficiency","bicuspid aortic valve","calcified valve"],instrumentTerms:["prosthetic valve","mechanical valve","bioprosthetic","tissue valve","cardioplegia","bypass"],phraseMatches:["aortic valve replacement","avr"]}},
+{cptCode:"33430",cptDescription:"Mitral valve replacement",icd10:[{code:"I34.0",desc:"Nonrheumatic mitral valve insufficiency"},{code:"I05.1",desc:"Rheumatic mitral insufficiency"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["valve replacement","mvr","mitral valve","replacement"],anatomyTerms:["mitral valve","left atrium","annulus","papillary muscles","chordae"],approachTerms:["sternotomy","cardiopulmonary bypass","left atriotomy"],diagnosisTerms:["mitral regurgitation","mitral stenosis","mitral insufficiency","rheumatic"],instrumentTerms:["prosthetic valve","mechanical","bioprosthetic","cardioplegia","bypass"],phraseMatches:["mitral valve replacement","mvr"]}},
+{cptCode:"33426",cptDescription:"Mitral valve repair",icd10:[{code:"I34.0",desc:"Nonrheumatic mitral valve insufficiency"},{code:"I34.1",desc:"Nonrheumatic mitral valve prolapse"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["valve repair","mitral repair","annuloplasty","valvuloplasty"],anatomyTerms:["mitral valve","annulus","leaflet","chordae","papillary muscle"],approachTerms:["sternotomy","cardiopulmonary bypass","minimally invasive"],diagnosisTerms:["mitral regurgitation","mitral prolapse","mitral insufficiency","flail leaflet","myxomatous"],instrumentTerms:["annuloplasty ring","ring","neochordae","gore-tex","cardioplegia"],phraseMatches:["mitral valve repair","annuloplasty ring","mitral annuloplasty"]}},
+{cptCode:"32480",cptDescription:"Lobectomy, open",icd10:[{code:"C34.90",desc:"Malignant neoplasm of unspecified part of bronchus or lung"},{code:"C34.10",desc:"Malignant neoplasm of upper lobe, bronchus or lung"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["lobectomy","resection","lung resection","pulmonary resection"],anatomyTerms:["lung","lobe","upper lobe","lower lobe","middle lobe","hilum","bronchus","pulmonary artery","pulmonary vein"],approachTerms:["thoracotomy","posterolateral","open"],diagnosisTerms:["lung cancer","non-small cell","adenocarcinoma","squamous cell","lung mass","nodule"],instrumentTerms:["stapler","chest tube","bronchial blocker"],phraseMatches:["lung lobectomy","open lobectomy","lung cancer"]}},
+{cptCode:"32663",cptDescription:"VATS lobectomy",icd10:[{code:"C34.90",desc:"Malignant neoplasm of bronchus/lung"},{code:"C34.10",desc:"Malignant neoplasm of upper lobe"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["lobectomy","vats","video-assisted","thoracoscopic","resection"],anatomyTerms:["lung","lobe","hilum","bronchus","pulmonary artery","pulmonary vein","fissure"],approachTerms:["vats","thoracoscopic","minimally invasive"],diagnosisTerms:["lung cancer","non-small cell","adenocarcinoma","lung mass","nodule"],instrumentTerms:["stapler","endoscopic stapler","camera","trocar","chest tube","energy device"],phraseMatches:["vats lobectomy","video-assisted thoracoscopic","thoracoscopic lobectomy"]}},
+{cptCode:"32601",cptDescription:"VATS diagnostic thoracoscopy",icd10:[{code:"J91.0",desc:"Malignant pleural effusion"},{code:"R91.1",desc:"Solitary pulmonary nodule"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["thoracoscopy","vats","diagnostic","exploration","biopsy"],anatomyTerms:["pleura","lung","mediastinum","chest"],approachTerms:["thoracoscopic","vats","minimally invasive"],diagnosisTerms:["pleural effusion","lung nodule","empyema","pleural mass"],instrumentTerms:["camera","trocar","forceps","chest tube"],phraseMatches:["vats diagnostic","diagnostic thoracoscopy"]}},
+{cptCode:"33208",cptDescription:"Insertion of permanent pacemaker, dual chamber",icd10:[{code:"I44.1",desc:"Atrioventricular block, second degree"},{code:"I49.5",desc:"Sick sinus syndrome"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["pacemaker","insertion","implantation","generator placement"],anatomyTerms:["subclavian","cephalic vein","right atrium","right ventricle","pocket","subcutaneous"],approachTerms:["percutaneous","open","subclavian"],diagnosisTerms:["heart block","bradycardia","sick sinus","atrioventricular block","syncope"],instrumentTerms:["lead","generator","electrode","programmer","pacing"],phraseMatches:["pacemaker insertion","permanent pacemaker","dual chamber pacemaker"]}},
+{cptCode:"33249",cptDescription:"Insertion of ICD with transvenous lead(s)",icd10:[{code:"I47.20",desc:"Ventricular tachycardia, unspecified"},{code:"I49.01",desc:"Ventricular fibrillation"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["icd","defibrillator","implantation","insertion"],anatomyTerms:["subclavian","subcutaneous","right ventricle","right atrium"],approachTerms:["transvenous","subclavian"],diagnosisTerms:["ventricular tachycardia","ventricular fibrillation","sudden cardiac death","cardiomyopathy","heart failure"],instrumentTerms:["lead","generator","coil","shock","defibrillation threshold"],phraseMatches:["implantable cardioverter defibrillator","icd implantation"]}},
+{cptCode:"33880",cptDescription:"Endovascular thoracic aorta repair (TEVAR)",icd10:[{code:"I71.2",desc:"Thoracic aortic aneurysm, without rupture"},{code:"I71.1",desc:"Thoracic aortic aneurysm, ruptured"}],specialty:"Cardiothoracic Surgery",keywordWeights:{procedureTerms:["tevar","endovascular","stent graft","repair"],anatomyTerms:["thoracic aorta","descending aorta","aortic arch","aorta"],approachTerms:["endovascular","transfemoral","percutaneous"],diagnosisTerms:["thoracic aortic aneurysm","aortic dissection","type b dissection","traumatic aortic injury"],instrumentTerms:["stent graft","endograft","catheter","sheath","delivery system"],phraseMatches:["tevar","thoracic endovascular aortic repair","aortic stent graft"]}},
+
+// ===== VASCULAR =====
+{cptCode:"35301",cptDescription:"Carotid endarterectomy",icd10:[{code:"I65.21",desc:"Occlusion and stenosis of right carotid artery"},{code:"I65.22",desc:"Occlusion and stenosis of left carotid artery"}],specialty:"Vascular Surgery",keywordWeights:{procedureTerms:["endarterectomy","cea","carotid","plaque removal"],anatomyTerms:["carotid","carotid artery","internal carotid","external carotid","common carotid","carotid bifurcation"],approachTerms:["cervical","open","longitudinal arteriotomy"],diagnosisTerms:["carotid stenosis","carotid occlusion","stroke","tia","transient ischemic attack","atherosclerosis"],instrumentTerms:["shunt","bovie","patch","dacron","patch angioplasty","clamp"],phraseMatches:["carotid endarterectomy","cea","carotid stenosis"]}},
+{cptCode:"34800",cptDescription:"Endovascular abdominal aortic aneurysm repair (EVAR)",icd10:[{code:"I71.4",desc:"Abdominal aortic aneurysm, without rupture"},{code:"I71.3",desc:"Abdominal aortic aneurysm, ruptured"}],specialty:"Vascular Surgery",keywordWeights:{procedureTerms:["evar","endovascular","stent graft","aneurysm repair"],anatomyTerms:["abdominal aorta","aorta","iliac","infrarenal","aortic bifurcation"],approachTerms:["endovascular","transfemoral","percutaneous","cutdown"],diagnosisTerms:["abdominal aortic aneurysm","aaa","aneurysm","aortic aneurysm"],instrumentTerms:["stent graft","endograft","sheath","catheter","guidewire","deployment"],phraseMatches:["evar","endovascular aneurysm repair","abdominal aortic aneurysm"]}},
+{cptCode:"35556",cptDescription:"Femoral-popliteal bypass graft with vein",icd10:[{code:"I70.211",desc:"Atherosclerosis of native arteries of extremities with intermittent claudication, right leg"},{code:"I70.261",desc:"Atherosclerosis with gangrene, right leg"}],specialty:"Vascular Surgery",keywordWeights:{procedureTerms:["bypass","graft","fem-pop","femoropopliteal","revascularization"],anatomyTerms:["femoral artery","popliteal artery","superficial femoral","saphenous vein","below knee","above knee"],approachTerms:["open","medial","tunneled"],diagnosisTerms:["peripheral artery disease","pad","claudication","critical limb ischemia","rest pain","gangrene"],instrumentTerms:["saphenous vein","graft","anastomosis","clamp","heparin","doppler"],phraseMatches:["fem-pop bypass","femoropopliteal bypass","peripheral artery disease"]}},
+{cptCode:"36818",cptDescription:"Arteriovenous fistula, upper arm, autogenous",icd10:[{code:"N18.6",desc:"End stage renal disease"},{code:"Z99.2",desc:"Dependence on renal dialysis"}],specialty:"Vascular Surgery",keywordWeights:{procedureTerms:["av fistula","fistula creation","anastomosis","arteriovenous"],anatomyTerms:["brachial artery","cephalic vein","basilic vein","upper arm","brachiocephalic","brachiobasilic"],approachTerms:["open","transposition"],diagnosisTerms:["end stage renal disease","esrd","dialysis","hemodialysis","renal failure"],instrumentTerms:["suture","prolene","heparin","vessel loop","doppler"],phraseMatches:["av fistula","arteriovenous fistula","dialysis access"]}},
+{cptCode:"36821",cptDescription:"Arteriovenous fistula, forearm, autogenous",icd10:[{code:"N18.6",desc:"End stage renal disease"},{code:"Z99.2",desc:"Dependence on renal dialysis"}],specialty:"Vascular Surgery",keywordWeights:{procedureTerms:["av fistula","fistula creation","anastomosis","radiocephalic"],anatomyTerms:["radial artery","cephalic vein","forearm","wrist"],approachTerms:["open"],diagnosisTerms:["end stage renal disease","esrd","dialysis","hemodialysis"],instrumentTerms:["suture","prolene","vessel loop","doppler"],phraseMatches:["radiocephalic fistula","av fistula","forearm fistula"]}},
+{cptCode:"36830",cptDescription:"Arteriovenous graft creation",icd10:[{code:"N18.6",desc:"End stage renal disease"},{code:"Z99.2",desc:"Dependence on renal dialysis"}],specialty:"Vascular Surgery",keywordWeights:{procedureTerms:["av graft","graft placement","arteriovenous graft","loop graft"],anatomyTerms:["brachial artery","axillary vein","forearm","upper arm","graft"],approachTerms:["open","tunneled","loop"],diagnosisTerms:["esrd","end stage renal disease","dialysis","failed fistula"],instrumentTerms:["ptfe","gore-tex","graft","tunneler","heparin"],phraseMatches:["av graft","arteriovenous graft","dialysis graft"]}},
+{cptCode:"37700",cptDescription:"Ligation and division of varicose veins",icd10:[{code:"I83.10",desc:"Varicose veins of unspecified lower extremity with inflammation"},{code:"I83.90",desc:"Asymptomatic varicose veins"}],specialty:"Vascular Surgery",keywordWeights:{procedureTerms:["ligation","division","stripping","ablation","varicose vein surgery"],anatomyTerms:["saphenous","greater saphenous","lesser saphenous","varicose veins","leg veins"],approachTerms:["open","endovenous","laser","radiofrequency"],diagnosisTerms:["varicose veins","venous insufficiency","venous reflux","stasis"],instrumentTerms:["laser fiber","closure catheter","rf catheter"],phraseMatches:["varicose vein surgery","saphenous vein ligation"]}},
+
+// ===== UROLOGY =====
+{cptCode:"55840",cptDescription:"Radical retropubic prostatectomy",icd10:[{code:"C61",desc:"Malignant neoplasm of prostate"}],specialty:"Urology",keywordWeights:{procedureTerms:["prostatectomy","radical prostatectomy","removal"],anatomyTerms:["prostate","bladder neck","urethra","seminal vesicles","pelvic lymph nodes","neurovascular bundle"],approachTerms:["retropubic","open","perineal"],diagnosisTerms:["prostate cancer","adenocarcinoma","gleason","psa","prostatic carcinoma"],instrumentTerms:["catheter","drain","suture","clips"],phraseMatches:["radical prostatectomy","prostate cancer","open prostatectomy"]}},
+{cptCode:"55866",cptDescription:"Robotic-assisted radical prostatectomy",icd10:[{code:"C61",desc:"Malignant neoplasm of prostate"}],specialty:"Urology",keywordWeights:{procedureTerms:["prostatectomy","robotic","radical","robot-assisted","da vinci"],anatomyTerms:["prostate","bladder neck","urethra","seminal vesicles","neurovascular bundle","pelvic lymph nodes"],approachTerms:["robotic","laparoscopic","minimally invasive","da vinci"],diagnosisTerms:["prostate cancer","adenocarcinoma","gleason","psa"],instrumentTerms:["robotic arms","camera","trocar","endowrist"],phraseMatches:["robotic prostatectomy","robot-assisted prostatectomy","da vinci prostatectomy"]}},
+{cptCode:"50545",cptDescription:"Laparoscopic radical nephrectomy",icd10:[{code:"C64.1",desc:"Malignant neoplasm of right kidney"},{code:"C64.2",desc:"Malignant neoplasm of left kidney"}],specialty:"Urology",keywordWeights:{procedureTerms:["nephrectomy","laparoscopic","radical nephrectomy","kidney removal"],anatomyTerms:["kidney","renal","adrenal","ureter","renal artery","renal vein","hilum"],approachTerms:["laparoscopic","robotic","transperitoneal","retroperitoneal"],diagnosisTerms:["renal cell carcinoma","kidney cancer","renal mass","kidney mass","rcc"],instrumentTerms:["trocar","stapler","endocatch","harmonic","clips"],phraseMatches:["laparoscopic nephrectomy","radical nephrectomy","renal cell carcinoma"]}},
+{cptCode:"50220",cptDescription:"Open nephrectomy",icd10:[{code:"C64.1",desc:"Malignant neoplasm of right kidney"},{code:"C64.2",desc:"Malignant neoplasm of left kidney"}],specialty:"Urology",keywordWeights:{procedureTerms:["nephrectomy","open","radical","kidney removal"],anatomyTerms:["kidney","renal","adrenal","ureter","renal artery","renal vein","gerota fascia"],approachTerms:["open","flank","subcostal","thoracoabdominal"],diagnosisTerms:["renal cell carcinoma","kidney cancer","renal mass","tumor thrombus"],instrumentTerms:["retractor","clamp","suture","drain"],phraseMatches:["open nephrectomy","radical nephrectomy"]}},
+{cptCode:"50543",cptDescription:"Laparoscopic partial nephrectomy",icd10:[{code:"C64.1",desc:"Malignant neoplasm of right kidney"},{code:"C64.2",desc:"Malignant neoplasm of left kidney"}],specialty:"Urology",keywordWeights:{procedureTerms:["partial nephrectomy","nephron-sparing","tumor excision","robotic partial"],anatomyTerms:["kidney","renal","renal mass","tumor","cortex","hilum"],approachTerms:["laparoscopic","robotic","minimally invasive"],diagnosisTerms:["renal mass","small renal mass","renal cell carcinoma","kidney tumor"],instrumentTerms:["renorrhaphy","bolster","suture","bulldog clamp","harmonic"],phraseMatches:["partial nephrectomy","nephron-sparing surgery","robotic partial nephrectomy"]}},
+{cptCode:"51595",cptDescription:"Radical cystectomy",icd10:[{code:"C67.9",desc:"Malignant neoplasm of bladder, unspecified"}],specialty:"Urology",keywordWeights:{procedureTerms:["cystectomy","radical cystectomy","bladder removal","urinary diversion"],anatomyTerms:["bladder","ureter","urethra","prostate","ileal conduit","neobladder","pelvis"],approachTerms:["open","robotic"],diagnosisTerms:["bladder cancer","urothelial carcinoma","transitional cell","muscle invasive"],instrumentTerms:["stapler","catheter","stent","drain"],phraseMatches:["radical cystectomy","bladder cancer","ileal conduit"]}},
+{cptCode:"52601",cptDescription:"Transurethral resection of prostate (TURP)",icd10:[{code:"N40.1",desc:"Benign prostatic hyperplasia with lower urinary tract symptoms"}],specialty:"Urology",keywordWeights:{procedureTerms:["turp","transurethral resection","resection","prostate resection"],anatomyTerms:["prostate","urethra","bladder neck","prostatic fossa","verumontanum"],approachTerms:["transurethral","endoscopic"],diagnosisTerms:["bph","benign prostatic hyperplasia","prostatic hypertrophy","bladder outlet obstruction","urinary retention"],instrumentTerms:["resectoscope","loop","electrocautery","irrigation","catheter"],phraseMatches:["transurethral resection prostate","turp","benign prostatic hyperplasia"]}},
+{cptCode:"52353",cptDescription:"Ureteroscopy with lithotripsy",icd10:[{code:"N20.1",desc:"Calculus of ureter"},{code:"N20.0",desc:"Calculus of kidney"}],specialty:"Urology",keywordWeights:{procedureTerms:["ureteroscopy","lithotripsy","stone extraction","fragmentation"],anatomyTerms:["ureter","kidney","renal pelvis","calyx","ureteral orifice"],approachTerms:["endoscopic","retrograde","ureteroscopic"],diagnosisTerms:["ureteral stone","kidney stone","calculus","nephrolithiasis","ureterolithiasis"],instrumentTerms:["laser","holmium","basket","ureteroscope","stent","guidewire"],phraseMatches:["ureteroscopy with lithotripsy","ureteral stone","holmium laser"]}},
+{cptCode:"52000",cptDescription:"Cystoscopy",icd10:[{code:"R31.9",desc:"Hematuria, unspecified"},{code:"N32.0",desc:"Bladder neck obstruction"}],specialty:"Urology",keywordWeights:{procedureTerms:["cystoscopy","cystourethroscopy","endoscopy","bladder examination"],anatomyTerms:["bladder","urethra","ureteral orifice","trigone"],approachTerms:["endoscopic","transurethral"],diagnosisTerms:["hematuria","bladder lesion","bladder stone","obstruction","recurrent uti"],instrumentTerms:["cystoscope","camera","biopsy forceps"],phraseMatches:["cystoscopy","bladder examination"]}},
+{cptCode:"52234",cptDescription:"Cystoscopy with resection of bladder tumor (TURBT)",icd10:[{code:"C67.9",desc:"Malignant neoplasm of bladder"},{code:"D49.4",desc:"Neoplasm of unspecified behavior of bladder"}],specialty:"Urology",keywordWeights:{procedureTerms:["turbt","transurethral resection","bladder tumor resection","resection","fulguration"],anatomyTerms:["bladder","tumor","bladder wall","trigone","lateral wall","dome"],approachTerms:["transurethral","endoscopic"],diagnosisTerms:["bladder cancer","bladder tumor","urothelial carcinoma","transitional cell","papillary tumor"],instrumentTerms:["resectoscope","loop","electrocautery","biopsy forceps"],phraseMatches:["transurethral resection bladder tumor","turbt","bladder tumor"]}},
+{cptCode:"54150",cptDescription:"Circumcision",icd10:[{code:"N47.1",desc:"Phimosis"}],specialty:"Urology",keywordWeights:{procedureTerms:["circumcision","excision","foreskin removal"],anatomyTerms:["foreskin","prepuce","glans","penis"],approachTerms:["dorsal slit","sleeve"],diagnosisTerms:["phimosis","paraphimosis","balanitis","redundant foreskin"],instrumentTerms:["clamp","gomco","suture","bovie"],phraseMatches:["circumcision","phimosis"]}},
+{cptCode:"55250",cptDescription:"Vasectomy",icd10:[{code:"Z30.2",desc:"Encounter for sterilization"}],specialty:"Urology",keywordWeights:{procedureTerms:["vasectomy","ligation","division","transection"],anatomyTerms:["vas deferens","scrotum","spermatic cord","inguinal"],approachTerms:["open","no-scalpel","percutaneous"],diagnosisTerms:["sterilization","contraception","elective"],instrumentTerms:["cautery","suture","clamp","fascial interposition"],phraseMatches:["vasectomy","vas deferens"]}},
+
+// ===== GYNECOLOGIC =====
+{cptCode:"58150",cptDescription:"Total abdominal hysterectomy",icd10:[{code:"D25.9",desc:"Leiomyoma of uterus, unspecified"},{code:"N80.0",desc:"Endometriosis of uterus"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["hysterectomy","total abdominal hysterectomy","tah","uterine removal"],anatomyTerms:["uterus","cervix","ovary","fallopian tube","broad ligament","uterine artery","vaginal cuff"],approachTerms:["abdominal","open","pfannenstiel","midline"],diagnosisTerms:["fibroids","leiomyoma","menorrhagia","endometriosis","abnormal uterine bleeding","adenomyosis"],instrumentTerms:["clamp","suture","bovie","pedicle","heaney"],phraseMatches:["total abdominal hysterectomy","tah","uterine removal"]}},
+{cptCode:"58571",cptDescription:"Total laparoscopic hysterectomy with BSO",icd10:[{code:"D25.9",desc:"Leiomyoma of uterus"},{code:"N80.0",desc:"Endometriosis of uterus"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["laparoscopic hysterectomy","tlh","total laparoscopic","bilateral salpingo-oophorectomy","bso"],anatomyTerms:["uterus","ovaries","fallopian tubes","cervix","broad ligament","uterine artery","vaginal cuff"],approachTerms:["laparoscopic","robotic","minimally invasive"],diagnosisTerms:["fibroids","leiomyoma","endometriosis","abnormal bleeding","adenomyosis"],instrumentTerms:["trocar","energy device","uterine manipulator","morcellator","camera"],phraseMatches:["total laparoscopic hysterectomy","tlh with bso","laparoscopic hysterectomy"]}},
+{cptCode:"58260",cptDescription:"Vaginal hysterectomy",icd10:[{code:"D25.9",desc:"Leiomyoma of uterus"},{code:"N81.2",desc:"Incomplete uterovaginal prolapse"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["vaginal hysterectomy","hysterectomy","transvaginal"],anatomyTerms:["uterus","cervix","vagina","cardinal ligament","uterosacral","cul-de-sac"],approachTerms:["vaginal","transvaginal"],diagnosisTerms:["uterine prolapse","pelvic organ prolapse","fibroids","abnormal bleeding"],instrumentTerms:["clamp","suture","jorgenson","weighted speculum"],phraseMatches:["vaginal hysterectomy","transvaginal hysterectomy"]}},
+{cptCode:"58661",cptDescription:"Laparoscopic removal of adnexal structures (oophorectomy)",icd10:[{code:"D27.9",desc:"Benign neoplasm of unspecified ovary"},{code:"N83.20",desc:"Unspecified ovarian cyst"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["oophorectomy","salpingectomy","salpingo-oophorectomy","adnexal removal","laparoscopic"],anatomyTerms:["ovary","fallopian tube","adnexa","infundibulopelvic ligament","mesosalpinx"],approachTerms:["laparoscopic","robotic","minimally invasive"],diagnosisTerms:["ovarian cyst","ovarian mass","tubal mass","ovarian torsion","dermoid"],instrumentTerms:["trocar","energy device","endo bag","grasper"],phraseMatches:["laparoscopic oophorectomy","salpingo-oophorectomy","ovarian cyst removal"]}},
+{cptCode:"58140",cptDescription:"Myomectomy, abdominal",icd10:[{code:"D25.1",desc:"Intramural leiomyoma of uterus"},{code:"D25.9",desc:"Leiomyoma of uterus, unspecified"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["myomectomy","fibroid removal","excision","enucleation"],anatomyTerms:["uterus","myometrium","fibroid","leiomyoma","serosa"],approachTerms:["abdominal","open","pfannenstiel"],diagnosisTerms:["fibroids","leiomyoma","uterine fibroids","symptomatic fibroids","menorrhagia","infertility"],instrumentTerms:["clamp","suture","tourniquet","vasopressin","bovie"],phraseMatches:["abdominal myomectomy","fibroid removal"]}},
+{cptCode:"58545",cptDescription:"Laparoscopic myomectomy",icd10:[{code:"D25.1",desc:"Intramural leiomyoma"},{code:"D25.9",desc:"Leiomyoma of uterus"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["myomectomy","laparoscopic","fibroid removal","robotic myomectomy"],anatomyTerms:["uterus","fibroid","myometrium"],approachTerms:["laparoscopic","robotic","minimally invasive"],diagnosisTerms:["fibroids","leiomyoma","infertility","menorrhagia"],instrumentTerms:["trocar","morcellator","energy device","suture","barbed suture"],phraseMatches:["laparoscopic myomectomy","robotic myomectomy"]}},
+{cptCode:"59510",cptDescription:"Cesarean delivery",icd10:[{code:"O82",desc:"Encounter for cesarean delivery without indication"},{code:"O34.21",desc:"Maternal care for scar from previous cesarean delivery"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["cesarean","c-section","cesarean delivery","delivery"],anatomyTerms:["uterus","lower uterine segment","abdomen","placenta","amniotic fluid"],approachTerms:["pfannenstiel","low transverse","vertical","classical"],diagnosisTerms:["prior cesarean","cephalopelvic disproportion","breech","fetal distress","placenta previa","failed induction"],instrumentTerms:["stapler","suture","retractor","bladder blade"],phraseMatches:["cesarean delivery","c-section","cesarean section"]}},
+{cptCode:"58611",cptDescription:"Ligation or transection of fallopian tube(s)",icd10:[{code:"Z30.2",desc:"Encounter for sterilization"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["tubal ligation","ligation","transection","salpingectomy","sterilization"],anatomyTerms:["fallopian tube","tube","mesosalpinx","isthmus"],approachTerms:["laparoscopic","postpartum","minilaparotomy"],diagnosisTerms:["sterilization","contraception","elective","bilateral"],instrumentTerms:["clip","filshie clip","ring","cautery","suture"],phraseMatches:["tubal ligation","bilateral tubal ligation","tubal sterilization"]}},
+{cptCode:"58120",cptDescription:"Dilation and curettage (D&C)",icd10:[{code:"N93.9",desc:"Abnormal uterine bleeding, unspecified"},{code:"O02.1",desc:"Missed abortion"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["dilation and curettage","d&c","curettage","suction"],anatomyTerms:["uterus","endometrium","cervix","cervical canal","uterine cavity"],approachTerms:["transcervical","transvaginal"],diagnosisTerms:["abnormal bleeding","miscarriage","missed abortion","incomplete abortion","endometrial polyp","retained products"],instrumentTerms:["curette","dilator","suction","tenaculum","speculum"],phraseMatches:["dilation and curettage","d&c","uterine curettage"]}},
+{cptCode:"57288",cptDescription:"Sling operation for stress incontinence",icd10:[{code:"N39.3",desc:"Stress incontinence"}],specialty:"Gynecologic Surgery",keywordWeights:{procedureTerms:["sling","midurethral sling","tvt","tot","stress incontinence surgery"],anatomyTerms:["urethra","vagina","pubic bone","obturator"],approachTerms:["transvaginal","retropubic","transobturator"],diagnosisTerms:["stress urinary incontinence","incontinence","pelvic floor"],instrumentTerms:["mesh sling","trocar","cystoscope"],phraseMatches:["sling procedure","midurethral sling","stress incontinence repair"]}},
+
+// ===== ENT =====
+{cptCode:"42826",cptDescription:"Tonsillectomy, primary, age 12 or over",icd10:[{code:"J35.01",desc:"Chronic tonsillitis"},{code:"J35.03",desc:"Chronic tonsillitis and adenoiditis"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["tonsillectomy","tonsil removal","dissection"],anatomyTerms:["tonsil","tonsillar fossa","pharynx","palate","uvula"],approachTerms:["transoral","cold dissection","coblation","electrocautery"],diagnosisTerms:["chronic tonsillitis","recurrent tonsillitis","obstructive sleep apnea","tonsillar hypertrophy"],instrumentTerms:["bovie","coblator","suction","mouth gag"],phraseMatches:["tonsillectomy","tonsil removal"]}},
+{cptCode:"30520",cptDescription:"Septoplasty",icd10:[{code:"J34.2",desc:"Deviated nasal septum"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["septoplasty","septal correction","septal reconstruction"],anatomyTerms:["nasal septum","septum","cartilage","vomer","perpendicular plate","maxillary crest"],approachTerms:["endonasal","open","hemitransfixion"],diagnosisTerms:["deviated septum","nasal obstruction","septal deviation","nasal airway obstruction"],instrumentTerms:["speculum","elevator","splints","packing","scissors"],phraseMatches:["septoplasty","deviated septum","septal correction"]}},
+{cptCode:"31254",cptDescription:"Nasal/sinus endoscopy with ethmoidectomy (FESS)",icd10:[{code:"J32.9",desc:"Chronic sinusitis, unspecified"},{code:"J33.0",desc:"Polyp of nasal cavity"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["fess","ethmoidectomy","endoscopic sinus surgery","polypectomy"],anatomyTerms:["ethmoid","sinus","maxillary","frontal","sphenoid","nasal","middle turbinate","uncinate"],approachTerms:["endoscopic","endonasal","transnasal"],diagnosisTerms:["chronic sinusitis","nasal polyps","polyposis","recurrent sinusitis","mucocele"],instrumentTerms:["endoscope","microdebrider","shaver","suction","through-cutting forceps","navigation"],phraseMatches:["functional endoscopic sinus surgery","fess","ethmoidectomy","endoscopic sinus"]}},
+{cptCode:"31256",cptDescription:"Nasal/sinus endoscopy with maxillary antrostomy",icd10:[{code:"J32.0",desc:"Chronic maxillary sinusitis"},{code:"J32.9",desc:"Chronic sinusitis, unspecified"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["antrostomy","maxillary antrostomy","endoscopic","sinus surgery"],anatomyTerms:["maxillary sinus","natural ostium","middle meatus","uncinate"],approachTerms:["endoscopic","transnasal"],diagnosisTerms:["maxillary sinusitis","chronic sinusitis","sinus disease"],instrumentTerms:["endoscope","backbiter","through-cutting","microdebrider"],phraseMatches:["maxillary antrostomy","endoscopic sinus surgery"]}},
+{cptCode:"30140",cptDescription:"Turbinate reduction",icd10:[{code:"J34.3",desc:"Hypertrophy of nasal turbinates"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["turbinate reduction","turbinoplasty","turbinectomy","submucosal resection"],anatomyTerms:["inferior turbinate","turbinate","nasal","nasal cavity"],approachTerms:["endonasal","endoscopic","submucosal"],diagnosisTerms:["turbinate hypertrophy","nasal obstruction","chronic rhinitis"],instrumentTerms:["microdebrider","coblator","radiofrequency","bovie","outfracture"],phraseMatches:["turbinate reduction","inferior turbinate reduction"]}},
+{cptCode:"42420",cptDescription:"Parotidectomy, superficial",icd10:[{code:"D11.0",desc:"Benign neoplasm of parotid gland"},{code:"C07",desc:"Malignant neoplasm of parotid gland"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["parotidectomy","superficial parotidectomy","excision","gland removal"],anatomyTerms:["parotid","facial nerve","parotid gland","masseter","sternocleidomastoid"],approachTerms:["open","modified blair","preauricular"],diagnosisTerms:["parotid tumor","pleomorphic adenoma","parotid mass","warthin tumor","mucoepidermoid"],instrumentTerms:["nerve stimulator","facial nerve monitor","bipolar","drain"],phraseMatches:["superficial parotidectomy","parotid tumor","parotid gland excision"]}},
+{cptCode:"31622",cptDescription:"Diagnostic bronchoscopy",icd10:[{code:"R91.1",desc:"Solitary pulmonary nodule"},{code:"R05.9",desc:"Cough, unspecified"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["bronchoscopy","diagnostic","inspection","examination"],anatomyTerms:["bronchus","trachea","carina","airway","bronchial tree","mainstem"],approachTerms:["flexible","rigid","transoral","transnasal"],diagnosisTerms:["lung mass","hemoptysis","pneumonia","airway obstruction","cough"],instrumentTerms:["bronchoscope","camera","suction","lavage"],phraseMatches:["diagnostic bronchoscopy","flexible bronchoscopy"]}},
+{cptCode:"31535",cptDescription:"Direct laryngoscopy with biopsy",icd10:[{code:"D14.1",desc:"Benign neoplasm of larynx"},{code:"C32.9",desc:"Malignant neoplasm of larynx"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["laryngoscopy","direct laryngoscopy","biopsy","suspension laryngoscopy","microlaryngoscopy"],anatomyTerms:["larynx","vocal cord","vocal fold","epiglottis","arytenoid","glottis","subglottis"],approachTerms:["direct","suspension","transoral","microlaryngoscopy"],diagnosisTerms:["laryngeal lesion","vocal cord lesion","hoarseness","dysphonia","laryngeal mass","leukoplakia"],instrumentTerms:["microscope","biopsy forceps","suspension system","laryngoscope"],phraseMatches:["direct laryngoscopy","laryngoscopy with biopsy","vocal cord biopsy"]}},
+{cptCode:"42145",cptDescription:"Uvulopalatopharyngoplasty (UPPP)",icd10:[{code:"G47.33",desc:"Obstructive sleep apnea"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["uvulopalatopharyngoplasty","uppp","palatoplasty","pharyngoplasty"],anatomyTerms:["uvula","palate","pharynx","tonsil","soft palate"],approachTerms:["transoral"],diagnosisTerms:["obstructive sleep apnea","osa","sleep apnea","snoring","upper airway obstruction"],instrumentTerms:["bovie","cautery","suture"],phraseMatches:["uvulopalatopharyngoplasty","uppp","sleep apnea surgery"]}},
+{cptCode:"69436",cptDescription:"Tympanostomy tube placement",icd10:[{code:"H65.20",desc:"Chronic serous otitis media, unspecified ear"},{code:"H66.90",desc:"Otitis media, unspecified"}],specialty:"ENT / Head & Neck",keywordWeights:{procedureTerms:["tympanostomy","tube placement","myringotomy","ventilation tube"],anatomyTerms:["tympanic membrane","eardrum","middle ear","ear canal"],approachTerms:["transcanal"],diagnosisTerms:["otitis media","chronic otitis","serous otitis","effusion","recurrent ear infections"],instrumentTerms:["tube","grommet","myringotomy knife","suction"],phraseMatches:["tympanostomy tubes","ear tubes","myringotomy"]}},
+
+// ===== PLASTIC & RECONSTRUCTIVE =====
+{cptCode:"19361",cptDescription:"Breast reconstruction with tissue expander",icd10:[{code:"Z42.1",desc:"Encounter for breast reconstruction following mastectomy"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["breast reconstruction","tissue expander","expander placement","reconstruction"],anatomyTerms:["breast","chest wall","pectoralis","mastectomy site","capsule"],approachTerms:["subpectoral","prepectoral","implant-based"],diagnosisTerms:["post-mastectomy","breast cancer reconstruction","immediate reconstruction","delayed reconstruction"],instrumentTerms:["tissue expander","alloderm","acellular dermal matrix","adm","drain"],phraseMatches:["breast reconstruction","tissue expander placement","post-mastectomy reconstruction"]}},
+{cptCode:"19364",cptDescription:"Breast reconstruction with free flap",icd10:[{code:"Z42.1",desc:"Encounter for breast reconstruction following mastectomy"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["free flap","breast reconstruction","microvascular","diep","tram"],anatomyTerms:["breast","abdomen","perforator","artery","vein","internal mammary","thoracodorsal"],approachTerms:["microsurgical","free tissue transfer"],diagnosisTerms:["post-mastectomy","breast reconstruction","autologous reconstruction"],instrumentTerms:["microscope","microvascular","anastomosis","doppler","coupler"],phraseMatches:["free flap breast reconstruction","diep flap","tram flap","microvascular breast reconstruction"]}},
+{cptCode:"15100",cptDescription:"Split-thickness skin graft (STSG)",icd10:[{code:"L89.90",desc:"Pressure ulcer of unspecified site"},{code:"T30.0",desc:"Burn of unspecified body region"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["skin graft","split-thickness","stsg","grafting","harvest"],anatomyTerms:["skin","dermatome","donor site","recipient site","wound bed","thigh","scalp"],approachTerms:["tangential","open"],diagnosisTerms:["wound","burn","ulcer","skin defect","soft tissue defect","skin loss"],instrumentTerms:["dermatome","mesher","stapler","bolster","dressing"],phraseMatches:["split-thickness skin graft","stsg","skin graft"]}},
+{cptCode:"15120",cptDescription:"Full-thickness skin graft (FTSG)",icd10:[{code:"L89.90",desc:"Pressure ulcer"},{code:"T30.0",desc:"Burn"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["skin graft","full-thickness","ftsg","grafting"],anatomyTerms:["skin","donor","recipient","wound","defect","groin","postauricular"],approachTerms:["open"],diagnosisTerms:["skin defect","wound","contracture","scar","excision defect"],instrumentTerms:["suture","bolster","tie-over dressing"],phraseMatches:["full-thickness skin graft","ftsg"]}},
+{cptCode:"30400",cptDescription:"Rhinoplasty, primary",icd10:[{code:"J34.2",desc:"Deviated nasal septum"},{code:"M95.0",desc:"Acquired deformity of nose"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["rhinoplasty","nose reshaping","nasal surgery","osteotomy"],anatomyTerms:["nose","nasal","dorsum","tip","cartilage","septum","nasal bones","alar"],approachTerms:["open","closed","endonasal","external"],diagnosisTerms:["nasal deformity","deviated septum","nasal obstruction","cosmetic","functional"],instrumentTerms:["osteotome","rasp","scissors","suture","splint"],phraseMatches:["rhinoplasty","nasal surgery","nose surgery"]}},
+{cptCode:"15734",cptDescription:"Muscle flap",icd10:[{code:"L89.90",desc:"Pressure ulcer"},{code:"T81.4",desc:"Infection following a procedure"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["flap","muscle flap","musculocutaneous flap","rotation","advancement","transfer"],anatomyTerms:["muscle","latissimus dorsi","pectoralis","gracilis","rectus abdominis","gluteus"],approachTerms:["open","pedicled","rotational"],diagnosisTerms:["wound","defect","chronic wound","radiation wound","exposed hardware","osteomyelitis"],instrumentTerms:["drain","suture","bovie","doppler"],phraseMatches:["muscle flap","pedicled flap","flap coverage"]}},
+{cptCode:"14000",cptDescription:"Adjacent tissue transfer or rearrangement, trunk, 10 sq cm or less",icd10:[{code:"D22.9",desc:"Melanocytic nevi, unspecified"},{code:"C44.9",desc:"Other and unspecified malignant neoplasm of skin"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["tissue transfer","local flap","advancement flap","rotation flap","transposition"],anatomyTerms:["skin","defect","wound","subcutaneous","trunk","face","scalp"],approachTerms:["local","adjacent"],diagnosisTerms:["skin defect","skin cancer","excision defect","mohs defect","wound"],instrumentTerms:["suture","undermining","bovie","flap"],phraseMatches:["adjacent tissue transfer","local flap","tissue rearrangement"]}},
+{cptCode:"15830",cptDescription:"Panniculectomy / excision of excessive skin and subcutaneous tissue of abdomen",icd10:[{code:"L98.7",desc:"Excessive and redundant skin and subcutaneous tissue"},{code:"E66.01",desc:"Morbid obesity"}],specialty:"Plastic & Reconstructive Surgery",keywordWeights:{procedureTerms:["panniculectomy","abdominoplasty","excision","skin removal"],anatomyTerms:["abdomen","pannus","panniculus","abdominal wall","umbilicus"],approachTerms:["open","transverse"],diagnosisTerms:["panniculus","redundant skin","massive weight loss","intertrigo","skin fold"],instrumentTerms:["bovie","stapler","drain","suture"],phraseMatches:["panniculectomy","abdominal panniculectomy","pannus excision"]}},
+
+// ===== OPHTHALMOLOGY =====
+{cptCode:"66984",cptDescription:"Cataract surgery with IOL implant",icd10:[{code:"H25.9",desc:"Unspecified age-related cataract"},{code:"H25.11",desc:"Age-related nuclear cataract, right eye"}],specialty:"Ophthalmology",keywordWeights:{procedureTerms:["cataract","phacoemulsification","lens implant","cataract extraction","iol"],anatomyTerms:["lens","anterior chamber","capsule","posterior capsule","cornea","iris","pupil","eye"],approachTerms:["clear corneal","limbal","temporal"],diagnosisTerms:["cataract","nuclear sclerosis","cortical cataract","posterior subcapsular","visual impairment"],instrumentTerms:["phaco","intraocular lens","iol","viscoelastic","keratome","irrigating/aspirating"],phraseMatches:["cataract surgery","phacoemulsification","iol implantation","cataract extraction"]}},
+{cptCode:"66982",cptDescription:"Complex cataract surgery",icd10:[{code:"H25.9",desc:"Age-related cataract"},{code:"H27.10",desc:"Unspecified subluxation of lens"}],specialty:"Ophthalmology",keywordWeights:{procedureTerms:["complex cataract","phacoemulsification","cataract extraction","iol"],anatomyTerms:["lens","capsule","zonules","iris","anterior chamber","vitreous"],approachTerms:["clear corneal"],diagnosisTerms:["mature cataract","subluxated lens","small pupil","pseudoexfoliation","complex","brunescent","white cataract"],instrumentTerms:["iris hooks","capsular tension ring","phaco","chopper","viscoelastic","malyugin ring"],phraseMatches:["complex cataract","complicated cataract"]}},
+{cptCode:"67036",cptDescription:"Vitrectomy, pars plana approach",icd10:[{code:"H43.10",desc:"Vitreous hemorrhage, unspecified eye"},{code:"H33.001",desc:"Unspecified retinal detachment with retinal break, right eye"}],specialty:"Ophthalmology",keywordWeights:{procedureTerms:["vitrectomy","pars plana vitrectomy","ppv","membrane peel"],anatomyTerms:["vitreous","retina","macula","pars plana","optic nerve","fovea"],approachTerms:["pars plana","posterior","transconjunctival"],diagnosisTerms:["vitreous hemorrhage","retinal detachment","epiretinal membrane","macular hole","diabetic retinopathy","proliferative"],instrumentTerms:["vitrector","light pipe","endolaser","gas","silicone oil","forceps","cutter"],phraseMatches:["pars plana vitrectomy","vitrectomy","ppv"]}},
+{cptCode:"67108",cptDescription:"Repair of retinal detachment with vitrectomy",icd10:[{code:"H33.001",desc:"Retinal detachment with break, right eye"},{code:"H33.002",desc:"Retinal detachment with break, left eye"}],specialty:"Ophthalmology",keywordWeights:{procedureTerms:["retinal detachment repair","vitrectomy","scleral buckle","retinopexy"],anatomyTerms:["retina","macula","vitreous","sclera","choroid","optic nerve"],approachTerms:["pars plana","scleral buckle","pneumatic"],diagnosisTerms:["retinal detachment","rhegmatogenous","retinal tear","retinal break","macula-off","macula-on"],instrumentTerms:["vitrector","cryoprobe","endolaser","gas","sf6","c3f8","silicone oil","band"],phraseMatches:["retinal detachment repair","scleral buckle","retinal detachment surgery"]}},
+{cptCode:"66170",cptDescription:"Trabeculectomy",icd10:[{code:"H40.10",desc:"Unspecified open-angle glaucoma"},{code:"H40.11",desc:"Primary open-angle glaucoma"}],specialty:"Ophthalmology",keywordWeights:{procedureTerms:["trabeculectomy","filtration surgery","glaucoma surgery","bleb"],anatomyTerms:["trabecular meshwork","sclera","conjunctiva","anterior chamber","iris","bleb"],approachTerms:["fornix-based","limbus-based"],diagnosisTerms:["glaucoma","open-angle glaucoma","uncontrolled iop","elevated intraocular pressure"],instrumentTerms:["mitomycin","antimetabolite","5-fu","sponge","keratome","kelly punch","scleral flap"],phraseMatches:["trabeculectomy","glaucoma surgery","filtration surgery"]}},
+{cptCode:"66180",cptDescription:"Aqueous shunt to extraocular reservoir (glaucoma drainage device)",icd10:[{code:"H40.10",desc:"Unspecified open-angle glaucoma"},{code:"H40.11",desc:"Primary open-angle glaucoma"}],specialty:"Ophthalmology",keywordWeights:{procedureTerms:["glaucoma shunt","drainage device","tube shunt","aqueous shunt"],anatomyTerms:["anterior chamber","sclera","conjunctiva","plate","tube","extraocular"],approachTerms:["open","superior","superotemporal"],diagnosisTerms:["glaucoma","refractory glaucoma","neovascular glaucoma","failed trabeculectomy","elevated iop"],instrumentTerms:["ahmed","baerveldt","tube","plate","patch graft","suture"],phraseMatches:["glaucoma drainage device","tube shunt","ahmed valve","baerveldt implant"]}},
+{cptCode:"65756",cptDescription:"Corneal transplant, endothelial keratoplasty (DSAEK/DMEK)",icd10:[{code:"H18.10",desc:"Bullous keratopathy"},{code:"H18.51",desc:"Endothelial corneal dystrophy"}],specialty:"Ophthalmology",keywordWeights:{procedureTerms:["keratoplasty","corneal transplant","dsaek","dmek","endothelial keratoplasty"],anatomyTerms:["cornea","endothelium","descemet membrane","anterior chamber","graft"],approachTerms:["endothelial","posterior lamellar"],diagnosisTerms:["fuchs dystrophy","bullous keratopathy","corneal edema","endothelial dysfunction","pseudophakic bullous"],instrumentTerms:["donor tissue","graft","air bubble","suture","injector"],phraseMatches:["corneal transplant","endothelial keratoplasty","dsaek","dmek"]}},
+
+// ===== COLORECTAL =====
+{cptCode:"45378",cptDescription:"Colonoscopy, diagnostic",icd10:[{code:"Z12.11",desc:"Encounter for screening for malignant neoplasm of colon"},{code:"K63.5",desc:"Polyp of colon"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["colonoscopy","diagnostic","examination","visualization"],anatomyTerms:["colon","cecum","rectum","sigmoid","transverse colon","ascending colon","descending colon","terminal ileum"],approachTerms:["endoscopic","per rectum"],diagnosisTerms:["screening","polyp","colon cancer","colitis","diverticulosis","hematochezia"],instrumentTerms:["colonoscope","camera","suction"],phraseMatches:["diagnostic colonoscopy","screening colonoscopy"]}},
+{cptCode:"45380",cptDescription:"Colonoscopy with biopsy",icd10:[{code:"K63.5",desc:"Polyp of colon"},{code:"K51.90",desc:"Ulcerative colitis, unspecified"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["colonoscopy","biopsy","sampling"],anatomyTerms:["colon","rectum","sigmoid","cecum","mucosa"],approachTerms:["endoscopic"],diagnosisTerms:["polyp","colitis","mass","lesion","inflammatory bowel disease","crohn","ulcerative colitis"],instrumentTerms:["biopsy forceps","colonoscope"],phraseMatches:["colonoscopy with biopsy","colon biopsy"]}},
+{cptCode:"45385",cptDescription:"Colonoscopy with polypectomy (snare technique)",icd10:[{code:"K63.5",desc:"Polyp of colon"},{code:"D12.6",desc:"Benign neoplasm of colon, unspecified"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["polypectomy","colonoscopy","snare","polyp removal"],anatomyTerms:["colon","polyp","sigmoid","cecum","ascending","transverse"],approachTerms:["endoscopic","snare"],diagnosisTerms:["colon polyp","adenoma","sessile","pedunculated","tubular adenoma","villous adenoma"],instrumentTerms:["snare","cautery","hot snare","cold snare","retrieval net"],phraseMatches:["colonoscopy with polypectomy","snare polypectomy","polyp removal"]}},
+{cptCode:"45395",cptDescription:"Laparoscopic low anterior resection",icd10:[{code:"C20",desc:"Malignant neoplasm of rectum"},{code:"C19",desc:"Malignant neoplasm of rectosigmoid junction"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["low anterior resection","lar","resection","proctectomy","anastomosis"],anatomyTerms:["rectum","sigmoid","mesorectum","tme","stapled anastomosis","pelvis"],approachTerms:["laparoscopic","robotic","minimally invasive"],diagnosisTerms:["rectal cancer","rectosigmoid cancer","adenocarcinoma"],instrumentTerms:["stapler","eea","endo gia","trocar","energy device"],phraseMatches:["low anterior resection","lar","total mesorectal excision"]}},
+{cptCode:"45110",cptDescription:"Abdominoperineal resection (APR)",icd10:[{code:"C20",desc:"Malignant neoplasm of rectum"},{code:"C21.0",desc:"Malignant neoplasm of anus, unspecified"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["abdominoperineal resection","apr","proctectomy","colostomy","perineal excision"],anatomyTerms:["rectum","anus","perineum","sigmoid","colostomy site"],approachTerms:["abdominal","perineal","combined","laparoscopic"],diagnosisTerms:["rectal cancer","anal cancer","low rectal cancer","squamous cell"],instrumentTerms:["stapler","ostomy","drain","energy device"],phraseMatches:["abdominoperineal resection","apr","permanent colostomy"]}},
+{cptCode:"46255",cptDescription:"Hemorrhoidectomy, excisional, 2 or more columns",icd10:[{code:"K64.1",desc:"Second degree hemorrhoids"},{code:"K64.2",desc:"Third degree hemorrhoids"},{code:"K64.3",desc:"Fourth degree hemorrhoids"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["hemorrhoidectomy","excision","hemorrhoid removal"],anatomyTerms:["hemorrhoid","anal canal","anus","columns","hemorrhoidal tissue","pedicle"],approachTerms:["open","closed","Ferguson","Milligan-Morgan"],diagnosisTerms:["hemorrhoids","prolapsing hemorrhoids","bleeding hemorrhoids","thrombosed hemorrhoid"],instrumentTerms:["cautery","suture","ligasure","harmonic"],phraseMatches:["hemorrhoidectomy","hemorrhoid excision"]}},
+{cptCode:"46060",cptDescription:"Fistulotomy",icd10:[{code:"K60.3",desc:"Anal fistula"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["fistulotomy","fistulectomy","fistula repair","seton","lay open"],anatomyTerms:["fistula","anal","perianal","internal opening","external opening","sphincter"],approachTerms:["open","perineal"],diagnosisTerms:["anal fistula","fistula-in-ano","perianal fistula","cryptoglandular","abscess"],instrumentTerms:["probe","seton","suture","cautery","fistula probe"],phraseMatches:["fistulotomy","anal fistula repair","seton placement"]}},
+{cptCode:"46200",cptDescription:"Fissurectomy / sphincterotomy",icd10:[{code:"K60.0",desc:"Acute anal fissure"},{code:"K60.1",desc:"Chronic anal fissure"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["fissurectomy","sphincterotomy","lateral internal sphincterotomy","fissure excision"],anatomyTerms:["anal fissure","internal sphincter","anal canal","anoderm"],approachTerms:["lateral","open","closed"],diagnosisTerms:["anal fissure","chronic fissure","hypertrophied papilla","sentinel pile"],instrumentTerms:["blade","bovie","anoscope","retractor"],phraseMatches:["lateral internal sphincterotomy","fissurectomy","anal fissure surgery"]}},
+{cptCode:"46020",cptDescription:"Incision and drainage of perianal abscess",icd10:[{code:"K61.0",desc:"Anal abscess"},{code:"K61.1",desc:"Rectal abscess"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["incision","drainage","i&d","abscess drainage"],anatomyTerms:["perianal","ischiorectal","abscess","anus","perineum"],approachTerms:["open","bedside"],diagnosisTerms:["perianal abscess","anorectal abscess","ischiorectal abscess","pilonidal abscess"],instrumentTerms:["blade","packing","drain","culture"],phraseMatches:["perianal abscess drainage","anorectal abscess","incision and drainage"]}},
+{cptCode:"46947",cptDescription:"Hemorrhoid banding (rubber band ligation)",icd10:[{code:"K64.0",desc:"First degree hemorrhoids"},{code:"K64.1",desc:"Second degree hemorrhoids"}],specialty:"Colorectal Surgery",keywordWeights:{procedureTerms:["banding","rubber band ligation","ligation","hemorrhoid banding"],anatomyTerms:["hemorrhoid","anal canal","internal hemorrhoid","columns"],approachTerms:["endoscopic","anoscopic"],diagnosisTerms:["internal hemorrhoids","hemorrhoids","bleeding hemorrhoids"],instrumentTerms:["band","ligator","anoscope","suction"],phraseMatches:["hemorrhoid banding","rubber band ligation"]}},
+
+// ===== PEDIATRIC =====
+{cptCode:"43520",cptDescription:"Pyloromyotomy",icd10:[{code:"Q40.0",desc:"Infantile hypertrophic pyloric stenosis"}],specialty:"Pediatric Surgery",keywordWeights:{procedureTerms:["pyloromyotomy","ramstedt","pyloric","myotomy"],anatomyTerms:["pylorus","stomach","duodenum","pyloric muscle"],approachTerms:["open","laparoscopic","umbilical"],diagnosisTerms:["pyloric stenosis","hypertrophic pyloric stenosis","projectile vomiting","infantile pyloric stenosis"],instrumentTerms:["pyloric spreader","knife","olive","trocar"],phraseMatches:["pyloromyotomy","pyloric stenosis","ramstedt pyloromyotomy"]}},
+{cptCode:"43831",cptDescription:"Gastrostomy tube placement, open",icd10:[{code:"K21.0",desc:"GERD with esophagitis"},{code:"R63.3",desc:"Feeding difficulties"}],specialty:"Pediatric Surgery",keywordWeights:{procedureTerms:["gastrostomy","g-tube","peg","tube placement","feeding tube"],anatomyTerms:["stomach","abdominal wall","gastric","anterior gastric wall"],approachTerms:["open","laparoscopic","percutaneous","stamm"],diagnosisTerms:["feeding difficulty","dysphagia","failure to thrive","neurologic impairment","aspiration"],instrumentTerms:["tube","balloon","bumper","suture","fascial suture"],phraseMatches:["gastrostomy tube","g-tube placement","feeding tube placement"]}},
+{cptCode:"49491",cptDescription:"Repair of inguinal hernia, infant",icd10:[{code:"K40.90",desc:"Inguinal hernia, unspecified"},{code:"K40.30",desc:"Unilateral inguinal hernia, with obstruction"}],specialty:"Pediatric Surgery",keywordWeights:{procedureTerms:["hernia repair","herniorrhaphy","herniotomy","inguinal repair"],anatomyTerms:["inguinal","groin","spermatic cord","internal ring","processus vaginalis","hernia sac"],approachTerms:["open","inguinal","crease incision"],diagnosisTerms:["inguinal hernia","congenital hernia","incarcerated hernia","pediatric hernia","infant hernia"],instrumentTerms:["suture","mosquito","retractor"],phraseMatches:["pediatric inguinal hernia","infant hernia repair"]}},
+
+// ===== TRANSPLANT =====
+{cptCode:"50360",cptDescription:"Kidney transplant, allotransplantation",icd10:[{code:"N18.6",desc:"End stage renal disease"},{code:"Z94.0",desc:"Kidney transplant status"}],specialty:"Transplant Surgery",keywordWeights:{procedureTerms:["kidney transplant","renal transplant","allotransplantation","transplantation"],anatomyTerms:["kidney","iliac fossa","renal artery","renal vein","ureter","iliac artery","iliac vein","bladder"],approachTerms:["open","iliac fossa","gibson incision","extraperitoneal"],diagnosisTerms:["end stage renal disease","esrd","renal failure","transplant","cadaveric","living donor"],instrumentTerms:["vascular clamp","suture","doppler","cold ischemia","bench"],phraseMatches:["kidney transplant","renal transplant"]}},
+{cptCode:"47135",cptDescription:"Liver transplant, orthotopic",icd10:[{code:"K74.60",desc:"Unspecified cirrhosis of liver"},{code:"Z94.4",desc:"Liver transplant status"}],specialty:"Transplant Surgery",keywordWeights:{procedureTerms:["liver transplant","hepatic transplant","orthotopic","transplantation","hepatectomy"],anatomyTerms:["liver","hepatic artery","portal vein","bile duct","ivc","inferior vena cava","hepatic veins"],approachTerms:["open","bilateral subcostal","chevron","mercedes"],diagnosisTerms:["cirrhosis","end-stage liver disease","hepatocellular carcinoma","fulminant hepatic failure","meld"],instrumentTerms:["vascular clamp","bypass","suture","doppler","cold ischemia"],phraseMatches:["liver transplant","orthotopic liver transplant","hepatic transplant"]}},
+{cptCode:"33935",cptDescription:"Heart transplant with or without lung",icd10:[{code:"I25.5",desc:"Ischemic cardiomyopathy"},{code:"I42.0",desc:"Dilated cardiomyopathy"},{code:"Z94.1",desc:"Heart transplant status"}],specialty:"Transplant Surgery",keywordWeights:{procedureTerms:["heart transplant","cardiac transplant","transplantation","cardiectomy"],anatomyTerms:["heart","aorta","pulmonary artery","superior vena cava","inferior vena cava","atrium"],approachTerms:["sternotomy","median sternotomy","cardiopulmonary bypass"],diagnosisTerms:["heart failure","cardiomyopathy","end-stage heart failure","dilated cardiomyopathy","ischemic cardiomyopathy"],instrumentTerms:["bypass","cardioplegia","pump","suture","donor heart"],phraseMatches:["heart transplant","cardiac transplant"]}},
+{cptCode:"32851",cptDescription:"Lung transplant, single",icd10:[{code:"J43.9",desc:"Emphysema, unspecified"},{code:"J84.10",desc:"Pulmonary fibrosis, unspecified"},{code:"Z94.2",desc:"Lung transplant status"}],specialty:"Transplant Surgery",keywordWeights:{procedureTerms:["lung transplant","pulmonary transplant","transplantation","pneumonectomy"],anatomyTerms:["lung","bronchus","pulmonary artery","pulmonary vein","hilum","pleural space"],approachTerms:["thoracotomy","posterolateral","clamshell","bilateral"],diagnosisTerms:["pulmonary fibrosis","copd","emphysema","cystic fibrosis","pulmonary hypertension","end-stage lung disease"],instrumentTerms:["stapler","suture","bypass","cardiopulmonary","chest tube"],phraseMatches:["lung transplant","pulmonary transplant"]}}
+];
+
+// ======================= TF-IDF: compute document frequency =======================
+const DF={};
+CODE_DB.forEach(entry=>{
+  const seen=new Set();
+  for(const cat of Object.keys(entry.keywordWeights)){
+    (entry.keywordWeights[cat]||[]).forEach(w=>{const k=w.toLowerCase();if(!seen.has(k)){seen.add(k);DF[k]=(DF[k]||0)+1;}});
+  }
+});
+
+// ======================= NLP ENGINE =======================
+const SECTION_PATTERNS=[
+  {name:"procedure",regex:/\b(procedure\s*performed|procedures?\s*:?|operation\s*performed|name\s*of\s*procedure)\b/i,boost:true},
+  {name:"diagnosis",regex:/\b(pre\s*-?\s*operative\s*diagnosis|post\s*-?\s*operative\s*diagnosis|diagnosis|diagnoses|indication)\b/i,boost:true},
+  {name:"description",regex:/\b(description\s*of\s*procedure|technique|operative\s*technique|details?\s*of\s*procedure|operative\s*description)\b/i,boost:true},
+  {name:"findings",regex:/\b(operative\s*findings?|findings?|intraoperative\s*findings?)\b/i,boost:false},
+  {name:"other",regex:/\b(specimen|implants?|estimated\s*blood\s*loss|ebl|complications?|closure|anesthesia|drains?)\b/i,boost:false}
+];
+
+const NEGATION_CUES=["no evidence of","without","denied","no sign of","negative for","ruled out","not consistent with","absence of","no","unremarkable","does not","did not","was not","were not","is not","are not","cannot","none","never"];
+
+function preprocessText(rawText){
+  let text=rawText.toLowerCase().replace(/[^\w\s\-\/\.,']/g,' ').replace(/\s+/g,' ').trim();
+  // Synonym expansion
+  const words=text.split(/\s+/);
+  const expanded=[];
+  for(const w of words){
+    const clean=w.replace(/[.,;:!?'"()]/g,'');
+    if(SYNONYMS[clean]){expanded.push(SYNONYMS[clean]);}
+    else{expanded.push(w);}
+  }
+  text=expanded.join(' ');
+  return text;
+}
+
+function detectSections(text){
+  const lines=text.split(/\n/);
+  const sections=[];
+  let currentSection={name:"general",boost:false,text:""};
+  for(const line of lines){
+    let matched=false;
+    for(const sp of SECTION_PATTERNS){
+      if(sp.regex.test(line)){
+        if(currentSection.text.trim()) sections.push({...currentSection});
+        currentSection={name:sp.name,boost:sp.boost,text:""};
+        matched=true;break;
+      }
+    }
+    currentSection.text+=line+" ";
+  }
+  if(currentSection.text.trim()) sections.push({...currentSection});
+  return sections;
+}
+
+function findNegatedRanges(text){
+  const ranges=[];
+  const words=text.split(/\s+/);
+  for(let i=0;i<words.length;i++){
+    for(const cue of NEGATION_CUES){
+      const cueWords=cue.split(/\s+/);
+      if(i+cueWords.length<=words.length){
+        let match=true;
+        for(let j=0;j<cueWords.length;j++){
+          if(words[i+j].replace(/[.,;:]/g,'')!==cueWords[j]){match=false;break;}
+        }
+        if(match){
+          const start=i+cueWords.length;
+          const end=Math.min(start+5,words.length);
+          ranges.push({start,end});
+        }
+      }
+    }
+  }
+  return ranges;
+}
+
+function isNegated(wordIndex,ranges){
+  for(const r of ranges) if(wordIndex>=r.start && wordIndex<r.end) return true;
+  return false;
+}
+
+function generateNGrams(words,n){
+  const grams=[];
+  for(let i=0;i<=words.length-n;i++){
+    grams.push(words.slice(i,i+n).join(' '));
+  }
+  return grams;
+}
+
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  if(Math.abs(m-n)>2) return 999;
+  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++) dp[i][0]=i;
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++){
+    dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+(a[i-1]!==b[j-1]?1:0));
+  }
+  return dp[m][n];
+}
+
+const CATEGORY_WEIGHTS={procedureTerms:3.0,anatomyTerms:2.0,approachTerms:1.5,diagnosisTerms:2.5,instrumentTerms:1.0,phraseMatches:4.0};
+
+function scoreEntry(entry,processedText,sections){
+  const words=processedText.split(/\s+/).map(w=>w.replace(/[.,;:!?'"()]/g,''));
+  const negRanges=findNegatedRanges(processedText);
+  const bigrams=generateNGrams(words,2);
+  const trigrams=generateNGrams(words,3);
+  const allPhrases=[...bigrams,...trigrams];
+  const matchedTermsSet=new Set();
+  let totalScore=0;
+  let maxPossible=0;
+
+  for(const [category,weight] of Object.entries(CATEGORY_WEIGHTS)){
+    const terms=entry.keywordWeights[category]||[];
+    if(!terms.length) continue;
+    let catScore=0;
+
+    if(category==='phraseMatches'){
+      for(const phrase of terms){
+        maxPossible+=weight;
+        const pLow=phrase.toLowerCase();
+        if(allPhrases.some(p=>p===pLow)||processedText.includes(pLow)){
+          const idfW=1/Math.log(1+(DF[pLow]||1));
+          catScore+=weight*idfW;
+          matchedTermsSet.add(phrase);
+        }
+      }
+    } else {
+      for(const term of terms){
+        maxPossible+=weight;
+        const termLow=term.toLowerCase();
+        const termWords=termLow.split(/\s+/);
+        let found=false;
+        let fuzzyFound=false;
+
+        if(termWords.length===1){
+          for(let i=0;i<words.length;i++){
+            if(isNegated(i,negRanges)) continue;
+            if(words[i]===termLow){found=true;break;}
+            if(termLow.length>5 && words[i].length>5 && levenshtein(words[i],termLow)<=2){fuzzyFound=true;}
+          }
+        } else {
+          const joined=termWords.join(' ');
+          if(processedText.includes(joined)){
+            found=true;
+          }
+        }
+
+        if(found){
+          const idfW=1/Math.log(1+(DF[termLow]||1));
+          catScore+=weight*idfW;
+          matchedTermsSet.add(term);
+        } else if(fuzzyFound){
+          const idfW=1/Math.log(1+(DF[termLow]||1));
+          catScore+=weight*0.6*idfW;
+          matchedTermsSet.add(term+'~');
+        }
+      }
+    }
+    totalScore+=catScore;
+  }
+
+  // Section boost
+  let sectionBoost=1.0;
+  for(const sec of sections){
+    if(sec.boost){
+      const secWords=sec.text.toLowerCase().split(/\s+/);
+      for(const term of matchedTermsSet){
+        const tLow=term.replace('~','').toLowerCase();
+        if(secWords.some(w=>w.includes(tLow)||tLow.includes(w))){
+          sectionBoost=1.3;break;
+        }
+      }
+      if(sectionBoost>1) break;
+    }
+  }
+
+  totalScore*=sectionBoost;
+  const normalizedMax=maxPossible>0?maxPossible:1;
+  let confidence=Math.min((totalScore/normalizedMax)*100*3.5,99);
+  confidence=Math.round(confidence*10)/10;
+
+  return {confidence,matchedTerms:[...matchedTermsSet]};
+}
+
+// ======================= MODIFIER ENGINE =======================
+function analyzeModifiers(text,cptCodes){
+  const modifiers=[];
+  const t=text.toLowerCase();
+
+  // Laterality
+  const hasLeft=/\bleft\b|\blt\b/.test(t);
+  const hasRight=/\bright\b|\brt\b/.test(t);
+  const hasBilateral=/\bbilateral\b/.test(t);
+  if(hasBilateral) modifiers.push({code:'-50',name:'Bilateral',reason:'Text contains "bilateral"',color:'bg-purple-100 text-purple-700'});
+  else {
+    if(hasLeft) modifiers.push({code:'-LT',name:'Left Side',reason:'Text indicates left laterality',color:'bg-brand-100 text-brand-700'});
+    if(hasRight) modifiers.push({code:'-RT',name:'Right Side',reason:'Text indicates right laterality',color:'bg-brand-100 text-brand-700'});
+  }
+
+  // -22 Increased complexity
+  const m22Cues=["extensive","significantly more complex","unusual","difficult","complicated","adhesions","revision","redo","re-exploration","extensive blood loss","prolonged operative time","dense adhesions"];
+  const found22=m22Cues.filter(c=>t.includes(c));
+  if(found22.length>0) modifiers.push({code:'-22',name:'Increased Procedural Services',reason:'Indicators: '+found22.slice(0,3).join(', '),color:'bg-orange-100 text-orange-700'});
+
+  // -51 Multiple procedures
+  if(cptCodes.length>1) modifiers.push({code:'-51',name:'Multiple Procedures',reason:'Multiple CPT codes identified ('+cptCodes.length+')',color:'bg-teal-100 text-teal-700'});
+
+  // -59 Distinct procedural service
+  if(cptCodes.length>1){
+    const specialties=cptCodes.map(c=>{const e=CODE_DB.find(d=>d.cptCode===c);return e?e.specialty:'';});
+    const uniqueSpecs=new Set(specialties);
+    if(uniqueSpecs.size<cptCodes.length) modifiers.push({code:'-59',name:'Distinct Procedural Service',reason:'Multiple codes from same specialty/anatomical region',color:'bg-purple-50 text-purple-700'});
+  }
+
+  // -62 Two surgeons
+  const m62Cues=["two surgeons","co-surgeon","second surgeon","access surgeon","vascular surgeon assisted"];
+  if(m62Cues.some(c=>t.includes(c))) modifiers.push({code:'-62',name:'Two Surgeons',reason:'Co-surgeon language detected',color:'bg-teal-50 text-teal-700'});
+
+  // -80 Assistant
+  const m80Cues=["assistant","surgical assistant","first assist","pa assisted","resident assisted"];
+  if(m80Cues.some(c=>t.includes(c))) modifiers.push({code:'-80',name:'Assistant Surgeon',reason:'Surgical assistant language detected',color:'bg-navy-100 text-navy-700'});
+
+  // -76 Repeat same physician
+  const hasRepeat=/\brepeat\b|\bre-do\b|\bredo\b|\bsecond look\b|\breturn to or\b/.test(t);
+  const diffPhysician=/\bdifferent surgeon\b|\bdifferent physician\b/.test(t);
+  if(hasRepeat&&diffPhysician) modifiers.push({code:'-77',name:'Repeat Procedure (Different Physician)',reason:'"Repeat" and "different physician/surgeon" detected',color:'bg-warn-100 text-warn-700'});
+  else if(hasRepeat) modifiers.push({code:'-76',name:'Repeat Procedure (Same Physician)',reason:'Repeat/re-do language detected',color:'bg-warn-50 text-warn-700'});
+
+  // -78 Unplanned return
+  const m78Cues=["unplanned return","emergent return","return to operating room","take back"];
+  if(m78Cues.some(c=>t.includes(c))) modifiers.push({code:'-78',name:'Unplanned Return to OR',reason:'Unplanned return language detected',color:'bg-danger-100 text-danger-600'});
+
+  // -XE/XS/XP/XU
+  if(cptCodes.length>1){
+    modifiers.push({code:'-XS',name:'Separate Structure',reason:'Consider for procedures on distinct anatomical structures',color:'bg-surface-200 text-navy-700'});
+  }
+
+  return modifiers;
+}
+
+function getModifiersForCode(allModifiers,cptCode,cptCodes,index){
+  const perCode=[];
+  for(const mod of allModifiers){
+    if(mod.code==='-51' && index===0) continue; // -51 not on primary
+    if(mod.code==='-59' && index===0) continue;
+    if(mod.code==='-XS' && index===0) continue;
+    perCode.push(mod);
+  }
+  return perCode;
+}
+
+// ======================= MAIN ANALYSIS =======================
+function analyzeReport(){
+  const rawText=document.getElementById('report-textarea-k8m2').value.trim();
+  if(!rawText){
+    alert('Please paste or upload an operative report before analyzing.');
+    return;
+  }
+
+  // Show processing
+  document.getElementById('processing-indicator-b4c1').classList.remove('hidden');
+  document.getElementById('results-container-m3n7').classList.add('hidden');
+  document.getElementById('no-results-y1t5').classList.add('hidden');
+
+  setTimeout(()=>{
+    const processedText=preprocessText(rawText);
+    const sections=detectSections(processedText);
+    const selectedSpecialty=document.getElementById('specialty-filter-d4e1').value;
+
+    let entries=CODE_DB;
+    if(selectedSpecialty!=='all') entries=entries.filter(e=>e.specialty===selectedSpecialty);
+
+    const results=[];
+    for(const entry of entries){
+      const {confidence,matchedTerms}=scoreEntry(entry,processedText,sections);
+      if(confidence>50){
+        results.push({...entry,confidence,matchedTerms});
+      }
+    }
+
+    results.sort((a,b)=>b.confidence-a.confidence);
+
+    // Modifiers
+    const cptCodes=results.map(r=>r.cptCode);
+    const allModifiers=analyzeModifiers(processedText,cptCodes);
+
+    document.getElementById('processing-indicator-b4c1').classList.add('hidden');
+    renderResults(results,allModifiers,cptCodes);
+  },800);
+}
+
+function renderResults(results,allModifiers,cptCodes){
+  const container=document.getElementById('results-list-h4g6');
+  container.innerHTML='';
+
+  if(!results.length){
+    document.getElementById('results-container-m3n7').classList.add('hidden');
+    document.getElementById('no-results-y1t5').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('results-container-m3n7').classList.remove('hidden');
+  document.getElementById('no-results-y1t5').classList.add('hidden');
+
+  const totalCPT=results.length;
+  const totalICD=new Set();
+  results.forEach(r=>r.icd10.forEach(i=>totalICD.add(i.code)));
+  document.getElementById('total-codes-z8x1').textContent=totalCPT+' CPT + '+totalICD.size+' ICD-10 codes found';
+
+  const now=new Date();
+  document.getElementById('analysis-time-v2b9').textContent='Analyzed '+now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Los_Angeles'})+' PDT';
+
+  // Group by specialty
+  const grouped={};
+  results.forEach(r=>{
+    if(!grouped[r.specialty]) grouped[r.specialty]=[];
+    grouped[r.specialty].push(r);
+  });
+
+  for(const [specialty,entries] of Object.entries(grouped)){
+    const section=document.createElement('div');
+    section.className='bg-white rounded-2xl shadow-sm border border-surface-300/60 overflow-hidden fade-in';
+
+    const header=document.createElement('button');
+    header.className='w-full flex items-center justify-between px-5 py-4 hover:bg-surface-100 transition text-left';
+    header.innerHTML=`<div class="flex items-center gap-2"><i data-lucide="chevron-down" class="w-4 h-4 text-navy-400 section-chevron transition-transform"></i><span class="text-sm font-semibold text-navy-900">${specialty}</span><span class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-semibold">${entries.length}</span></div>`;
+
+    const body=document.createElement('div');
+    body.className='section-collapse border-t border-surface-200';
+    body.style.maxHeight='5000px';
+
+    entries.forEach((r,idx)=>{
+      const codeModifiers=getModifiersForCode(allModifiers,r.cptCode,cptCodes,results.indexOf(r));
+      const confColor=r.confidence>=80?'bg-success-500':r.confidence>=60?'bg-warn-500':'bg-orange-500';
+      const confTextColor=r.confidence>=80?'text-success-700':r.confidence>=60?'text-warn-700':'text-orange-600';
+      const confBgColor=r.confidence>=80?'bg-success-50':r.confidence>=60?'bg-warn-50':'bg-orange-50';
+
+      const card=document.createElement('div');
+      card.className='px-5 py-4 '+(idx<entries.length-1?'border-b border-surface-200':'');
+
+      let modBadgesHTML='';
+      if(codeModifiers.length){
+        modBadgesHTML=codeModifiers.map(m=>`<span class="modifier-badge ${m.color}" title="${m.reason}">${m.code} ${m.name}</span>`).join('');
+      }
+
+      let matchedHTML='';
+      if(r.matchedTerms.length){
+        matchedHTML=r.matchedTerms.slice(0,12).map(t=>`<span class="matched-term">${t}</span>`).join('');
+        if(r.matchedTerms.length>12) matchedHTML+=`<span class="matched-term">+${r.matchedTerms.length-12} more</span>`;
+      }
+
+      let icdHTML=r.icd10.map(i=>`<span class="inline-flex items-center gap-1 text-xs"><span class="font-mono font-semibold text-navy-700">${i.code}</span><span class="text-navy-500">— ${i.desc}</span></span>`).join('<br>');
+
+      card.innerHTML=`
+        <div class="flex flex-col md:flex-row md:items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <span class="font-mono text-sm font-bold text-brand-600">${r.cptCode}</span>
+              <span class="text-sm font-medium text-navy-900">${r.cptDescription}</span>
+            </div>
+            <div class="flex flex-wrap gap-1 mb-2">${modBadgesHTML}</div>
+            <div class="mb-2">${icdHTML}</div>
+            <div class="flex flex-wrap gap-0.5">${matchedHTML}</div>
+          </div>
+          <div class="flex flex-col items-end gap-1 min-w-[120px]">
+            <span class="text-xs font-medium ${confTextColor} ${confBgColor} px-2 py-0.5 rounded-full tabular-nums">${r.confidence}% match</span>
+            <div class="w-28 h-2 bg-surface-200 rounded-full overflow-hidden">
+              <div class="confidence-bar h-full rounded-full ${confColor}" style="width:${r.confidence}%"></div>
+            </div>
+          </div>
+        </div>`;
+      body.appendChild(card);
+    });
+
+    section.appendChild(header);
+    section.appendChild(body);
+    container.appendChild(section);
+
+    // Toggle
+    header.addEventListener('click',()=>{
+      const isOpen=body.style.maxHeight!=='0px';
+      body.style.maxHeight=isOpen?'0px':'5000px';
+      const chev=header.querySelector('.section-chevron');
+      if(chev) chev.style.transform=isOpen?'rotate(-90deg)':'rotate(0deg)';
+    });
+  }
+
+  lucide.createIcons();
+}
+
+// ======================= COPY ALL CODES =======================
+document.getElementById('copy-all-btn-j5f2').addEventListener('click',()=>{
+  const cards=document.querySelectorAll('#results-list-h4g6 [class*="px-5 py-4"]');
+  const lines=[];
+  const resultItems=document.querySelectorAll('#results-list-h4g6 .font-mono.text-brand-600');
+  resultItems.forEach(el=>{
+    const parent=el.closest('[class*="px-5 py-4"]');
+    if(!parent) return;
+    const cpt=el.textContent.trim();
+    const desc=el.nextElementSibling?el.nextElementSibling.textContent.trim():'';
+    lines.push('CPT '+cpt+' — '+desc);
+    const icdEls=parent.querySelectorAll('.font-mono.text-navy-700');
+    icdEls.forEach(ic=>lines.push('  ICD-10 '+ic.textContent.trim()));
+    const modEls=parent.querySelectorAll('.modifier-badge');
+    modEls.forEach(m=>lines.push('  Modifier: '+m.textContent.trim()));
+    lines.push('');
+  });
+  const text=lines.join('\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copy-all-btn-j5f2');
+    const orig=btn.innerHTML;
+    btn.innerHTML='<i data-lucide="check" class="w-4 h-4"></i> Copied!';
+    btn.classList.add('bg-success-600');btn.classList.remove('bg-navy-900');
+    lucide.createIcons();
+    setTimeout(()=>{btn.innerHTML=orig;btn.classList.remove('bg-success-600');btn.classList.add('bg-navy-900');lucide.createIcons();},2000);
+  });
+});
+
+// ======================= ANALYZE BUTTON =======================
+document.getElementById('analyze-btn-w9p5').addEventListener('click',analyzeReport);
+
+// ======================= INIT =======================
+updateWordCount();
+lucide.createIcons();
+</script>
+</body>
+</html>

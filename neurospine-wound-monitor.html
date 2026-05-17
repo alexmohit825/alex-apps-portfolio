@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NeuroSpine Wound Monitor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: { 50:'#e6f4f7', 100:'#b3dde5', 200:'#80c6d3', 300:'#4dafc1', 400:'#1a9bb5', 500:'#0f3d4a', 600:'#0c3039', 700:'#092329', 800:'#061618', 900:'#030b0c' },
+        teal: { light:'#f0f8fa', base:'#1a9bb5', dark:'#0f3d4a' },
+        esc: { green:'#16a34a', yellow:'#ca8a04', orange:'#ea580c', red:'#dc2626' }
+      }
+    }
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --primary:#0f3d4a; --accent:#1a9bb5; --light-bg:#f0f8fa;
+  --green:#16a34a; --yellow:#ca8a04; --orange:#ea580c; --red:#dc2626;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Inter',system-ui,sans-serif; background:var(--light-bg); color:#1e293b; min-height:100vh; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+.wizard-step { display:none; }
+.wizard-step.active { display:block; }
+.q-option { transition: all .15s ease; cursor:pointer; }
+.q-option:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.q-option.selected { ring: 2px solid var(--accent); box-shadow:0 0 0 3px rgba(26,155,181,.25); }
+.checkin-card { transition: all .2s ease; }
+.checkin-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.1); }
+.fade-in { animation: fadeIn .3s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse-red { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)} 50%{box-shadow:0 0 0 12px rgba(220,38,38,0)} }
+.pulse-emergency { animation: pulse-red 1.5s infinite; }
+.score-donut { transition: stroke-dashoffset .8s ease; }
+input[type="file"] { display:none; }
+.accordion-body { max-height:0; overflow:hidden; transition: max-height .3s ease; }
+.accordion-body.open { max-height:2000px; }
+.step-dot { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:14px; }
+.step-dot.completed { background:var(--accent); color:#fff; }
+.step-dot.current { background:var(--primary); color:#fff; }
+.step-dot.upcoming { background:#cbd5e1; color:#64748b; }
+.step-line { height:3px; flex:1; }
+.step-line.completed { background:var(--accent); }
+.step-line.upcoming { background:#cbd5e1; }
+@media print {
+  .no-print { display:none!important; }
+  body { background:#fff; }
+  .print-only { display:block!important; }
+}
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:#f0f8fa; }
+::-webkit-scrollbar-thumb { background:#1a9bb5; border-radius:3px; }
+</style>
+</head>
+<body data-id="0" class="pb-20 md:pb-4">
+<app-icon data-id="1" hidden data-icon="heart-pulse" data-palette="Green"></app-icon>
+<app-disclaimer data-id="2" intent="medical"></app-disclaimer>
+
+<!-- ==================== SETUP SCREEN ==================== -->
+<div data-id="3" id="setup-screen-s1k2" class="min-h-screen flex items-center justify-center p-4">
+<div data-id="4" class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 md:p-10 fade-in">
+  <div data-id="5" class="text-center mb-8">
+    <div data-id="6" class="text-5xl mb-3">🧠🦴</div>
+    <h1 data-id="7" class="text-2xl md:text-3xl font-bold" style="color:var(--primary)">NeuroSpine Wound Monitor</h1>
+    <p data-id="8" class="text-sm text-gray-500 mt-1">Smart wound tracking for spine & neurosurgery patients</p>
+  </div>
+  <h2 data-id="9" class="text-lg font-semibold mb-4" style="color:var(--primary)">Patient Setup</h2>
+  <div data-id="10" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div data-id="11">
+      <label data-id="12" class="block text-sm font-medium text-gray-700 mb-1">Patient Name <span data-id="13" class="text-red-500">*</span></label>
+      <input data-id="14" id="inp-name-a1b2" type="text" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none" style="focus:ring-color:var(--accent)" placeholder="Full name"/>
+    </div>
+    <div data-id="15">
+      <label data-id="16" class="block text-sm font-medium text-gray-700 mb-1">Date of Birth <span data-id="17" class="text-red-500">*</span></label>
+      <input data-id="18" id="inp-dob-c3d4" type="date" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none"/>
+    </div>
+    <div data-id="19" class="md:col-span-2">
+      <label data-id="20" class="block text-sm font-medium text-gray-700 mb-1">Surgery Type <span data-id="21" class="text-red-500">*</span></label>
+      <select data-id="22" id="inp-surgery-e5f6" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none bg-white">
+        <option data-id="23" value="">Select surgery type...</option>
+        <optgroup data-id="24" label="Spine Surgery">
+          <option data-id="25" value="cervical-fusion">Cervical Fusion (Anterior or Posterior)</option>
+          <option data-id="26" value="cervical-laminectomy">Cervical Laminectomy / Laminoplasty</option>
+          <option data-id="27" value="lumbar-microdiscectomy">Lumbar Microdiscectomy</option>
+          <option data-id="28" value="lumbar-laminectomy">Lumbar Laminectomy / Laminotomy</option>
+          <option data-id="29" value="lumbar-fusion">Lumbar Fusion (TLIF / PLIF / ALIF / LLIF)</option>
+          <option data-id="30" value="thoracic-spine">Thoracic Spine Surgery</option>
+          <option data-id="31" value="mis-spine">Minimally Invasive Spine (MIS)</option>
+          <option data-id="32" value="vertebroplasty">Vertebroplasty / Kyphoplasty</option>
+        </optgroup>
+        <optgroup data-id="33" label="Neurosurgery">
+          <option data-id="34" value="craniotomy-supra">Craniotomy — Supratentorial (Front/Top of Head)</option>
+          <option data-id="35" value="craniotomy-infra">Craniotomy — Infratentorial / Posterior Fossa (Back of Head)</option>
+          <option data-id="36" value="craniectomy">Craniectomy / Cranioplasty</option>
+          <option data-id="37" value="dbs">Deep Brain Stimulation (DBS)</option>
+          <option data-id="38" value="shunt">Ventricular Shunt (VP / LP Shunt)</option>
+          <option data-id="39" value="transsphenoidal">Transsphenoidal Pituitary Surgery</option>
+          <option data-id="40" value="awake-craniotomy">Awake Craniotomy</option>
+          <option data-id="41" value="peripheral-nerve">Peripheral Nerve Surgery</option>
+        </optgroup>
+      </select>
+    </div>
+    <div data-id="42">
+      <label data-id="43" class="block text-sm font-medium text-gray-700 mb-1">Surgeon Name <span data-id="44" class="text-red-500">*</span></label>
+      <input data-id="45" id="inp-surgeon-g7h8" type="text" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none" placeholder="Dr. Last Name"/>
+    </div>
+    <div data-id="46">
+      <label data-id="47" class="block text-sm font-medium text-gray-700 mb-1">Surgery Date <span data-id="48" class="text-red-500">*</span></label>
+      <input data-id="49" id="inp-surgdate-i9j0" type="date" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none"/>
+    </div>
+    <div data-id="50">
+      <label data-id="51" class="block text-sm font-medium text-gray-700 mb-1">Hospital / Clinic Name</label>
+      <input data-id="52" id="inp-hospital-k1l2" type="text" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none" placeholder="Hospital name"/>
+    </div>
+    <div data-id="53">
+      <label data-id="54" class="block text-sm font-medium text-gray-700 mb-1">Surgeon Phone / Nurse Line <span data-id="55" class="text-red-500">*</span></label>
+      <input data-id="56" id="inp-surgphone-m3n4" type="tel" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none" placeholder="(555) 123-4567"/>
+    </div>
+    <div data-id="57">
+      <label data-id="58" class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Name</label>
+      <input data-id="59" id="inp-emname-o5p6" type="text" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none" placeholder="Contact name"/>
+    </div>
+    <div data-id="60">
+      <label data-id="61" class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Phone</label>
+      <input data-id="62" id="inp-emphone-q7r8" type="tel" class="w-full h-11 px-3 border border-gray-300 rounded-lg text-base focus:ring-2 focus:outline-none" placeholder="(555) 987-6543"/>
+    </div>
+  </div>
+  <div data-id="63" id="setup-error-s9t0" class="mt-3 text-sm text-red-600 hidden"></div>
+  <button data-id="64" id="btn-begin-u1v2" class="w-full mt-6 h-12 rounded-xl text-white font-semibold text-lg" style="background:var(--primary)">
+    Begin Wound Monitoring
+  </button>
+</div>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div data-id="65" id="main-app-w3x4" class="hidden">
+
+<!-- STICKY TOP BAR -->
+<header data-id="66" id="topbar-y5z6" class="sticky top-0 z-40 px-4 py-3 flex items-center justify-between gap-3" style="background:var(--primary)">
+  <div data-id="67" class="flex items-center gap-3 min-w-0">
+    <span data-id="68" class="text-xl md:text-2xl">🧠🦴</span>
+    <div data-id="69" class="hidden md:block text-white font-bold text-lg">NeuroSpine</div>
+    <div data-id="70" id="patient-chip-a2b3" class="bg-white/15 text-white text-xs md:text-sm px-3 py-1 rounded-full truncate max-w-[120px] md:max-w-[200px]"></div>
+    <div data-id="71" id="days-chip-c4d5" class="bg-white/15 text-white text-xs px-2 py-1 rounded-full whitespace-nowrap"></div>
+  </div>
+  <div data-id="72" class="flex items-center gap-2">
+    <div data-id="73" id="esc-badge-e6f7" class="px-3 py-1 rounded-full text-xs font-bold text-white"></div>
+    <button data-id="74" id="btn-emergency-g8h9" class="flex items-center gap-1 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 min-h-[44px]">
+      <i data-id="75" data-lucide="phone-call" class="w-4 h-4"></i>
+      <span data-id="76" class="hidden md:inline">Emergency</span>
+    </button>
+  </div>
+</header>
+
+<!-- EMERGENCY MODAL -->
+<div data-id="77" id="emergency-modal-i0j1" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+  <div data-id="78" class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+    <div data-id="79" class="flex justify-between items-center mb-4">
+      <h3 data-id="80" class="text-lg font-bold text-gray-800">Emergency Contacts</h3>
+      <button data-id="81" id="close-em-modal-k2l3" class="p-2 hover:bg-gray-100 rounded-lg"><i data-id="82" data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div data-id="83" class="space-y-3">
+      <a data-id="84" id="em-call-911-m4n5" href="tel:911" class="flex items-center gap-3 p-4 bg-red-50 border-2 border-red-200 rounded-xl hover:bg-red-100">
+        <div data-id="85" class="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center"><i data-id="86" data-lucide="phone" class="w-5 h-5 text-white"></i></div>
+        <div data-id="87"><div data-id="88" class="font-bold text-red-700">Call 911</div><div data-id="89" class="text-xs text-red-600">Emergency Services</div></div>
+      </a>
+      <a data-id="90" id="em-call-surgeon-o6p7" href="#" class="flex items-center gap-3 p-4 bg-teal-50 border border-teal-200 rounded-xl hover:bg-teal-100">
+        <div data-id="91" class="w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--accent)"><i data-id="92" data-lucide="stethoscope" class="w-5 h-5 text-white"></i></div>
+        <div data-id="93"><div data-id="94" id="em-surgeon-name-q8r9" class="font-bold" style="color:var(--primary)"></div><div data-id="95" id="em-surgeon-phone-s0t1" class="text-xs text-gray-600"></div></div>
+      </a>
+      <a data-id="96" id="em-call-contact-u2v3" href="#" class="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100">
+        <div data-id="97" class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center"><i data-id="98" data-lucide="user" class="w-5 h-5 text-white"></i></div>
+        <div data-id="99"><div data-id="100" id="em-contact-name-w4x5" class="font-bold text-gray-700"></div><div data-id="101" id="em-contact-phone-y6z7" class="text-xs text-gray-600"></div></div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- SURGEON CALL MODAL -->
+<div data-id="102" id="surgeon-modal-a8b9" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+  <div data-id="103" class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+    <div data-id="104" class="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style="background:var(--accent)"><i data-id="105" data-lucide="stethoscope" class="w-8 h-8 text-white"></i></div>
+    <h3 data-id="106" id="surg-modal-name-c0d1" class="text-lg font-bold" style="color:var(--primary)"></h3>
+    <p data-id="107" id="surg-modal-phone-e2f3" class="text-2xl font-bold mt-2" style="color:var(--accent)"></p>
+    <a data-id="108" id="surg-modal-call-g4h5" href="#" class="inline-flex items-center gap-2 mt-4 px-6 py-3 rounded-xl text-white font-semibold" style="background:var(--primary)">
+      <i data-id="109" data-lucide="phone" class="w-5 h-5"></i> Call Now
+    </a>
+    <button data-id="110" id="close-surg-modal-i6j7" class="block mx-auto mt-3 text-sm text-gray-500 hover:text-gray-700">Close</button>
+  </div>
+</div>
+
+<!-- TAB CONTENT AREA -->
+<main data-id="111" class="max-w-4xl mx-auto px-4 py-4 md:py-6 mb-16 md:mb-4">
+
+<!-- ==================== TAB 1: DASHBOARD ==================== -->
+<section data-id="112" id="tab-dashboard-k8l9" class="tab-panel active fade-in">
+
+<!-- Today's Status -->
+<div data-id="113" id="status-banner-m0n1" class="rounded-2xl p-5 mb-4 text-white text-center">
+  <div data-id="114" id="status-emoji-o2p3" class="text-4xl mb-2"></div>
+  <div data-id="115" id="status-text-q4r5" class="text-xl font-bold"></div>
+  <div data-id="116" id="status-sub-s6t7" class="text-sm opacity-90 mt-1"></div>
+</div>
+
+<!-- Status Details Row -->
+<div data-id="117" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <div data-id="118" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="119" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Days Post-Op</div>
+    <div data-id="120" id="dash-days-u8v9" class="text-2xl font-bold tabular-nums" style="color:var(--primary)">—</div>
+  </div>
+  <div data-id="121" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="122" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Last NWAT</div>
+    <div data-id="123" id="dash-lastscore-w0x1" class="text-2xl font-bold tabular-nums" style="color:var(--accent)">—</div>
+  </div>
+  <div data-id="124" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="125" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Last Check-In</div>
+    <div data-id="126" id="dash-lastdate-y2z3" class="text-sm font-semibold text-gray-700">—</div>
+  </div>
+  <div data-id="127" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="128" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Next Check-In</div>
+    <div data-id="129" id="dash-nextci-a4b5" class="text-sm font-semibold text-gray-700">Tomorrow</div>
+  </div>
+</div>
+
+<!-- NWAT Score Trend Chart -->
+<div data-id="130" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="131" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+    <i data-id="132" data-lucide="trending-up" class="w-4 h-4" style="color:var(--accent)"></i> NWAT Score Trend (Last 7 Check-Ins)
+  </h3>
+  <div data-id="133" id="chart-container-c6d7" class="relative h-48 md:h-56">
+    <svg data-id="134" id="nwat-chart-e8f9" viewBox="0 0 600 200" class="w-full h-full" preserveAspectRatio="xMidYMid meet">
+      <line data-id="135" x1="60" y1="10" x2="60" y2="170" stroke="#e2e8f0" stroke-width="1"/>
+      <line data-id="136" x1="60" y1="170" x2="580" y2="170" stroke="#e2e8f0" stroke-width="1"/>
+      <text data-id="137" x="10" y="18" fill="#94a3b8" font-size="10">60</text>
+      <text data-id="138" x="10" y="58" fill="#94a3b8" font-size="10">45</text>
+      <text data-id="139" x="10" y="98" fill="#94a3b8" font-size="10">30</text>
+      <text data-id="140" x="10" y="138" fill="#94a3b8" font-size="10">15</text>
+      <text data-id="141" x="18" y="174" fill="#94a3b8" font-size="10">0</text>
+      <line data-id="142" x1="60" y1="50" x2="580" y2="50" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4"/>
+      <line data-id="143" x1="60" y1="90" x2="580" y2="90" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4"/>
+      <line data-id="144" x1="60" y1="130" x2="580" y2="130" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4"/>
+      <g data-id="145" id="chart-data-g0h1"></g>
+    </svg>
+    <div data-id="146" id="chart-empty-i2j3" class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+      Complete your first check-in to see trends
+    </div>
+  </div>
+  <div data-id="147" class="flex flex-wrap gap-3 mt-3 text-xs">
+    <span data-id="148" class="flex items-center gap-1"><span data-id="149" class="w-3 h-3 rounded-full" style="background:var(--green)"></span> 0–10 Safe</span>
+    <span data-id="150" class="flex items-center gap-1"><span data-id="151" class="w-3 h-3 rounded-full" style="background:var(--yellow)"></span> 11–20 Watch</span>
+    <span data-id="152" class="flex items-center gap-1"><span data-id="153" class="w-3 h-3 rounded-full" style="background:var(--orange)"></span> 21–40 Concerning</span>
+    <span data-id="154" class="flex items-center gap-1"><span data-id="155" class="w-3 h-3 rounded-full" style="background:var(--red)"></span> 41+ Emergency</span>
+  </div>
+</div>
+
+<!-- Quick Action Cards -->
+<div data-id="156" class="grid grid-cols-2 gap-3 mb-4">
+  <button data-id="157" id="qa-checkin-k4l5" class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-left min-h-[80px] flex flex-col justify-center">
+    <i data-id="158" data-lucide="camera" class="w-6 h-6 mb-2" style="color:var(--accent)"></i>
+    <div data-id="159" class="text-sm font-semibold text-gray-800">New Check-In</div>
+    <div data-id="160" class="text-xs text-gray-500">Log wound assessment</div>
+  </button>
+  <button data-id="161" id="qa-care-m6n7" class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-left min-h-[80px] flex flex-col justify-center">
+    <i data-id="162" data-lucide="book-open" class="w-6 h-6 mb-2" style="color:var(--accent)"></i>
+    <div data-id="163" class="text-sm font-semibold text-gray-800">Wound Care</div>
+    <div data-id="164" class="text-xs text-gray-500">View instructions</div>
+  </button>
+  <button data-id="165" id="qa-call-o8p9" class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-left min-h-[80px] flex flex-col justify-center">
+    <i data-id="166" data-lucide="phone" class="w-6 h-6 mb-2" style="color:var(--accent)"></i>
+    <div data-id="167" class="text-sm font-semibold text-gray-800">Call Surgeon</div>
+    <div data-id="168" class="text-xs text-gray-500">Office / nurse line</div>
+  </button>
+  <button data-id="169" id="qa-escalate-q0r1" class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-left min-h-[80px] flex flex-col justify-center">
+    <i data-id="170" data-lucide="alert-triangle" class="w-6 h-6 mb-2 text-orange-500"></i>
+    <div data-id="171" class="text-sm font-semibold text-gray-800">When to Escalate</div>
+    <div data-id="172" class="text-xs text-gray-500">Know the warning signs</div>
+  </button>
+</div>
+
+<!-- CSF Leak Alert Banner -->
+<div data-id="173" id="csf-banner-s2t3" class="hidden bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 mb-4">
+  <div data-id="174" class="flex items-start justify-between">
+    <div data-id="175" class="flex items-start gap-3">
+      <div data-id="176" class="text-2xl mt-0.5">🚨</div>
+      <div data-id="177">
+        <div data-id="178" class="font-bold text-amber-800 text-sm">CSF Leak Watch: Know the Signs</div>
+        <ul data-id="179" class="text-xs text-amber-700 mt-2 space-y-1 list-disc ml-4">
+          <li data-id="180">Clear fluid draining from your wound</li>
+          <li data-id="181">Positional headache that worsens when upright</li>
+          <li data-id="182">Soft bulging mass under the wound</li>
+        </ul>
+        <div data-id="183" class="text-xs font-bold text-amber-900 mt-2">→ CALL SURGEON IMMEDIATELY if any of these occur</div>
+      </div>
+    </div>
+    <button data-id="184" id="dismiss-csf-u4v5" class="p-1 text-amber-500 hover:text-amber-700"><i data-id="185" data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+</div>
+
+<!-- Surgery Info Card -->
+<div data-id="186" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="187" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+    <i data-id="188" data-lucide="clipboard-list" class="w-4 h-4" style="color:var(--accent)"></i> Surgery Info
+  </h3>
+  <div data-id="189" class="grid grid-cols-2 gap-3 text-sm">
+    <div data-id="190"><span data-id="191" class="text-gray-500">Surgery:</span><div data-id="192" id="info-surgery-w6x7" class="font-medium text-gray-800"></div></div>
+    <div data-id="193"><span data-id="194" class="text-gray-500">Date:</span><div data-id="195" id="info-date-y8z9" class="font-medium text-gray-800"></div></div>
+    <div data-id="196"><span data-id="197" class="text-gray-500">Surgeon:</span><div data-id="198" id="info-surgeon-a0b1" class="font-medium text-gray-800"></div></div>
+    <div data-id="199"><span data-id="200" class="text-gray-500">Hospital:</span><div data-id="201" id="info-hospital-c2d3" class="font-medium text-gray-800"></div></div>
+  </div>
+</div>
+</section>
+
+<!-- ==================== TAB 2: LOG CHECK-IN ==================== -->
+<section data-id="202" id="tab-checkin-e4f5" class="tab-panel fade-in">
+<div data-id="203" class="bg-white rounded-2xl p-5 shadow-sm">
+
+<!-- Step Indicator -->
+<div data-id="204" id="step-indicator-g6h7" class="flex items-center mb-6 px-2">
+  <div data-id="205" class="step-dot current" id="sdot-1-i8j9">1</div>
+  <div data-id="206" class="step-line upcoming" id="sline-1-k0l1"></div>
+  <div data-id="207" class="step-dot upcoming" id="sdot-2-m2n3">2</div>
+  <div data-id="208" class="step-line upcoming" id="sline-2-o4p5"></div>
+  <div data-id="209" class="step-dot upcoming" id="sdot-3-q6r7">3</div>
+  <div data-id="210" class="step-line upcoming" id="sline-3-s8t9"></div>
+  <div data-id="211" class="step-dot upcoming" id="sdot-4-u0v1">4</div>
+</div>
+<div data-id="212" id="step-label-w2x3" class="text-center text-xs text-gray-500 mb-4">Step 1 of 4</div>
+
+<!-- STEP 1: Photo -->
+<div data-id="213" id="wiz-step1-y4z5" class="wizard-step active">
+  <h3 data-id="214" class="text-lg font-bold mb-1" style="color:var(--primary)">Step 1: Take or Upload Your Wound Photo</h3>
+  <p data-id="215" class="text-sm text-gray-500 mb-4">Hold phone 6–12 inches from wound. Ensure good lighting. Capture the full incision.</p>
+  <div data-id="216" id="photo-upload-area-a6b7" class="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-teal-400 transition cursor-pointer">
+    <div data-id="217" id="photo-preview-c8d9" class="hidden mb-4">
+      <img data-id="218" id="photo-img-e0f1" class="w-48 h-48 object-cover rounded-xl mx-auto border-2" style="border-color:var(--accent)" alt="Wound photo preview"/>
+      <p data-id="219" class="text-xs text-green-600 mt-2 font-medium">Photo captured</p>
+    </div>
+    <div data-id="220" id="photo-placeholder-g2h3">
+      <i data-id="221" data-lucide="camera" class="w-12 h-12 mx-auto mb-3 text-gray-400"></i>
+      <p data-id="222" class="text-gray-600 font-medium">Tap to take or upload photo</p>
+      <p data-id="223" class="text-xs text-gray-400 mt-1">JPEG or PNG recommended</p>
+    </div>
+    <input data-id="224" id="photo-input-i4j5" type="file" accept="image/*" capture="environment"/>
+  </div>
+  <button data-id="225" id="btn-gallery-k6l7" class="mt-3 text-sm flex items-center gap-2 mx-auto px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600">
+    <i data-id="226" data-lucide="image" class="w-4 h-4"></i> Upload from Gallery
+  </button>
+  <input data-id="227" id="gallery-input-m8n9" type="file" accept="image/*"/>
+  <div data-id="228" class="mt-4">
+    <button data-id="229" id="tips-toggle-o0p1" class="flex items-center gap-2 text-sm font-medium" style="color:var(--accent)">
+      <i data-id="230" data-lucide="lightbulb" class="w-4 h-4"></i> Photo Tips
+      <i data-id="231" data-lucide="chevron-down" class="w-4 h-4" id="tips-chevron-q2r3"></i>
+    </button>
+    <div data-id="232" id="tips-body-s4t5" class="accordion-body text-xs text-gray-600 mt-2 space-y-1 pl-6">
+      <p data-id="233">• Use a ruler or coin next to the wound for scale if possible</p>
+      <p data-id="234">• Take photo in the same position each time</p>
+      <p data-id="235">• Avoid blurry or dark photos</p>
+      <p data-id="236">• For head/neck wounds, have someone help you</p>
+    </div>
+  </div>
+  <label data-id="237" class="flex items-center gap-2 mt-4 text-sm text-gray-600 cursor-pointer">
+    <input data-id="238" id="skip-photo-u6v7" type="checkbox" class="w-4 h-4 rounded"/> Skip photo for this check-in
+  </label>
+  <div data-id="239" class="flex justify-end mt-6">
+    <button data-id="240" id="btn-next1-w8x9" class="px-6 py-3 rounded-xl text-white font-semibold" style="background:var(--primary)">Next: Wound Appearance →</button>
+  </div>
+</div>
+
+<!-- STEP 2: Visual Assessment -->
+<div data-id="241" id="wiz-step2-y0z1" class="wizard-step">
+  <h3 data-id="242" class="text-lg font-bold mb-1" style="color:var(--primary)">Step 2: Describe What You See</h3>
+  <p data-id="243" class="text-sm text-gray-500 mb-4">Tap the option that best matches your wound today.</p>
+  <div data-id="244" class="space-y-5">
+  <!-- Q1 -->
+  <div data-id="245" class="border rounded-xl p-4">
+    <p data-id="246" class="font-semibold text-sm text-gray-800 mb-3">Q1 — How does your wound closure look?</p>
+    <div data-id="247" class="space-y-2" id="q1-options-a2b3">
+      <button data-id="248" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q1" data-val="0">✅ Closed and intact (all staples/stitches/steri-strips in place)</button>
+      <button data-id="249" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q1" data-val="5">⚠️ Minor separation at one small spot (&lt; 5mm gap)</button>
+      <button data-id="250" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q1" data-val="15">🔶 Moderate separation (&gt; 5mm gap or multiple spots)</button>
+      <button data-id="251" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q1" data-val="40">🚨 Large opening / wound falling apart</button>
+    </div>
+  </div>
+  <!-- Q2 -->
+  <div data-id="252" class="border rounded-xl p-4">
+    <p data-id="253" class="font-semibold text-sm text-gray-800 mb-3">Q2 — Is there any fluid or drainage from the wound?</p>
+    <div data-id="254" class="space-y-2" id="q2-options-c4d5">
+      <button data-id="255" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q2" data-val="0">✅ None / completely dry</button>
+      <button data-id="256" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q2" data-val="3">🟡 Small amount of clear/straw-colored fluid (serum)</button>
+      <button data-id="257" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q2" data-val="10">🔶 Cloudy, milky, or thick fluid</button>
+      <button data-id="258" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q2" data-val="25" data-flag="Purulent drainage (pus)">🚨 Pus (thick yellow/green/foul smelling)</button>
+      <button data-id="259" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-600 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q2" data-val="40" data-flag="Clear watery fluid (possible CSF)" data-red="1">🚨 CLEAR WATERY fluid (possibly CSF — report immediately)</button>
+      <button data-id="260" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-400 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q2" data-val="20" data-flag="Fresh blood / significant bleeding">🩸 Fresh blood / significant bleeding</button>
+    </div>
+  </div>
+  <!-- Q3 -->
+  <div data-id="261" class="border rounded-xl p-4">
+    <p data-id="262" class="font-semibold text-sm text-gray-800 mb-3">Q3 — What does the skin around your wound look like?</p>
+    <div data-id="263" class="space-y-2" id="q3-options-e6f7">
+      <button data-id="264" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q3" data-val="0">✅ Normal skin color (no redness)</button>
+      <button data-id="265" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q3" data-val="2">🟡 Mild pink color right at the wound edges</button>
+      <button data-id="266" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q3" data-val="8">🔶 Spreading redness beyond 1 inch from wound edges</button>
+      <button data-id="267" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q3" data-val="20">🚨 Bright red, purple, or dark discoloration spreading</button>
+    </div>
+  </div>
+  <!-- Q4 -->
+  <div data-id="268" class="border rounded-xl p-4">
+    <p data-id="269" class="font-semibold text-sm text-gray-800 mb-3">Q4 — Is there swelling around the wound?</p>
+    <div data-id="270" class="space-y-2" id="q4-options-g8h9">
+      <button data-id="271" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q4" data-val="0">✅ No unusual swelling</button>
+      <button data-id="272" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q4" data-val="2">🟡 Mild puffiness at the wound edges</button>
+      <button data-id="273" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q4" data-val="8">🔶 Noticeable swelling extending beyond wound area</button>
+      <button data-id="274" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q4" data-val="25" data-flag="Fluctuant bulging mass under wound">🚨 Firm or fluctuant bulging mass under the wound</button>
+    </div>
+  </div>
+  <!-- Q5 -->
+  <div data-id="275" class="border rounded-xl p-4">
+    <p data-id="276" class="font-semibold text-sm text-gray-800 mb-3">Q5 — Does the skin feel warm or hot near the wound?</p>
+    <div data-id="277" class="space-y-2" id="q5-options-i0j1">
+      <button data-id="278" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q5" data-val="0">✅ Normal skin temperature</button>
+      <button data-id="279" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q5" data-val="2">🟡 Slightly warm to touch</button>
+      <button data-id="280" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q5" data-val="8">🔶 Noticeably warm / hot compared to surrounding skin</button>
+    </div>
+  </div>
+  <!-- Q6 -->
+  <div data-id="281" class="border rounded-xl p-4">
+    <p data-id="282" class="font-semibold text-sm text-gray-800 mb-3">Q6 — Is there any odor from the wound?</p>
+    <div data-id="283" class="space-y-2" id="q6-options-k2l3">
+      <button data-id="284" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q6" data-val="0">✅ No odor</button>
+      <button data-id="285" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q6" data-val="3">🟡 Mild odor (may be from dressings)</button>
+      <button data-id="286" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q6" data-val="15" data-flag="Foul wound odor">🚨 Foul / bad smell from wound</button>
+    </div>
+  </div>
+  <!-- Q7 -->
+  <div data-id="287" class="border rounded-xl p-4">
+    <p data-id="288" class="font-semibold text-sm text-gray-800 mb-3">Q7 — How is your wound pain today compared to yesterday?</p>
+    <div data-id="289" class="space-y-2" id="q7-options-m4n5">
+      <button data-id="290" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q7" data-val="0">✅ Improving or same (expected)</button>
+      <button data-id="291" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q7" data-val="3">🟡 Slightly worse than yesterday</button>
+      <button data-id="292" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q7" data-val="8">🔶 Significantly worse / new sharp pain at wound</button>
+      <button data-id="293" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q7" data-val="15">🚨 Severe, sudden increase in wound pain</button>
+    </div>
+  </div>
+  </div>
+  <div data-id="294" class="flex justify-between mt-6">
+    <button data-id="295" id="btn-back2-o6p7" class="px-5 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50">← Back</button>
+    <button data-id="296" id="btn-next2-q8r9" class="px-6 py-3 rounded-xl text-white font-semibold" style="background:var(--primary)">Next: Symptoms →</button>
+  </div>
+</div>
+
+<!-- STEP 3: Systemic Symptoms -->
+<div data-id="297" id="wiz-step3-s0t1" class="wizard-step">
+  <h3 data-id="298" class="text-lg font-bold mb-1" style="color:var(--primary)">Step 3: How Are You Feeling Overall?</h3>
+  <p data-id="299" class="text-sm text-gray-500 mb-4">Tell us about your general health today.</p>
+  <div data-id="300" class="space-y-5">
+  <!-- Q8: Fever -->
+  <div data-id="301" class="border rounded-xl p-4">
+    <p data-id="302" class="font-semibold text-sm text-gray-800 mb-3">Q8 — Have you measured your temperature today?</p>
+    <div data-id="303" class="space-y-2" id="q8-options-u2v3">
+      <button data-id="304" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q8" data-val="0">✅ Normal (below 99.5°F / 37.5°C)</button>
+      <button data-id="305" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q8" data-val="5">🟡 Low-grade fever (99.5–100.9°F / 37.5–38.3°C)</button>
+      <button data-id="306" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q8" data-val="15">🔶 Moderate fever (101–102.9°F / 38.3–39.4°C)</button>
+      <button data-id="307" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-red-500 bg-red-50/50 hover:bg-red-50 text-sm" data-q="q8" data-val="30" data-flag="High fever ≥103°F">🚨 High fever (103°F / 39.4°C or above)</button>
+      <button data-id="308" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-gray-300 bg-gray-50/50 hover:bg-gray-50 text-sm" data-q="q8" data-val="0">➖ Haven't checked</button>
+    </div>
+  </div>
+
+  <!-- Q9: Surgery-specific symptoms -->
+  <div data-id="309" class="border rounded-xl p-4">
+    <p data-id="310" class="font-semibold text-sm text-gray-800 mb-3">Q9 — Are you experiencing any of the following?</p>
+    <p data-id="311" class="text-xs text-gray-500 mb-3">Select all that apply.</p>
+    <div data-id="312" id="q9-spine-w4x5" class="space-y-2 hidden">
+      <label data-id="313" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="314" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Positional headache (CSF leak sign)" data-pts="20"/> Headache that gets WORSE when I sit up or stand</label>
+      <label data-id="315" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="316" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Positional headache improving when lying down" data-pts="10"/> Headache that gets BETTER when I lie down</label>
+      <label data-id="317" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="318" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Clear fluid leak from wound" data-pts="80" data-red="1"/> Clear watery fluid leaking from my wound or dripping from nose</label>
+      <label data-id="319" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="320" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Soft bulge growing under wound (pseudomeningocele)" data-pts="20"/> Soft, squishy bulge growing under my wound</label>
+      <label data-id="321" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="322" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="New numbness/tingling in limbs" data-pts="15"/> New numbness or tingling in arms/legs (not present before discharge)</label>
+      <label data-id="323" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="324" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="New weakness in limbs" data-pts="15"/> New weakness in arms or legs</label>
+      <label data-id="325" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="326" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Loss of bladder/bowel control — EMERGENCY" data-pts="100" data-red="1"/> Loss of bladder or bowel control (EMERGENCY)</label>
+      <label data-id="327" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-green-50 cursor-pointer text-sm"><input data-id="328" type="checkbox" class="mt-0.5 w-4 h-4 q9-none" data-pts="0"/> ✅ None of the above</label>
+    </div>
+    <div data-id="329" id="q9-cranio-y6z7" class="space-y-2 hidden">
+      <label data-id="330" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="331" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Clear fluid from head wound/ear/nose (CSF)" data-pts="80" data-red="1"/> Clear fluid from head wound or running from ear/nose</label>
+      <label data-id="332" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="333" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Bone flap moving or clicking" data-pts="80" data-red="1"/> Bone flap feels like it is moving or clicking</label>
+      <label data-id="334" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="335" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Growing soft scalp bulge near surgery" data-pts="20"/> Growing soft bulge or swelling on scalp near surgery site</label>
+      <label data-id="336" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="337" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Sudden worsening headache" data-pts="25"/> Sudden worsening headache (worst headache of my life)</label>
+      <label data-id="338" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="339" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Confusion, difficulty speaking, memory changes" data-pts="20"/> New confusion, difficulty speaking, or memory changes</label>
+      <label data-id="340" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="341" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="New seizure or convulsions — EMERGENCY" data-pts="100" data-red="1"/> New seizure or convulsions</label>
+      <label data-id="342" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="343" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Stroke signs (facial weakness, vision, speech) — EMERGENCY" data-pts="100" data-red="1"/> Facial weakness, vision changes, slurred speech (EMERGENCY)</label>
+      <label data-id="344" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-green-50 cursor-pointer text-sm"><input data-id="345" type="checkbox" class="mt-0.5 w-4 h-4 q9-none" data-pts="0"/> ✅ None of the above</label>
+    </div>
+    <div data-id="346" id="q9-dbs-a8b9" class="space-y-2 hidden">
+      <label data-id="347" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="348" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Device/hardware protruding through skin — EMERGENCY" data-pts="80" data-red="1"/> Device or hardware feels like it is protruding through skin</label>
+      <label data-id="349" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="350" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Redness/swelling along shunt/DBS tract" data-pts="15"/> Redness or swelling along the shunt tract / DBS lead track</label>
+      <label data-id="351" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="352" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="DBS device feels moved" data-pts="15"/> DBS device feels like it has moved</label>
+      <label data-id="353" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="354" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Returning symptoms DBS was controlling" data-pts="10"/> Symptoms your DBS was controlling are returning</label>
+      <label data-id="355" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer text-sm"><input data-id="356" type="checkbox" class="mt-0.5 w-4 h-4 q9-check" data-flag="Headache with nausea/vomiting" data-pts="15"/> Headache with nausea/vomiting</label>
+      <label data-id="357" class="flex items-start gap-3 p-3 rounded-lg border hover:bg-green-50 cursor-pointer text-sm"><input data-id="358" type="checkbox" class="mt-0.5 w-4 h-4 q9-none" data-pts="0"/> ✅ None of the above</label>
+    </div>
+  </div>
+
+  <!-- Q10: Overall Wellbeing -->
+  <div data-id="359" class="border rounded-xl p-4">
+    <p data-id="360" class="font-semibold text-sm text-gray-800 mb-3">Q10 — How do you feel overall today?</p>
+    <div data-id="361" class="space-y-2" id="q10-options-c0d1">
+      <button data-id="362" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-green-500 bg-green-50/50 hover:bg-green-50 text-sm" data-q="q10" data-val="0">😊 Great — feeling better than yesterday</button>
+      <button data-id="363" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-gray-400 bg-gray-50/50 hover:bg-gray-50 text-sm" data-q="q10" data-val="0">😐 About the same as yesterday</button>
+      <button data-id="364" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-yellow-500 bg-yellow-50/50 hover:bg-yellow-50 text-sm" data-q="q10" data-val="3">😟 A bit worse than yesterday</button>
+      <button data-id="365" class="q-option w-full text-left p-3 rounded-lg border-l-4 border-orange-500 bg-orange-50/50 hover:bg-orange-50 text-sm" data-q="q10" data-val="8">😰 Much worse — concerned about my recovery</button>
+    </div>
+  </div>
+  </div>
+  <div data-id="366" class="flex justify-between mt-6">
+    <button data-id="367" id="btn-back3-e2f3" class="px-5 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50">← Back</button>
+    <button data-id="368" id="btn-next3-g4h5" class="px-6 py-3 rounded-xl text-white font-semibold" style="background:var(--primary)">Calculate NWAT Score →</button>
+  </div>
+</div>
+
+<!-- STEP 4: Results -->
+<div data-id="369" id="wiz-step4-i6j7" class="wizard-step">
+  <div data-id="370" id="result-card-k8l9" class="rounded-2xl p-6 text-center text-white mb-4">
+    <div data-id="371" id="result-emoji-m0n1" class="text-5xl mb-2"></div>
+    <div data-id="372" id="result-tier-o2p3" class="text-2xl font-bold mb-1"></div>
+    <div data-id="373" id="result-score-q4r5" class="text-lg opacity-90"></div>
+  </div>
+
+  <!-- Score Breakdown -->
+  <div data-id="374" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+    <h4 data-id="375" class="text-sm font-semibold text-gray-700 mb-3">Score Breakdown</h4>
+    <div data-id="376" class="flex justify-center gap-6 mb-4">
+      <div data-id="377" class="text-center">
+        <svg data-id="378" width="80" height="80" viewBox="0 0 80 80">
+          <circle data-id="379" cx="40" cy="40" r="32" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+          <circle data-id="380" id="donut-visual-s6t7" cx="40" cy="40" r="32" fill="none" stroke="#1a9bb5" stroke-width="8" stroke-dasharray="0 201" stroke-dashoffset="0" transform="rotate(-90 40 40)" class="score-donut"/>
+        </svg>
+        <div data-id="381" class="text-xs text-gray-500 mt-1">Visual</div>
+        <div data-id="382" id="score-visual-u8v9" class="text-sm font-bold" style="color:var(--primary)">0</div>
+      </div>
+      <div data-id="383" class="text-center">
+        <svg data-id="384" width="80" height="80" viewBox="0 0 80 80">
+          <circle data-id="385" cx="40" cy="40" r="32" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+          <circle data-id="386" id="donut-systemic-w0x1" cx="40" cy="40" r="32" fill="none" stroke="#ca8a04" stroke-width="8" stroke-dasharray="0 201" stroke-dashoffset="0" transform="rotate(-90 40 40)" class="score-donut"/>
+        </svg>
+        <div data-id="387" class="text-xs text-gray-500 mt-1">Systemic</div>
+        <div data-id="388" id="score-systemic-y2z3" class="text-sm font-bold" style="color:var(--primary)">0</div>
+      </div>
+      <div data-id="389" class="text-center">
+        <svg data-id="390" width="80" height="80" viewBox="0 0 80 80">
+          <circle data-id="391" cx="40" cy="40" r="32" fill="none" stroke="#e2e8f0" stroke-width="8"/>
+          <circle data-id="392" id="donut-specialty-a4b5" cx="40" cy="40" r="32" fill="none" stroke="#ea580c" stroke-width="8" stroke-dasharray="0 201" stroke-dashoffset="0" transform="rotate(-90 40 40)" class="score-donut"/>
+        </svg>
+        <div data-id="393" class="text-xs text-gray-500 mt-1">Specialty</div>
+        <div data-id="394" id="score-specialty-c6d7" class="text-sm font-bold" style="color:var(--primary)">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What This Means -->
+  <div data-id="395" id="result-meaning-e8f9" class="bg-white rounded-2xl p-5 shadow-sm mb-4"></div>
+
+  <!-- Action Panel -->
+  <div data-id="396" id="result-action-g0h1" class="rounded-2xl p-5 mb-4"></div>
+
+  <!-- Flagged Findings -->
+  <div data-id="397" id="result-flags-i2j3" class="bg-white rounded-2xl p-5 shadow-sm mb-4 hidden">
+    <h4 data-id="398" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+      <i data-id="399" data-lucide="alert-circle" class="w-4 h-4 text-orange-500"></i> Flagged Findings
+    </h4>
+    <ul data-id="400" id="flags-list-k4l5" class="space-y-2 text-sm"></ul>
+  </div>
+
+  <div data-id="401" class="flex gap-3">
+    <button data-id="402" id="btn-back4-m6n7" class="flex-1 px-5 py-3 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50">← Review Answers</button>
+    <button data-id="403" id="btn-save-o8p9" class="flex-1 px-6 py-3 rounded-xl text-white font-semibold" style="background:var(--primary)">Save Check-In</button>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- ==================== TAB 3: HISTORY ==================== -->
+<section data-id="404" id="tab-history-q0r1" class="tab-panel fade-in">
+<!-- Progress Stats -->
+<div data-id="405" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <div data-id="406" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="407" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Check-Ins</div>
+    <div data-id="408" id="hist-total-s2t3" class="text-2xl font-bold tabular-nums" style="color:var(--primary)">0</div>
+  </div>
+  <div data-id="409" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="410" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Days Post-Op</div>
+    <div data-id="411" id="hist-days-u4v5" class="text-2xl font-bold tabular-nums" style="color:var(--accent)">0</div>
+  </div>
+  <div data-id="412" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="413" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Score Trend</div>
+    <div data-id="414" id="hist-trend-w6x7" class="text-sm font-semibold text-gray-700">—</div>
+  </div>
+  <div data-id="415" class="bg-white rounded-xl p-4 text-center shadow-sm">
+    <div data-id="416" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Days Green</div>
+    <div data-id="417" id="hist-green-y8z9" class="text-2xl font-bold tabular-nums text-green-600">0</div>
+  </div>
+</div>
+
+<!-- Comparison Tool -->
+<div data-id="418" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="419" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+    <i data-id="420" data-lucide="columns-2" class="w-4 h-4" style="color:var(--accent)"></i> Photo Comparison
+  </h3>
+  <div data-id="421" class="flex flex-col md:flex-row gap-3 mb-3">
+    <select data-id="422" id="compare-left-a0b1" class="flex-1 h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white"><option data-id="423" value="">Select check-in...</option></select>
+    <select data-id="424" id="compare-right-c2d3" class="flex-1 h-10 px-3 border border-gray-300 rounded-lg text-sm bg-white"><option data-id="425" value="">Select check-in...</option></select>
+  </div>
+  <div data-id="426" id="compare-view-e4f5" class="flex gap-3 hidden">
+    <div data-id="427" class="flex-1 text-center">
+      <img data-id="428" id="compare-img-left-g6h7" class="w-full max-w-[200px] mx-auto h-auto rounded-xl border-2" alt="Left comparison"/>
+      <p data-id="429" id="compare-label-left-i8j9" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+    <div data-id="430" class="flex-1 text-center">
+      <img data-id="431" id="compare-img-right-k0l1" class="w-full max-w-[200px] mx-auto h-auto rounded-xl border-2" alt="Right comparison"/>
+      <p data-id="432" id="compare-label-right-m2n3" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Export -->
+<button data-id="433" id="btn-export-o4p5" class="w-full mb-4 flex items-center justify-center gap-2 py-3 rounded-xl text-white font-semibold" style="background:var(--primary)">
+  <i data-id="434" data-lucide="file-text" class="w-5 h-5"></i> Export Wound Log
+</button>
+
+<!-- Timeline -->
+<h3 data-id="435" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+  <i data-id="436" data-lucide="clock" class="w-4 h-4" style="color:var(--accent)"></i> Check-In Timeline
+</h3>
+<div data-id="437" id="history-list-q6r7" class="space-y-3">
+  <div data-id="438" id="history-empty-s8t9" class="bg-white rounded-2xl p-8 text-center shadow-sm">
+    <i data-id="439" data-lucide="camera-off" class="w-12 h-12 mx-auto text-gray-300 mb-3"></i>
+    <p data-id="440" class="text-gray-500 font-medium">No check-ins yet</p>
+    <p data-id="441" class="text-sm text-gray-400 mt-1">Log your first wound check-in to start tracking your healing journey.</p>
+  </div>
+</div>
+</section>
+
+<!-- ==================== TAB 4: ESCALATION GUIDE ==================== -->
+<section data-id="442" id="tab-escalation-u0v1" class="tab-panel fade-in">
+<h2 data-id="443" class="text-lg font-bold mb-4" style="color:var(--primary)">Escalation Guide</h2>
+
+<!-- Tier Cards -->
+<div data-id="444" class="space-y-3 mb-6">
+  <div data-id="445" class="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-green-500">
+    <button data-id="446" class="esc-accordion w-full flex items-center justify-between p-4 text-left" data-target="esc-green-w2x3">
+      <div data-id="447" class="flex items-center gap-3"><span data-id="448" class="w-8 h-8 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-sm font-bold">✅</span><span data-id="449" class="font-semibold text-gray-800">GREEN — Healing Well (NWAT 0–10)</span></div>
+      <i data-id="450" data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+    </button>
+    <div data-id="451" id="esc-green-w2x3" class="accordion-body px-4 pb-4">
+      <p data-id="452" class="text-sm text-gray-600 mb-2"><strong data-id="453">What it means:</strong> Your wound shows normal healing signs. No concerning features detected.</p>
+      <p data-id="454" class="text-sm text-gray-600 mb-2"><strong data-id="455">What to do:</strong> Continue your wound care routine as instructed by your surgeon. Keep the wound clean and dry.</p>
+      <p data-id="456" class="text-sm text-gray-600"><strong data-id="457">Who to contact:</strong> No urgent contact needed. Attend your scheduled follow-up appointment.</p>
+    </div>
+  </div>
+  <div data-id="458" class="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-yellow-500">
+    <button data-id="459" class="esc-accordion w-full flex items-center justify-between p-4 text-left" data-target="esc-yellow-y4z5">
+      <div data-id="460" class="flex items-center gap-3"><span data-id="461" class="w-8 h-8 bg-yellow-100 text-yellow-700 rounded-full flex items-center justify-center text-sm font-bold">⚠️</span><span data-id="462" class="font-semibold text-gray-800">YELLOW — Monitor Closely (NWAT 11–20)</span></div>
+      <i data-id="463" data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+    </button>
+    <div data-id="464" id="esc-yellow-y4z5" class="accordion-body px-4 pb-4">
+      <p data-id="465" class="text-sm text-gray-600 mb-2"><strong data-id="466">What it means:</strong> Minor signs worth watching. May be normal early healing, but warrants attention.</p>
+      <p data-id="467" class="text-sm text-gray-600 mb-2"><strong data-id="468">What to do:</strong> Watch carefully for 24 hours. Log another check-in tomorrow. If signs worsen, move to ORANGE.</p>
+      <p data-id="469" class="text-sm text-gray-600"><strong data-id="470">Who to contact:</strong> Call your surgeon's office if you are unsure or symptoms worsen within 24 hours.</p>
+    </div>
+  </div>
+  <div data-id="471" class="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-orange-500">
+    <button data-id="472" class="esc-accordion w-full flex items-center justify-between p-4 text-left" data-target="esc-orange-a6b7">
+      <div data-id="473" class="flex items-center gap-3"><span data-id="474" class="w-8 h-8 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-sm font-bold">🔶</span><span data-id="475" class="font-semibold text-gray-800">ORANGE — Concerning (NWAT 21–40)</span></div>
+      <i data-id="476" data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+    </button>
+    <div data-id="477" id="esc-orange-a6b7" class="accordion-body px-4 pb-4">
+      <p data-id="478" class="text-sm text-gray-600 mb-2"><strong data-id="479">What it means:</strong> Your wound shows signs that need professional evaluation today. Do not wait.</p>
+      <p data-id="480" class="text-sm text-gray-600 mb-2"><strong data-id="481">What to do:</strong> Call your surgeon's office TODAY during business hours. If after hours, call the hospital surgical line.</p>
+      <p data-id="482" class="text-sm text-gray-600"><strong data-id="483">Who to contact:</strong> Your surgeon's office or hospital nurse line.</p>
+    </div>
+  </div>
+  <div data-id="484" class="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-red-500">
+    <button data-id="485" class="esc-accordion w-full flex items-center justify-between p-4 text-left" data-target="esc-red-c8d9">
+      <div data-id="486" class="flex items-center gap-3"><span data-id="487" class="w-8 h-8 bg-red-100 text-red-700 rounded-full flex items-center justify-center text-sm font-bold">🚨</span><span data-id="488" class="font-semibold text-gray-800">RED — Seek Immediate Care (NWAT 41+)</span></div>
+      <i data-id="489" data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+    </button>
+    <div data-id="490" id="esc-red-c8d9" class="accordion-body px-4 pb-4">
+      <p data-id="491" class="text-sm text-gray-600 mb-2"><strong data-id="492">What it means:</strong> Serious signs detected that require emergency evaluation. Do not delay.</p>
+      <p data-id="493" class="text-sm text-gray-600 mb-2"><strong data-id="494">What to do:</strong> Go to the Emergency Room or call 911. Do not drive yourself. Have someone take you.</p>
+      <p data-id="495" class="text-sm text-gray-600"><strong data-id="496">Who to contact:</strong> 911 or proceed to nearest ER immediately.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Surgery-Specific Red Flags -->
+<h3 data-id="497" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+  <i data-id="498" data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i> Red Flag Guide for Your Surgery
+</h3>
+<div data-id="499" id="red-flags-container-e0f1" class="space-y-3 mb-6"></div>
+
+<!-- Decision Tree -->
+<div data-id="500" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="501" class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+    <i data-id="502" data-lucide="git-branch" class="w-4 h-4" style="color:var(--accent)"></i> Escalation Decision Tree
+  </h3>
+  <div data-id="503" id="decision-tree-g2h3">
+    <div data-id="504" id="dt-step-i4j5" class="text-center"></div>
+  </div>
+</div>
+
+<!-- Emergency Contact Panel -->
+<div data-id="505" class="bg-red-50 border-2 border-red-200 rounded-2xl p-5">
+  <h3 data-id="506" class="text-sm font-bold text-red-800 mb-3">Emergency Contacts</h3>
+  <div data-id="507" class="space-y-2">
+    <a data-id="508" href="tel:911" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-red-200"><div data-id="509" class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center"><i data-id="510" data-lucide="phone" class="w-4 h-4 text-white"></i></div><div data-id="511"><div data-id="512" class="text-sm font-bold text-red-700">911</div><div data-id="513" class="text-xs text-gray-500">Emergency Services</div></div></a>
+    <div data-id="514" id="esc-surgeon-card-k6l7" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200"></div>
+  </div>
+</div>
+</section>
+
+<!-- ==================== TAB 5: EDUCATION ==================== -->
+<section data-id="515" id="tab-education-m8n9" class="tab-panel fade-in">
+<h2 data-id="516" class="text-lg font-bold mb-4" style="color:var(--primary)">Education & Wound Care</h2>
+
+<!-- Wound Care Instructions -->
+<div data-id="517" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="518" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+    <i data-id="519" data-lucide="book-open" class="w-4 h-4" style="color:var(--accent)"></i> Wound Care Instructions
+  </h3>
+  <div data-id="520" id="care-instructions-o0p1" class="space-y-2"></div>
+</div>
+
+<!-- Healing Timeline -->
+<div data-id="521" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="522" class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+    <i data-id="523" data-lucide="calendar-clock" class="w-4 h-4" style="color:var(--accent)"></i> Normal Healing Timeline
+  </h3>
+  <div data-id="524" class="relative pl-6 space-y-4 border-l-2" style="border-color:var(--accent)">
+    <div data-id="525" class="relative"><div data-id="526" class="absolute -left-[1.6rem] w-3 h-3 rounded-full" style="background:var(--accent)"></div><div data-id="527" class="text-sm font-semibold text-gray-800">Days 1–3</div><p data-id="528" class="text-xs text-gray-600">Swelling, bruising, and scabbing are normal. Wound may feel tight and tender. Keep the wound dry.</p></div>
+    <div data-id="529" class="relative"><div data-id="530" class="absolute -left-[1.6rem] w-3 h-3 rounded-full" style="background:var(--accent)"></div><div data-id="531" class="text-sm font-semibold text-gray-800">Days 4–7</div><p data-id="532" class="text-xs text-gray-600">Swelling may peak then start to subside. Itching is a sign of healing. Light pink color at wound edges is normal.</p></div>
+    <div data-id="533" class="relative"><div data-id="534" class="absolute -left-[1.6rem] w-3 h-3 rounded-full" style="background:var(--accent)"></div><div data-id="535" class="text-sm font-semibold text-gray-800">Days 7–14</div><p data-id="536" class="text-xs text-gray-600">Staple/suture removal typically occurs during this period. Incision edges start to knit together firmly.</p></div>
+    <div data-id="537" class="relative"><div data-id="538" class="absolute -left-[1.6rem] w-3 h-3 rounded-full" style="background:var(--accent)"></div><div data-id="539" class="text-sm font-semibold text-gray-800">Weeks 2–4</div><p data-id="540" class="text-xs text-gray-600">Scar formation begins. Pink or red appearance at the incision is normal and will gradually fade.</p></div>
+    <div data-id="541" class="relative"><div data-id="542" class="absolute -left-[1.6rem] w-3 h-3 rounded-full" style="background:var(--accent)"></div><div data-id="543" class="text-sm font-semibold text-gray-800">Months 1–3</div><p data-id="544" class="text-xs text-gray-600">Scar maturation. The scar softens, flattens, and fades over time. Full maturation can take 6–12 months.</p></div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div data-id="545" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="546" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+    <i data-id="547" data-lucide="help-circle" class="w-4 h-4" style="color:var(--accent)"></i> Frequently Asked Questions
+  </h3>
+  <div data-id="548" id="faq-container-q2r3" class="space-y-2"></div>
+</div>
+
+<!-- Wound Care Photo Guide -->
+<div data-id="549" class="bg-white rounded-2xl p-5 shadow-sm mb-4">
+  <h3 data-id="550" class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+    <i data-id="551" data-lucide="camera" class="w-4 h-4" style="color:var(--accent)"></i> How to Take a Good Monitoring Photo
+  </h3>
+  <div data-id="552" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div data-id="553" class="border rounded-xl p-4">
+      <div data-id="554" class="text-2xl mb-2">📐</div>
+      <div data-id="555" class="text-sm font-semibold text-gray-800 mb-1">1. Position & Distance</div>
+      <p data-id="556" class="text-xs text-gray-600">Hold your phone 6–12 inches from the wound. Try to take the photo at the same angle and distance each time.</p>
+    </div>
+    <div data-id="557" class="border rounded-xl p-4">
+      <div data-id="558" class="text-2xl mb-2">💡</div>
+      <div data-id="559" class="text-sm font-semibold text-gray-800 mb-1">2. Good Lighting</div>
+      <p data-id="560" class="text-xs text-gray-600">Use natural daylight or a well-lit room. Avoid harsh shadows or flash glare directly on the wound.</p>
+    </div>
+    <div data-id="561" class="border rounded-xl p-4">
+      <div data-id="562" class="text-2xl mb-2">📏</div>
+      <div data-id="563" class="text-sm font-semibold text-gray-800 mb-1">3. Include a Scale Reference</div>
+      <p data-id="564" class="text-xs text-gray-600">Place a coin or ruler next to the wound to show size. This helps your surgeon gauge changes.</p>
+    </div>
+    <div data-id="565" class="border rounded-xl p-4">
+      <div data-id="566" class="text-2xl mb-2">🔍</div>
+      <div data-id="567" class="text-sm font-semibold text-gray-800 mb-1">4. Capture the Full Incision</div>
+      <p data-id="568" class="text-xs text-gray-600">Make sure the entire wound is visible in the photo, including surrounding skin for context.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+</main>
+
+<!-- BOTTOM TAB BAR -->
+<nav data-id="569" id="bottom-tabs-s4t5" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 flex justify-around py-2 no-print">
+  <button data-id="570" class="tab-btn flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]" data-tab="dashboard">
+    <i data-id="571" data-lucide="home" class="w-5 h-5"></i>
+    <span data-id="572" class="text-[10px] font-medium">Home</span>
+  </button>
+  <button data-id="573" class="tab-btn flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]" data-tab="checkin">
+    <i data-id="574" data-lucide="camera" class="w-5 h-5"></i>
+    <span data-id="575" class="text-[10px] font-medium">Check-In</span>
+  </button>
+  <button data-id="576" class="tab-btn flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]" data-tab="history">
+    <i data-id="577" data-lucide="calendar" class="w-5 h-5"></i>
+    <span data-id="578" class="text-[10px] font-medium">History</span>
+  </button>
+  <button data-id="579" class="tab-btn flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]" data-tab="escalation">
+    <i data-id="580" data-lucide="alert-triangle" class="w-5 h-5"></i>
+    <span data-id="581" class="text-[10px] font-medium">Escalation</span>
+  </button>
+  <button data-id="582" class="tab-btn flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]" data-tab="education">
+    <i data-id="583" data-lucide="book-open" class="w-5 h-5"></i>
+    <span data-id="584" class="text-[10px] font-medium">Education</span>
+  </button>
+</nav>
+</div>
+
+<!-- FOOTER -->
+<footer data-id="585" class="text-center text-xs text-gray-400 py-4 px-4 no-print">
+  <p data-id="586">This app is for educational monitoring purposes only. Always follow your surgical team's specific instructions. If in doubt, call your surgeon.</p>
+  <p data-id="587" class="mt-1">Made by Copilot</p>
+</footer>
+
+<script>
+// ============================================================
+// STATE & DATA
+// ============================================================
+let profile = JSON.parse(localStorage.getItem('nswm_profile') || 'null');
+let checkIns = JSON.parse(localStorage.getItem('nswm_checkins') || '[]');
+let currentPhoto = null;
+let wizardAnswers = {};
+let currentWizStep = 1;
+
+const SPINE_TYPES = ['cervical-fusion','cervical-laminectomy','lumbar-microdiscectomy','lumbar-laminectomy','lumbar-fusion','thoracic-spine','mis-spine','vertebroplasty'];
+const CRANIO_TYPES = ['craniotomy-supra','craniotomy-infra','craniectomy','awake-craniotomy','transsphenoidal'];
+const DBS_TYPES = ['dbs','shunt'];
+const CSF_WATCH_TYPES = [...SPINE_TYPES,'craniotomy-infra','craniectomy'];
+
+function isSpine(t){return SPINE_TYPES.includes(t)}
+function isCranio(t){return CRANIO_TYPES.includes(t)}
+function isDBS(t){return DBS_TYPES.includes(t)}
+function isPeriphNerve(t){return t==='peripheral-nerve'}
+
+function daysSince(dateStr){
+  if(!dateStr) return 0;
+  const d=new Date(dateStr); const now=new Date();
+  return Math.max(0,Math.floor((now-d)/(1000*60*60*24)));
+}
+
+function formatDate(d){
+  if(!d) return '—';
+  return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function tierFromScore(score, forceRed){
+  if(forceRed) return {tier:'RED',label:'Seek Immediate Care',emoji:'🚨',color:'#dc2626',bg:'bg-red-600'};
+  if(score<=10) return {tier:'GREEN',label:'Healing Well',emoji:'✅',color:'#16a34a',bg:'bg-green-600'};
+  if(score<=20) return {tier:'YELLOW',label:'Monitor Closely',emoji:'⚠️',color:'#ca8a04',bg:'bg-yellow-600'};
+  if(score<=40) return {tier:'ORANGE',label:'Concerning',emoji:'🔶',color:'#ea580c',bg:'bg-orange-600'};
+  return {tier:'RED',label:'Seek Immediate Care',emoji:'🚨',color:'#dc2626',bg:'bg-red-600'};
+}
+
+// ============================================================
+// SETUP
+// ============================================================
+const setupScreen = document.getElementById('setup-screen-s1k2');
+const mainApp = document.getElementById('main-app-w3x4');
+
+function showMainApp(){
+  setupScreen.classList.add('hidden');
+  mainApp.classList.remove('hidden');
+  updateTopBar();
+  updateDashboard();
+  updateHistory();
+  showQ9ForSurgeryType();
+  loadRedFlags();
+  loadCareInstructions();
+  loadFAQs();
+  showCSFBanner();
+  loadEscSurgeonCard();
+  lucide.createIcons();
+}
+
+if(profile){
+  showMainApp();
+}
+
+document.getElementById('btn-begin-u1v2').addEventListener('click',function(){
+  const name=document.getElementById('inp-name-a1b2').value.trim();
+  const dob=document.getElementById('inp-dob-c3d4').value;
+  const surgery=document.getElementById('inp-surgery-e5f6').value;
+  const surgeon=document.getElementById('inp-surgeon-g7h8').value.trim();
+  const surgDate=document.getElementById('inp-surgdate-i9j0').value;
+  const phone=document.getElementById('inp-surgphone-m3n4').value.trim();
+  if(!name||!dob||!surgery||!surgeon||!surgDate||!phone){
+    const err=document.getElementById('setup-error-s9t0');
+    err.textContent='Please fill in all required fields (marked with *).';
+    err.classList.remove('hidden');
+    return;
+  }
+  profile={
+    name,dob,surgery,surgeon,surgDate,
+    hospital:document.getElementById('inp-hospital-k1l2').value.trim(),
+    surgeonPhone:phone,
+    emergencyName:document.getElementById('inp-emname-o5p6').value.trim(),
+    emergencyPhone:document.getElementById('inp-emphone-q7r8').value.trim()
+  };
+  localStorage.setItem('nswm_profile',JSON.stringify(profile));
+  showMainApp();
+});
+
+// ============================================================
+// TOP BAR & STATUS
+// ============================================================
+function updateTopBar(){
+  if(!profile) return;
+  document.getElementById('patient-chip-a2b3').textContent=profile.name;
+  const days=daysSince(profile.surgDate);
+  document.getElementById('days-chip-c4d5').textContent='Day '+days;
+  const badge=document.getElementById('esc-badge-e6f7');
+  if(checkIns.length>0){
+    const last=checkIns[checkIns.length-1];
+    const t=tierFromScore(last.score,last.forceRed);
+    badge.textContent=t.tier;
+    badge.style.background=t.color;
+  } else {
+    badge.textContent='NO DATA';
+    badge.style.background='#64748b';
+  }
+}
+
+// Emergency Modal
+document.getElementById('btn-emergency-g8h9').addEventListener('click',function(){
+  if(!profile) return;
+  document.getElementById('em-surgeon-name-q8r9').textContent=profile.surgeon;
+  document.getElementById('em-surgeon-phone-s0t1').textContent=profile.surgeonPhone;
+  document.getElementById('em-call-surgeon-o6p7').href='tel:'+profile.surgeonPhone.replace(/\D/g,'');
+  document.getElementById('em-contact-name-w4x5').textContent=profile.emergencyName||'Not set';
+  document.getElementById('em-contact-phone-y6z7').textContent=profile.emergencyPhone||'—';
+  if(profile.emergencyPhone) document.getElementById('em-call-contact-u2v3').href='tel:'+profile.emergencyPhone.replace(/\D/g,'');
+  document.getElementById('emergency-modal-i0j1').classList.remove('hidden');
+});
+document.getElementById('close-em-modal-k2l3').addEventListener('click',function(){
+  document.getElementById('emergency-modal-i0j1').classList.add('hidden');
+});
+
+// ============================================================
+// TABS
+// ============================================================
+document.querySelectorAll('.tab-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    const tab=btn.dataset.tab;
+    document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});
+    document.getElementById('tab-'+tab+'-'+(tab==='dashboard'?'k8l9':tab==='checkin'?'e4f5':tab==='history'?'q0r1':tab==='escalation'?'u0v1':'m8n9')).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(function(b){
+      b.style.color=b===btn?'var(--primary)':'#94a3b8';
+    });
+    if(tab==='history'){updateHistory();}
+    if(tab==='dashboard'){updateDashboard();}
+    lucide.createIcons();
+  });
+});
+// Initial tab color
+document.querySelectorAll('.tab-btn').forEach(function(b,i){
+  b.style.color=i===0?'var(--primary)':'#94a3b8';
+});
+
+// Quick action buttons
+document.getElementById('qa-checkin-k4l5').addEventListener('click',function(){
+  document.querySelector('.tab-btn[data-tab="checkin"]').click();
+});
+document.getElementById('qa-care-m6n7').addEventListener('click',function(){
+  document.querySelector('.tab-btn[data-tab="education"]').click();
+});
+document.getElementById('qa-call-o8p9').addEventListener('click',function(){
+  if(!profile) return;
+  document.getElementById('surg-modal-name-c0d1').textContent=profile.surgeon;
+  document.getElementById('surg-modal-phone-e2f3').textContent=profile.surgeonPhone;
+  document.getElementById('surg-modal-call-g4h5').href='tel:'+profile.surgeonPhone.replace(/\D/g,'');
+  document.getElementById('surgeon-modal-a8b9').classList.remove('hidden');
+});
+document.getElementById('close-surg-modal-i6j7').addEventListener('click',function(){
+  document.getElementById('surgeon-modal-a8b9').classList.add('hidden');
+});
+document.getElementById('qa-escalate-q0r1').addEventListener('click',function(){
+  document.querySelector('.tab-btn[data-tab="escalation"]').click();
+});
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function updateDashboard(){
+  if(!profile) return;
+  const days=daysSince(profile.surgDate);
+  document.getElementById('dash-days-u8v9').textContent=days;
+  const banner=document.getElementById('status-banner-m0n1');
+  if(checkIns.length>0){
+    const last=checkIns[checkIns.length-1];
+    const t=tierFromScore(last.score,last.forceRed);
+    banner.style.background=t.color;
+    document.getElementById('status-emoji-o2p3').textContent=t.emoji;
+    document.getElementById('status-text-q4r5').textContent=t.label;
+    document.getElementById('status-sub-s6t7').textContent='Last NWAT Score: '+last.score+'/100 • '+formatDate(last.date);
+    document.getElementById('dash-lastscore-w0x1').textContent=last.score;
+    document.getElementById('dash-lastdate-y2z3').textContent=formatDate(last.date);
+  } else {
+    banner.style.background='#64748b';
+    document.getElementById('status-emoji-o2p3').textContent='📋';
+    document.getElementById('status-text-q4r5').textContent='No Assessment Yet';
+    document.getElementById('status-sub-s6t7').textContent='Complete your first check-in to get started';
+  }
+  // Surgery info
+  const surgeryLabel=document.getElementById('inp-surgery-e5f6');
+  const selOption=surgeryLabel?surgeryLabel.querySelector('option[value="'+profile.surgery+'"]'):null;
+  document.getElementById('info-surgery-w6x7').textContent=selOption?selOption.textContent:profile.surgery;
+  document.getElementById('info-date-y8z9').textContent=formatDate(profile.surgDate);
+  document.getElementById('info-surgeon-a0b1').textContent=profile.surgeon;
+  document.getElementById('info-hospital-c2d3').textContent=profile.hospital||'—';
+  // Chart
+  renderChart();
+}
+
+function renderChart(){
+  const g=document.getElementById('chart-data-g0h1');
+  const empty=document.getElementById('chart-empty-i2j3');
+  g.innerHTML='';
+  if(checkIns.length===0){empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  const last7=checkIns.slice(-7);
+  const n=last7.length;
+  const w=520, h=160, startX=60, startY=10;
+  const maxScore=60;
+  let pathD='';
+  last7.forEach(function(ci,i){
+    const x=startX+(i*(w/(Math.max(n-1,1))));
+    const y=startY+h-(ci.score/maxScore)*h;
+    const cY=Math.max(startY,Math.min(startY+h,y));
+    if(i===0) pathD+='M'+x+' '+cY;
+    else pathD+='L'+x+' '+cY;
+    const t=tierFromScore(ci.score,ci.forceRed);
+    g.innerHTML+='<circle cx="'+x+'" cy="'+cY+'" r="5" fill="'+t.color+'" stroke="white" stroke-width="2"/>';
+    g.innerHTML+='<text x="'+x+'" y="185" fill="#94a3b8" font-size="9" text-anchor="middle">'+formatDate(ci.date).replace(/, \d{4}/,'')+'</text>';
+    g.innerHTML+='<text x="'+x+'" y="'+(cY-10)+'" fill="'+t.color+'" font-size="10" text-anchor="middle" font-weight="600">'+ci.score+'</text>';
+  });
+  g.innerHTML='<path d="'+pathD+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>'+g.innerHTML;
+}
+
+// CSF Banner
+function showCSFBanner(){
+  if(!profile) return;
+  const banner=document.getElementById('csf-banner-s2t3');
+  const dismissed=localStorage.getItem('nswm_csf_dismissed');
+  if(CSF_WATCH_TYPES.includes(profile.surgery)&&!dismissed){
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+document.getElementById('dismiss-csf-u4v5').addEventListener('click',function(){
+  document.getElementById('csf-banner-s2t3').classList.add('hidden');
+  localStorage.setItem('nswm_csf_dismissed','1');
+});
+
+// ============================================================
+// CHECK-IN WIZARD
+// ============================================================
+function setWizStep(step){
+  currentWizStep=step;
+  document.querySelectorAll('.wizard-step').forEach(function(s){s.classList.remove('active')});
+  document.getElementById('wiz-step'+step+'-'+(step===1?'y4z5':step===2?'y0z1':step===3?'s0t1':'i6j7')).classList.add('active');
+  for(let i=1;i<=4;i++){
+    const dot=document.getElementById('sdot-'+i+'-'+(i===1?'i8j9':i===2?'m2n3':i===3?'q6r7':'u0v1'));
+    const line=i<4?document.getElementById('sline-'+i+'-'+(i===1?'k0l1':i===2?'o4p5':'s8t9')):null;
+    dot.className='step-dot '+(i<step?'completed':i===step?'current':'upcoming');
+    if(line) line.className='step-line '+(i<step?'completed':'upcoming');
+  }
+  document.getElementById('step-label-w2x3').textContent='Step '+step+' of 4';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Photo handling
+function handlePhoto(file){
+  if(!file) return;
+  const reader=new FileReader();
+  reader.addEventListener('load',function(){
+    const img=new Image();
+    img.addEventListener('load',function(){
+      const canvas=document.createElement('canvas');
+      let w=img.width,h=img.height;
+      const maxDim=800;
+      if(w>maxDim||h>maxDim){
+        if(w>h){h=Math.round(h*maxDim/w);w=maxDim;}
+        else{w=Math.round(w*maxDim/h);h=maxDim;}
+      }
+      canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      currentPhoto=canvas.toDataURL('image/jpeg',0.7);
+      document.getElementById('photo-img-e0f1').src=currentPhoto;
+      document.getElementById('photo-preview-c8d9').classList.remove('hidden');
+      document.getElementById('photo-placeholder-g2h3').classList.add('hidden');
+    });
+    img.src=reader.result;
+  });
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('photo-upload-area-a6b7').addEventListener('click',function(){
+  document.getElementById('photo-input-i4j5').click();
+});
+document.getElementById('photo-input-i4j5').addEventListener('change',function(e){
+  if(e.target.files[0]) handlePhoto(e.target.files[0]);
+});
+document.getElementById('btn-gallery-k6l7').addEventListener('click',function(){
+  document.getElementById('gallery-input-m8n9').click();
+});
+document.getElementById('gallery-input-m8n9').addEventListener('change',function(e){
+  if(e.target.files[0]) handlePhoto(e.target.files[0]);
+});
+
+// Photo tips toggle
+document.getElementById('tips-toggle-o0p1').addEventListener('click',function(){
+  document.getElementById('tips-body-s4t5').classList.toggle('open');
+});
+
+// Q option selection
+document.querySelectorAll('.q-option').forEach(function(opt){
+  opt.addEventListener('click',function(){
+    const q=opt.dataset.q;
+    document.querySelectorAll('.q-option[data-q="'+q+'"]').forEach(function(o){
+      o.style.outline='none';o.style.boxShadow='none';o.style.background='';
+    });
+    opt.style.outline='2px solid var(--accent)';
+    opt.style.boxShadow='0 0 0 3px rgba(26,155,181,0.25)';
+    wizardAnswers[q]={val:parseInt(opt.dataset.val),flag:opt.dataset.flag||null,red:opt.dataset.red==='1'};
+  });
+});
+
+// Step navigation
+document.getElementById('btn-next1-w8x9').addEventListener('click',function(){
+  const skip=document.getElementById('skip-photo-u6v7').checked;
+  if(!currentPhoto&&!skip){
+    if(!confirm('No photo selected. Continue without a photo?')) return;
+  }
+  setWizStep(2);
+});
+document.getElementById('btn-back2-o6p7').addEventListener('click',function(){setWizStep(1)});
+document.getElementById('btn-next2-q8r9').addEventListener('click',function(){setWizStep(3)});
+document.getElementById('btn-back3-e2f3').addEventListener('click',function(){setWizStep(2)});
+document.getElementById('btn-next3-g4h5').addEventListener('click',function(){calculateNWAT()});
+document.getElementById('btn-back4-m6n7').addEventListener('click',function(){setWizStep(3)});
+
+// Show correct Q9 based on surgery type
+function showQ9ForSurgeryType(){
+  if(!profile) return;
+  document.getElementById('q9-spine-w4x5').classList.add('hidden');
+  document.getElementById('q9-cranio-y6z7').classList.add('hidden');
+  document.getElementById('q9-dbs-a8b9').classList.add('hidden');
+  if(isSpine(profile.surgery)||isPeriphNerve(profile.surgery)){
+    document.getElementById('q9-spine-w4x5').classList.remove('hidden');
+  } else if(isCranio(profile.surgery)){
+    document.getElementById('q9-cranio-y6z7').classList.remove('hidden');
+  } else if(isDBS(profile.surgery)){
+    document.getElementById('q9-dbs-a8b9').classList.remove('hidden');
+  } else {
+    document.getElementById('q9-spine-w4x5').classList.remove('hidden');
+  }
+}
+
+// ============================================================
+// NWAT SCORING ENGINE
+// ============================================================
+function calculateNWAT(){
+  let visualScore=0, systemicScore=0, specialtyScore=0;
+  let flags=[], forceRed=false;
+
+  // Visual (Q1-Q7)
+  ['q1','q2','q3','q4','q5','q6','q7'].forEach(function(q){
+    if(wizardAnswers[q]){
+      visualScore+=wizardAnswers[q].val;
+      if(wizardAnswers[q].flag) flags.push(wizardAnswers[q].flag);
+      if(wizardAnswers[q].red) forceRed=true;
+    }
+  });
+  visualScore=Math.min(40,visualScore);
+
+  // Systemic (Q8)
+  if(wizardAnswers.q8){
+    systemicScore+=wizardAnswers.q8.val;
+    if(wizardAnswers.q8.flag) flags.push(wizardAnswers.q8.flag);
+  }
+  systemicScore=Math.min(30,systemicScore);
+
+  // Specialty (Q9 checkboxes)
+  document.querySelectorAll('.q9-check:checked').forEach(function(cb){
+    const pts=parseInt(cb.dataset.pts)||0;
+    specialtyScore+=pts;
+    if(cb.dataset.flag) flags.push(cb.dataset.flag);
+    if(cb.dataset.red==='1') forceRed=true;
+  });
+  specialtyScore=Math.min(30,specialtyScore);
+
+  // Q10
+  if(wizardAnswers.q10){
+    systemicScore=Math.min(30,systemicScore+wizardAnswers.q10.val);
+  }
+
+  let totalScore=visualScore+systemicScore+specialtyScore;
+  if(forceRed&&totalScore<80) totalScore=Math.max(totalScore,80);
+  totalScore=Math.min(100,totalScore);
+
+  const tier=tierFromScore(totalScore,forceRed);
+
+  // Display result
+  const rc=document.getElementById('result-card-k8l9');
+  rc.style.background=tier.color;
+  document.getElementById('result-emoji-m0n1').textContent=tier.emoji;
+  document.getElementById('result-tier-o2p3').textContent=tier.label;
+  document.getElementById('result-score-q4r5').textContent='NWAT Score: '+totalScore+' / 100';
+
+  // Donut charts
+  const circ=2*Math.PI*32;
+  document.getElementById('donut-visual-s6t7').setAttribute('stroke-dasharray',(visualScore/40*circ)+' '+circ);
+  document.getElementById('donut-systemic-w0x1').setAttribute('stroke-dasharray',(systemicScore/30*circ)+' '+circ);
+  document.getElementById('donut-specialty-a4b5').setAttribute('stroke-dasharray',(specialtyScore/30*circ)+' '+circ);
+  document.getElementById('score-visual-u8v9').textContent=visualScore+'/40';
+  document.getElementById('score-systemic-y2z3').textContent=systemicScore+'/30';
+  document.getElementById('score-specialty-c6d7').textContent=specialtyScore+'/30';
+
+  // Meaning
+  const meanings={
+    GREEN:'<h4 class="font-semibold text-green-700 mb-2">Keep Up the Great Work!</h4><p class="text-sm text-gray-600">Your wound shows signs of normal healing. Continue your wound care routine as instructed by your surgical team. Log again in 24 hours to continue tracking your progress.</p>',
+    YELLOW:'<h4 class="font-semibold text-yellow-700 mb-2">Keep an Eye on Your Wound</h4><p class="text-sm text-gray-600">Some minor signs worth watching. This may be normal early healing, but if any of these signs worsen or new symptoms appear, call your surgeon. Log again tomorrow.</p>',
+    ORANGE:'<h4 class="font-semibold text-orange-700 mb-2">Contact Your Surgeon Today</h4><p class="text-sm text-gray-600">Your wound assessment shows signs that need professional evaluation. Do not wait — call your surgeon\'s office today during business hours.</p>',
+    RED:'<h4 class="font-semibold text-red-700 mb-2">Seek Immediate Medical Care</h4><p class="text-sm text-gray-600">Serious warning signs have been detected. Go to the Emergency Room or call 911. Do not drive yourself. Have someone take you or call an ambulance.</p>'
+  };
+  document.getElementById('result-meaning-e8f9').innerHTML=meanings[tier.tier];
+
+  // Action
+  const actionDiv=document.getElementById('result-action-g0h1');
+  if(tier.tier==='GREEN'){
+    actionDiv.innerHTML='<div class="bg-green-50 border border-green-200 rounded-2xl p-4"><p class="text-sm text-green-800 font-medium">Continue your wound care routine. Log again in 24 hours.</p></div>';
+  } else if(tier.tier==='YELLOW'){
+    actionDiv.innerHTML='<div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-4"><p class="text-sm text-yellow-800 font-medium">Monitor closely. If signs worsen, call your surgeon. Log again tomorrow.</p></div>';
+  } else if(tier.tier==='ORANGE'){
+    actionDiv.innerHTML='<div class="bg-orange-50 border border-orange-200 rounded-2xl p-4"><p class="text-sm text-orange-800 font-medium mb-2">Call '+profile.surgeon+' at <strong>'+profile.surgeonPhone+'</strong> during business hours TODAY.</p><a href="tel:'+profile.surgeonPhone.replace(/\D/g,'')+'" class="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold mt-1"><i data-lucide="phone" class="w-4 h-4"></i> Call Surgeon Now</a></div>';
+  } else {
+    actionDiv.innerHTML='<div class="bg-red-50 border-2 border-red-300 rounded-2xl p-4 text-center"><p class="text-sm text-red-800 font-bold mb-3">Do not drive yourself. Call 911 or have someone take you to the ER immediately.</p><a href="tel:911" class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl text-lg font-bold pulse-emergency"><i data-lucide="phone" class="w-5 h-5"></i> Call 911</a></div>';
+  }
+
+  // Flags
+  const flagsDiv=document.getElementById('result-flags-i2j3');
+  const flagsList=document.getElementById('flags-list-k4l5');
+  if(flags.length>0){
+    flagsDiv.classList.remove('hidden');
+    flagsList.innerHTML=flags.map(function(f){return '<li class="flex items-start gap-2 text-gray-700"><span class="text-red-500 mt-0.5">•</span>'+f+'</li>'}).join('');
+  } else {
+    flagsDiv.classList.add('hidden');
+  }
+
+  // Store temp for save
+  window._pendingCheckin={score:totalScore,forceRed,tier:tier.tier,flags,visualScore,systemicScore,specialtyScore};
+  setWizStep(4);
+  lucide.createIcons();
+}
+
+// Save Check-In
+document.getElementById('btn-save-o8p9').addEventListener('click',function(){
+  if(!window._pendingCheckin) return;
+  const ci={
+    id:Date.now(),
+    date:new Date().toISOString(),
+    photo:currentPhoto||null,
+    score:window._pendingCheckin.score,
+    forceRed:window._pendingCheckin.forceRed,
+    tier:window._pendingCheckin.tier,
+    flags:window._pendingCheckin.flags,
+    visualScore:window._pendingCheckin.visualScore,
+    systemicScore:window._pendingCheckin.systemicScore,
+    specialtyScore:window._pendingCheckin.specialtyScore
+  };
+  checkIns.push(ci);
+  try{localStorage.setItem('nswm_checkins',JSON.stringify(checkIns));}catch(e){
+    // If quota exceeded, remove oldest photos
+    checkIns.forEach(function(c,i){if(i<checkIns.length-3)c.photo=null;});
+    try{localStorage.setItem('nswm_checkins',JSON.stringify(checkIns));}catch(e2){}
+  }
+  // Reset wizard
+  currentPhoto=null;
+  wizardAnswers={};
+  window._pendingCheckin=null;
+  document.getElementById('photo-preview-c8d9').classList.add('hidden');
+  document.getElementById('photo-placeholder-g2h3').classList.remove('hidden');
+  document.getElementById('skip-photo-u6v7').checked=false;
+  document.querySelectorAll('.q-option').forEach(function(o){o.style.outline='none';o.style.boxShadow='none';});
+  document.querySelectorAll('.q9-check,.q9-none').forEach(function(c){c.checked=false;});
+  setWizStep(1);
+  updateTopBar();
+  alert('Check-in saved successfully!');
+  document.querySelector('.tab-btn[data-tab="dashboard"]').click();
+});
+
+// ============================================================
+// HISTORY
+// ============================================================
+function updateHistory(){
+  const list=document.getElementById('history-list-q6r7');
+  const empty=document.getElementById('history-empty-s8t9');
+  const statsTotal=document.getElementById('hist-total-s2t3');
+  const statsDays=document.getElementById('hist-days-u4v5');
+  const statsTrend=document.getElementById('hist-trend-w6x7');
+  const statsGreen=document.getElementById('hist-green-y8z9');
+
+  statsTotal.textContent=checkIns.length;
+  statsDays.textContent=profile?daysSince(profile.surgDate):0;
+
+  // Trend
+  if(checkIns.length>=3){
+    const last3=checkIns.slice(-3);
+    if(last3[2].score<last3[0].score) statsTrend.innerHTML='<span class="text-green-600">↓ Improving</span>';
+    else if(last3[2].score>last3[0].score) statsTrend.innerHTML='<span class="text-red-600">↑ Worsening</span>';
+    else statsTrend.innerHTML='<span class="text-gray-600">→ Stable</span>';
+  } else {
+    statsTrend.textContent='—';
+  }
+
+  // Days at green
+  const greenCount=checkIns.filter(function(c){return c.tier==='GREEN'}).length;
+  statsGreen.textContent=greenCount;
+
+  // Comparison dropdowns
+  const leftSel=document.getElementById('compare-left-a0b1');
+  const rightSel=document.getElementById('compare-right-c2d3');
+  leftSel.innerHTML='<option value="">Select check-in...</option>';
+  rightSel.innerHTML='<option value="">Select check-in...</option>';
+
+  if(checkIns.length===0){
+    list.innerHTML='';
+    list.appendChild(empty);
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML='';
+
+  checkIns.slice().reverse().forEach(function(ci,idx){
+    const t=tierFromScore(ci.score,ci.forceRed);
+    const card=document.createElement('div');
+    card.className='checkin-card bg-white rounded-2xl p-4 shadow-sm flex items-start gap-3 cursor-pointer';
+    const thumbHtml=ci.photo?'<img src="'+ci.photo+'" class="w-16 h-16 rounded-xl object-cover border-2 flex-shrink-0" style="border-color:'+t.color+'" alt="Wound photo"/>':'<div class="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 border-2" style="border-color:'+t.color+'"><i data-lucide="camera-off" class="w-6 h-6 text-gray-300"></i></div>';
+    const flagsHtml=ci.flags&&ci.flags.length>0?'<p class="text-xs text-gray-500 mt-1">'+ci.flags.slice(0,2).join(' • ')+'</p>':'';
+    card.innerHTML=thumbHtml+'<div class="flex-1 min-w-0"><div class="flex items-center justify-between"><span class="text-sm font-semibold text-gray-800">'+formatDate(ci.date)+'</span><span class="text-xs font-bold px-2 py-0.5 rounded-full text-white" style="background:'+t.color+'">'+t.tier+' — '+ci.score+'</span></div><p class="text-xs text-gray-500 mt-1">'+new Date(ci.date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</p>'+flagsHtml+'</div>';
+    list.appendChild(card);
+
+    // Comparison options
+    const realIdx=checkIns.length-1-idx;
+    const opt1=document.createElement('option');opt1.value=realIdx;opt1.textContent=formatDate(ci.date)+' — Score: '+ci.score;leftSel.appendChild(opt1);
+    const opt2=opt1.cloneNode(true);rightSel.appendChild(opt2);
+  });
+  lucide.createIcons();
+}
+
+// Comparison
+document.getElementById('compare-left-a0b1').addEventListener('change',updateComparison);
+document.getElementById('compare-right-c2d3').addEventListener('change',updateComparison);
+function updateComparison(){
+  const li=document.getElementById('compare-left-a0b1').value;
+  const ri=document.getElementById('compare-right-c2d3').value;
+  const view=document.getElementById('compare-view-e4f5');
+  if(li===''||ri===''){view.classList.add('hidden');return;}
+  const lci=checkIns[parseInt(li)];
+  const rci=checkIns[parseInt(ri)];
+  view.classList.remove('hidden');
+  const lt=tierFromScore(lci.score,lci.forceRed);
+  const rt=tierFromScore(rci.score,rci.forceRed);
+  document.getElementById('compare-img-left-g6h7').src=lci.photo||'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YxZjVmOSIvPjx0ZXh0IHg9IjEwMCIgeT0iMTA1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTRhM2I4IiBmb250LXNpemU9IjE0Ij5ObyBQaG90bzwvdGV4dD48L3N2Zz4=';
+  document.getElementById('compare-img-left-g6h7').style.borderColor=lt.color;
+  document.getElementById('compare-img-right-k0l1').src=rci.photo||'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YxZjVmOSIvPjx0ZXh0IHg9IjEwMCIgeT0iMTA1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTRhM2I4IiBmb250LXNpemU9IjE0Ij5ObyBQaG90bzwvdGV4dD48L3N2Zz4=';
+  document.getElementById('compare-img-right-k0l1').style.borderColor=rt.color;
+  document.getElementById('compare-label-left-i8j9').textContent=formatDate(lci.date)+' • Score: '+lci.score;
+  document.getElementById('compare-label-right-m2n3').textContent=formatDate(rci.date)+' • Score: '+rci.score;
+}
+
+// Export
+document.getElementById('btn-export-o4p5').addEventListener('click',function(){
+  if(checkIns.length===0){alert('No check-ins to export.');return;}
+  let html='<html><head><title>Wound Log — '+profile.name+'</title><style>body{font-family:Inter,sans-serif;max-width:800px;margin:auto;padding:20px}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}th{background:#0f3d4a;color:white}.hdr{margin-bottom:10px}img{max-width:150px;border-radius:8px;margin:4px}</style></head><body>';
+  html+='<h1 style="color:#0f3d4a">NeuroSpine Wound Monitor — Wound Log Report</h1>';
+  html+='<div class="hdr"><strong>Patient:</strong> '+profile.name+' | <strong>Surgery:</strong> '+profile.surgery+' | <strong>Date:</strong> '+formatDate(profile.surgDate)+' | <strong>Surgeon:</strong> '+profile.surgeon+'</div>';
+  html+='<table><tr><th>Date</th><th>NWAT Score</th><th>Tier</th><th>Key Findings</th><th>Photo</th></tr>';
+  checkIns.forEach(function(ci){
+    html+='<tr><td>'+formatDate(ci.date)+'</td><td>'+ci.score+'/100</td><td>'+ci.tier+'</td><td>'+(ci.flags?ci.flags.join(', '):'None')+'</td><td>'+(ci.photo?'<img src="'+ci.photo+'"/>':'No photo')+'</td></tr>';
+  });
+  html+='</table><p style="color:#64748b;font-size:12px;margin-top:20px">Share this report with your surgeon at your next appointment.<br>Generated by NeuroSpine Wound Monitor. For educational monitoring purposes only.</p></body></html>';
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='WoundLog_'+profile.name.replace(/\s/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.html';
+  a.click();
+});
+
+// ============================================================
+// ESCALATION GUIDE
+// ============================================================
+// Accordion
+document.querySelectorAll('.esc-accordion').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    const target=document.getElementById(btn.dataset.target);
+    target.classList.toggle('open');
+  });
+});
+
+function loadEscSurgeonCard(){
+  if(!profile) return;
+  const card=document.getElementById('esc-surgeon-card-k6l7');
+  card.innerHTML='<a href="tel:'+profile.surgeonPhone.replace(/\D/g,'')+'" class="flex items-center gap-3 w-full"><div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--accent)"><i data-lucide="stethoscope" class="w-4 h-4 text-white"></i></div><div><div class="text-sm font-bold" style="color:var(--primary)">'+profile.surgeon+'</div><div class="text-xs text-gray-500">'+profile.surgeonPhone+'</div></div></a>';
+}
+
+// Red Flags
+function loadRedFlags(){
+  if(!profile) return;
+  const container=document.getElementById('red-flags-container-e0f1');
+  let flags=[];
+  if(isSpine(profile.surgery)||isPeriphNerve(profile.surgery)){
+    flags=[
+      {name:'CSF Leak / Spinal Fluid Leak',looks:'Clear, watery fluid dripping from your wound. Fluid is thin and colorless like water. May be accompanied by a headache that is worse when sitting/standing, better when lying flat.',danger:'CSF protects the brain and spinal cord. A leak greatly increases risk of meningitis (life-threatening brain infection).',action:'Call surgeon immediately. Do not pack or plug the wound. Lie flat. Do not blow nose or strain.'},
+      {name:'Pseudomeningocele',looks:'A soft, squishy, fluid-filled bulge growing under your incision. May grow larger when you stand or cough.',danger:'Sign that CSF is collecting under the skin due to a dural tear. Can rupture or become infected.',action:'Call surgeon same day. Avoid direct pressure on the swelling.'},
+      {name:'Wound Dehiscence (Opening)',looks:'The wound edges are separating, pulling apart. You can see deeper tissue.',danger:'Exposes deep tissue to infection, especially dangerous with spinal hardware.',action:'Cover loosely with clean dressing. Call surgeon immediately. Do not put anything in the opening.'},
+      {name:'Surgical Site Infection (SSI) — Deep',looks:'Increasing redness spreading beyond the wound, warmth, swelling, purulent (pus) drainage, fever, increasing pain.',danger:'Deep spinal infections can reach implanted hardware and are very difficult to treat. Can spread to the spinal canal.',action:'Call surgeon today. If fever > 103°F, go to ER.'},
+      {name:'Epidural Abscess / Deep Space Infection',looks:'Worsening back pain NOT relieved by position or medication. May have new neurological symptoms. Fever.',danger:'Pus in the spinal canal compresses the spinal cord and nerves. Can cause permanent paralysis if untreated within hours.',action:'911 / ER immediately. This is a surgical emergency.'},
+      {name:'New Neurological Deficits',looks:'New weakness, numbness, or tingling in arms/legs NOT there at discharge. Loss of bladder or bowel control.',danger:'May indicate spinal cord compression, hematoma, or infection.',action:'Go to ER immediately.'}
+    ];
+  } else if(isCranio(profile.surgery)){
+    flags=[
+      {name:'Cranial CSF Leak',looks:'Clear, watery fluid from scalp incision, ear, or nose after head surgery. The "halo test": fluid makes a ring stain on paper towel with clear outer ring around blood stain.',danger:'Direct pathway for bacteria to enter the brain → meningitis.',action:'Call surgeon immediately. Do not pack or plug. Keep head elevated at 30°. Do not blow nose or strain.'},
+      {name:'Subgaleal CSF Collection',looks:'A soft, fluctuant swelling on the scalp that grows larger over days. Under the surgical flap.',danger:'Can rupture, leak, or become infected. May indicate persistent dural tear.',action:'Call surgeon same day. No direct pressure.'},
+      {name:'Bone Flap Complication',looks:'The bone flap feels like it is moving, clicking, or is sunken. Area may feel softer than expected.',danger:'Loose bone flap can injure brain. Sunken flap compresses brain.',action:'Call surgeon immediately. Protect the area.'},
+      {name:'Scalp Wound Infection',looks:'Increasing redness of scalp around incision, warmth, swelling, discharge, fever, and pain.',danger:'Scalp is highly vascularized. Infection can spread to skull and intracranial contents rapidly.',action:'Call surgeon today. If fever > 101°F with neurological change, go to ER.'},
+      {name:'Intracranial Hemorrhage / Stroke Signs',looks:'Sudden severe headache, new facial drooping, sudden weakness on one side, slurred speech, vision loss, confusion, loss of consciousness.',danger:'Bleeding inside the skull or stroke is life-threatening and requires neurosurgical intervention within minutes to hours.',action:'CALL 911 IMMEDIATELY. Do not drive. Time is brain.'}
+    ];
+  } else if(isDBS(profile.surgery)){
+    flags=[
+      {name:'Hardware Erosion / Protrusion',looks:'Device or hardware feels like it is breaking through or tenting the skin.',danger:'Creates an open pathway for infection directly to the implanted device.',action:'Call surgeon immediately. Cover area with sterile dressing.'},
+      {name:'Tract Infection',looks:'Redness, swelling, or warmth along the path of the shunt/DBS lead under the skin.',danger:'Can spread along the entire device tract and require removal of hardware.',action:'Call surgeon today.'},
+      {name:'Device Malfunction',looks:'Returning symptoms the device was controlling. DBS: tremor returns. Shunt: headache, nausea, vision changes.',danger:'Device may have moved, broken, or become disconnected.',action:'Call surgeon or device clinic same day.'}
+    ];
+  }
+  container.innerHTML=flags.map(function(f){
+    return '<div class="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-red-400"><button class="redflag-acc w-full flex items-center justify-between p-4 text-left" data-target="rf-'+f.name.replace(/\W/g,'').slice(0,10)+'"><span class="font-semibold text-sm text-gray-800">🚨 '+f.name+'</span><i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i></button><div id="rf-'+f.name.replace(/\W/g,'').slice(0,10)+'" class="accordion-body px-4 pb-4"><p class="text-sm text-gray-600 mb-2"><strong>Looks like:</strong> '+f.looks+'</p><p class="text-sm text-gray-600 mb-2"><strong>Why dangerous:</strong> '+f.danger+'</p><p class="text-sm text-red-700 font-medium"><strong>What to do:</strong> '+f.action+'</p></div></div>';
+  }).join('');
+  // Bind red flag accordions
+  document.querySelectorAll('.redflag-acc').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      const t=document.getElementById(btn.dataset.target);
+      t.classList.toggle('open');
+    });
+  });
+
+  // Decision tree
+  initDecisionTree();
+  lucide.createIcons();
+}
+
+// Decision Tree
+function initDecisionTree(){
+  const container=document.getElementById('dt-step-i4j5');
+  const steps=[
+    {q:'How does your wound look today?',options:[{text:'Wound looks clean and normal',next:1},{text:'Something looks different or concerning',next:2}]},
+    {q:'Is the wound dry with no drainage?',options:[{text:'Yes, dry and clean',result:'GREEN',msg:'Continue routine care. Log check-in tomorrow.'},{text:'Some drainage present',next:3}]},
+    {q:'What type of drainage do you see?',options:[{text:'Clear watery fluid',result:'RED',msg:'Possible CSF leak. Call surgeon immediately or go to ER.'},{text:'Cloudy or pus-like fluid',result:'ORANGE',msg:'Possible infection. Call surgeon TODAY.'},{text:'Small amount of straw-colored fluid',result:'YELLOW',msg:'Monitor for 24 hours. If it increases, call surgeon.'}]},
+    {q:'Do you see any of these: redness spreading, wound opening, bulging mass, or foul smell?',options:[{text:'Yes, one or more of these',result:'ORANGE',msg:'Call your surgeon TODAY during business hours.'},{text:'No, just mild changes',result:'YELLOW',msg:'Monitor closely. Log again in 24 hours.'}]}
+  ];
+  let currentStep=0;
+  function renderStep(idx){
+    const step=steps[idx];
+    let html='<div class="bg-gray-50 rounded-xl p-5 text-left fade-in"><p class="font-semibold text-gray-800 mb-3">'+step.q+'</p><div class="space-y-2">';
+    step.options.forEach(function(opt,oi){
+      html+='<button class="dt-option w-full text-left p-3 rounded-lg border hover:bg-white text-sm font-medium text-gray-700" data-oi="'+oi+'">'+opt.text+'</button>';
+    });
+    html+='</div></div>';
+    container.innerHTML=html;
+    container.querySelectorAll('.dt-option').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        const o=step.options[parseInt(btn.dataset.oi)];
+        if(o.result){
+          const t=tierFromScore(o.result==='GREEN'?0:o.result==='YELLOW'?15:o.result==='ORANGE'?30:50,false);
+          container.innerHTML='<div class="rounded-xl p-5 text-center fade-in" style="background:'+t.color+'20;border:2px solid '+t.color+'"><div class="text-3xl mb-2">'+t.emoji+'</div><div class="font-bold text-lg" style="color:'+t.color+'">'+t.label+'</div><p class="text-sm text-gray-700 mt-2">'+o.msg+'</p><button class="dt-restart mt-4 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50">Start Over</button></div>';
+          container.querySelector('.dt-restart').addEventListener('click',function(){renderStep(0)});
+        } else {
+          renderStep(o.next);
+        }
+      });
+    });
+  }
+  renderStep(0);
+}
+
+// ============================================================
+// EDUCATION
+// ============================================================
+function loadCareInstructions(){
+  if(!profile) return;
+  const container=document.getElementById('care-instructions-o0p1');
+  let sections=[];
+  if(isSpine(profile.surgery)||isPeriphNerve(profile.surgery)||isDBS(profile.surgery)){
+    sections=[
+      {title:'Dressing Care',text:'Keep wound dry for 48 hours post-op. Change dressings as instructed. Use clean hands and technique. Do not apply creams, ointments, or powders unless directed.'},
+      {title:'Showering',text:'May shower 48–72 hours after surgery (if cleared by surgeon). Let water run over the wound gently — do not scrub. Pat dry with a clean towel. No submerging in pools, baths, or hot tubs until fully healed.'},
+      {title:'Activity',text:'No bending, lifting over 5–10 lbs, or twisting. Walk regularly as tolerated. No strenuous activity. Use a log-roll technique when getting in and out of bed.'},
+      {title:'Staple/Suture Removal',text:'Usually 10–14 days post-op at your follow-up appointment. Do not attempt to remove staples or sutures yourself.'},
+      {title:'What is NORMAL',text:'Mild swelling, bruising around incision, scabbing at staple/suture sites, itching (sign of healing), steri-strips peeling at edges, slight soreness.'},
+      {title:'What is NOT Normal',text:'CSF leak signs (clear fluid draining, positional headache), pus or foul-smelling drainage, spreading redness beyond wound edges, widening gap in incision, fever above 101°F, new neurological symptoms.'}
+    ];
+  } else {
+    sections=[
+      {title:'Head Wound Care',text:'Gentle cleaning with mild soap after 48 hours. No hair products near incision. Use a soft pillow (not firm) to sleep. Avoid sleeping directly on the surgical site.'},
+      {title:'Hair Washing',text:'48–72 hours after surgery if cleared by surgeon. Be very gentle around the incision. No rubbing. Use mild, unscented shampoo.'},
+      {title:'Headwear',text:'Soft hats only if needed. No tight headbands over the incision. Protect the surgical area from direct sunlight.'},
+      {title:'Scalp Staple Removal',text:'Typically 7–14 days post-op. Done at your surgical follow-up appointment. Do not pull or pick at staples.'},
+      {title:'Bone Flap Watch',text:'Gently feel the surgical area daily. Report any new movement, clicking, or sinking of the bone flap. Protect the area from bumps or pressure.'},
+      {title:'Activity',text:'No strenuous activity, no heavy lifting, no straining (raises intracranial pressure). Walk as tolerated. Avoid bending over for prolonged periods.'}
+    ];
+  }
+  container.innerHTML=sections.map(function(s){
+    return '<button class="care-acc w-full flex items-center justify-between p-3 rounded-xl border hover:bg-gray-50 text-left" data-target="care-'+s.title.replace(/\W/g,'')+'"><span class="text-sm font-semibold text-gray-800">'+s.title+'</span><i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i></button><div id="care-'+s.title.replace(/\W/g,'')+'" class="accordion-body px-3 pb-3"><p class="text-sm text-gray-600">'+s.text+'</p></div>';
+  }).join('');
+  document.querySelectorAll('.care-acc').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.getElementById(btn.dataset.target).classList.toggle('open');
+    });
+  });
+  lucide.createIcons();
+}
+
+function loadFAQs(){
+  if(!profile) return;
+  const container=document.getElementById('faq-container-q2r3');
+  let faqs=[];
+  if(isSpine(profile.surgery)||isPeriphNerve(profile.surgery)){
+    faqs=[
+      {q:'My wound feels tight and itchy — is that normal?',a:'Yes, itching is a sign of healing. Avoid scratching. You can gently pat the area if it\'s bothersome.'},
+      {q:'There\'s a small amount of blood on my dressing — should I be worried?',a:'Small spotting is normal for the first 24–48 hours. If bleeding increases or soaks through the dressing, call your surgeon.'},
+      {q:'My steri-strips are peeling off — what should I do?',a:'Allow them to fall off naturally. Do not pull them off. They typically come off on their own within 7–10 days.'},
+      {q:'I have a headache that gets worse when I stand up — is this serious?',a:'YES — positional headache can indicate a CSF leak, especially after spine surgery. Call your surgeon immediately.'},
+      {q:'I can feel something lumpy under my incision — is that hardware?',a:'Lumpy tissue is usually scar tissue or dissolvable sutures. If it\'s soft, fluid-filled, and growing, call your surgeon as it could be a pseudomeningocele.'},
+      {q:'When can I shower?',a:'Usually 48–72 hours post-op, but always confirm with your surgeon. Pat dry gently — do not rub the incision.'}
+    ];
+  } else {
+    faqs=[
+      {q:'My scalp is very numb around the incision — is that normal?',a:'Yes, numbness from nerve disruption is normal and typically improves over weeks to months. Some numbness may be permanent.'},
+      {q:'I can hear clicking from my head — is my skull piece moving?',a:'Contact your surgeon if you feel or hear clicking near the surgical area. The bone flap should feel stable.'},
+      {q:'I have a sunken area where my bone flap is — should I worry?',a:'Report any new sinking, sunken appearance, or change in the bone flap area to your surgeon promptly.'},
+      {q:'My headache is much worse today — what should I do?',a:'Severe or worsening headache after brain surgery is always important. Call your surgeon. If it\'s the worst headache of your life, call 911.'}
+    ];
+  }
+  container.innerHTML=faqs.map(function(f){
+    return '<button class="faq-acc w-full flex items-start justify-between p-3 rounded-xl border hover:bg-gray-50 text-left gap-2" data-target="faq-'+f.q.slice(0,15).replace(/\W/g,'')+'"><span class="text-sm font-medium text-gray-800 flex-1">'+f.q+'</span><i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5"></i></button><div id="faq-'+f.q.slice(0,15).replace(/\W/g,'')+'" class="accordion-body px-3 pb-3"><p class="text-sm text-gray-600">'+f.a+'</p></div>';
+  }).join('');
+  document.querySelectorAll('.faq-acc').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.getElementById(btn.dataset.target).classList.toggle('open');
+    });
+  });
+  lucide.createIcons();
+}
+
+// ============================================================
+// INIT ICONS
+// ============================================================
+lucide.createIcons();
+</script>
+</body>
+</html>

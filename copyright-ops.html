@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CopyRight Ops — Software Copyright Registration Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: {
+      brand: { 50:'#f5f3ff', 100:'#ede9fe', 200:'#ddd6fe', 300:'#c4b5fd', 400:'#a78bfa', 500:'#8b5cf6', 600:'#7c3aed', 700:'#6d28d9', 800:'#5b21b6', 900:'#4c1d95' },
+      sl: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',400:'#94a3b8',500:'#64748b',600:'#475569',700:'#334155',800:'#1e293b',900:'#0f172a' },
+      status: { draft:'#94a3b8', progress:'#f59e0b', ready:'#3b82f6', submitted:'#6366f1', certified:'#16a34a', blocked:'#dc2626', rejected:'#b91c1c' }
+    },
+    fontFamily: { sans: ['Inter','sans-serif'] },
+  }}
+};
+</script>
+<style>
+:root {
+  --sidebar-w: 256px;
+  --topbar-h: 60px;
+}
+* { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #f8fafc; margin: 0; color: #1e293b; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-w); background: #0f172a; color: #fff; z-index: 40; overflow-y: auto; transition: transform 0.3s; }
+.sidebar-header { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sidebar-nav { padding: 12px 10px; }
+.nav-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: #94a3b8; padding: 16px 12px 6px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 500; color: #cbd5e1; cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; margin-bottom: 2px; position: relative; }
+.nav-item:hover { background: rgba(124,58,237,0.12); color: #e2e8f0; }
+.nav-item.active { background: rgba(124,58,237,0.18); border-left-color: #8b5cf6; color: #c4b5fd; }
+.nav-badge { font-size: 11px; background: rgba(124,58,237,0.3); color: #c4b5fd; padding: 1px 7px; border-radius: 99px; margin-left: auto; }
+.topbar { position: fixed; top: 0; left: var(--sidebar-w); right: 0; height: var(--topbar-h); background: #fff; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; z-index: 30; }
+.main-content { margin-left: var(--sidebar-w); margin-top: var(--topbar-h); padding: 28px; min-height: calc(100vh - var(--topbar-h)); }
+.section { display: none; }
+.section.active { display: block; }
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04); }
+.stat-card { text-align: center; }
+.stat-card .stat-val { font-size: 32px; font-weight: 800; color: #7c3aed; }
+.stat-card .stat-label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-top: 4px; }
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+.badge-draft { background: #f1f5f9; color: #64748b; }
+.badge-progress { background: #fef3c7; color: #92400e; }
+.badge-ready { background: #dbeafe; color: #1e40af; }
+.badge-submitted { background: #e0e7ff; color: #3730a3; }
+.badge-certified { background: #dcfce7; color: #166534; }
+.badge-blocked { background: #fee2e2; color: #991b1b; }
+.progress-bar { height: 8px; border-radius: 99px; background: #e2e8f0; overflow: hidden; }
+.progress-bar .fill { height: 100%; border-radius: 99px; transition: width 0.4s; }
+.tbl { width: 100%; text-align: left; border-collapse: collapse; }
+.tbl thead th { background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; padding: 10px 14px; cursor: pointer; white-space: nowrap; }
+.tbl tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; }
+.tbl tbody tr:hover { background: #f8fafc; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal-card { background: #fff; border-radius: 20px; max-width: 680px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.15); }
+.modal-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; }
+.btn { padding: 9px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; }
+.btn-primary:hover { background: linear-gradient(135deg, #6d28d9, #5b21b6); }
+.btn-secondary { background: #f1f5f9; color: #334155; }
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-danger { background: #fee2e2; color: #991b1b; }
+.btn-danger:hover { background: #fecaca; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.form-label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-input { width: 100%; padding: 9px 14px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; background: #f8fafc; transition: all 0.15s; font-family: inherit; }
+.form-input:focus { outline: none; border-color: #a78bfa; background: #fff; box-shadow: 0 0 0 3px rgba(139,92,246,0.12); }
+select.form-input { appearance: auto; }
+textarea.form-input { resize: vertical; min-height: 80px; }
+.info-banner { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 16px 20px; color: #115e59; font-size: 13px; line-height: 1.6; }
+.warn-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 16px 20px; color: #92400e; font-size: 13px; line-height: 1.6; }
+.legal-banner { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 16px 20px; color: #115e59; font-size: 13px; line-height: 1.6; }
+.kanban-col { flex: 1; min-width: 240px; background: #f1f5f9; border-radius: 14px; padding: 14px; min-height: 300px; }
+.kanban-card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid #e2e8f0; cursor: pointer; transition: box-shadow 0.15s; }
+.kanban-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.timeline-item { position: relative; padding-left: 32px; padding-bottom: 24px; border-left: 2px solid #e2e8f0; }
+.timeline-item:last-child { border-left-color: transparent; }
+.timeline-dot { position: absolute; left: -7px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #7c3aed; border: 2px solid #fff; }
+.timeline-dot.empty { background: #e2e8f0; }
+.tab-btn { padding: 8px 16px; font-size: 13px; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; }
+.tab-btn.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+.funnel-step { display: flex; align-items: center; gap: 4px; }
+.funnel-count { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; }
+.funnel-label { font-size: 11px; color: #64748b; font-weight: 500; }
+.checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; }
+.checklist-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #7c3aed; margin-top: 2px; cursor: pointer; flex-shrink: 0; }
+.wizard-step { display: none; }
+.wizard-step.active { display: block; }
+.step-indicator { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-size: 13px; font-weight: 700; background: #e2e8f0; color: #64748b; }
+.step-indicator.active { background: #7c3aed; color: #fff; }
+.step-indicator.done { background: #16a34a; color: #fff; }
+.rule-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; font-size: 13px; }
+/* Filing Modal Styles */
+.filing-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 60; display: none; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
+.filing-modal-overlay.show { display: flex; }
+.filing-modal-card { background: #fff; border-radius: 20px; max-width: 960px; width: 100%; max-height: 92vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.2); margin: auto; }
+.filing-modal-header { background: linear-gradient(135deg, #6d28d9, #5b21b6); padding: 20px 28px; border-radius: 20px 20px 0 0; color: #fff; display: flex; justify-content: space-between; align-items: flex-start; position: sticky; top: 0; z-index: 5; }
+.filing-modal-body { padding: 0; }
+.filing-modal-footer { padding: 14px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 20px 20px; position: sticky; bottom: 0; z-index: 5; }
+.fm-tab-pills { display: flex; gap: 4px; padding: 16px 24px 0; border-bottom: 1px solid #e2e8f0; background: #fff; overflow-x: auto; flex-wrap: nowrap; }
+.fm-tab-pill { padding: 10px 16px; font-size: 12.5px; font-weight: 600; color: #64748b; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.15s; border-radius: 0; }
+.fm-tab-pill.active { color: #7c3aed; border-bottom-color: #7c3aed; background: #f5f3ff; border-radius: 8px 8px 0 0; }
+.fm-tab-pill:hover:not(.active) { color: #475569; background: #f1f5f9; border-radius: 8px 8px 0 0; }
+.fm-tab-panel { display: none; padding: 24px; }
+.fm-tab-panel.active { display: block; }
+.copy-btn { padding: 3px 10px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 99px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.copy-btn:hover { background: #e2e8f0; }
+.copy-btn.copied { background: #16a34a; color: #fff; border-color: #16a34a; }
+.eco-data-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+.eco-data-row:hover { background: #f8fafc; }
+.eco-field-name { color: #64748b; font-weight: 600; font-size: 12px; min-width: 180px; flex-shrink: 0; }
+.eco-field-val { flex: 1; color: #1e293b; padding: 0 12px; }
+.fee-card { border: 2px solid #e2e8f0; border-radius: 14px; padding: 20px; cursor: pointer; transition: all 0.15s; position: relative; }
+.fee-card.selected { border-color: #7c3aed; background: #f5f3ff; }
+.fee-card .fee-check { display: none; position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; background: #7c3aed; color: #fff; border-radius: 50%; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; }
+.fee-card.selected .fee-check { display: flex; }
+.step-guide-card { border-left: 4px solid #7c3aed; background: #fff; border-radius: 0 12px 12px 0; padding: 16px 20px; margin-bottom: 12px; cursor: pointer; transition: all 0.15s; }
+.step-guide-card:hover { background: #f8fafc; }
+.step-guide-card .step-detail { display: none; margin-top: 12px; font-size: 13px; color: #475569; line-height: 1.7; }
+.step-guide-card.expanded .step-detail { display: block; }
+.step-num-circle { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.btn-file-reg { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s; }
+.btn-file-reg:hover { background: linear-gradient(135deg, #6d28d9, #5b21b6); }
+.btn-eco-portal { background: linear-gradient(135deg, #7c3aed, #5b21b6); color: #fff; padding: 14px 24px; border-radius: 14px; font-size: 15px; font-weight: 700; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s; text-decoration: none; width: 100%; justify-content: center; }
+.btn-eco-portal:hover { background: linear-gradient(135deg, #6d28d9, #4c1d95); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(124,58,237,0.3); }
+@media (max-width: 767px) {
+  .sidebar { transform: translateX(-100%); width: 280px; }
+  .sidebar.open { transform: translateX(0); }
+  .topbar { left: 0; }
+  .main-content { margin-left: 0; }
+  .mobile-menu-btn { display: flex !important; }
+  .fm-tab-pills { padding: 12px 12px 0; }
+  .fm-tab-pill { padding: 8px 10px; font-size: 11px; }
+}
+@media (min-width: 768px) {
+  .mobile-menu-btn { display: none !important; }
+}
+.app-footer { text-align: center; padding: 32px 20px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; margin-top: 40px; }
+</style>
+</head>
+<body data-id="0">
+<app-icon data-id="1" hidden data-icon="shield-check" data-palette="Blue"></app-icon>
+<app-disclaimer data-id="2" intent="legal"></app-disclaimer>
+
+<!-- SIDEBAR -->
+<aside data-id="3" class="sidebar" id="sidebar">
+  <div data-id="4" class="sidebar-header">
+    <div data-id="5" style="display:flex;align-items:center;gap:10px;">
+      <div data-id="6" style="width:36px;height:36px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;">©</div>
+      <div data-id="7">
+        <div data-id="8" style="font-size:15px;font-weight:700;">CopyRight Ops</div>
+        <div data-id="9" style="font-size:10px;color:#94a3b8;margin-top:1px;">Software Copyright Platform</div>
+      </div>
+    </div>
+  </div>
+  <nav data-id="10" class="sidebar-nav">
+    <div data-id="11" class="nav-section-label">Operations</div>
+    <div data-id="12" class="nav-item active" data-section="dashboard"><i data-id="13" data-lucide="layout-dashboard" class="w-4 h-4"></i> Portfolio Dashboard</div>
+    <div data-id="14" class="nav-item" data-section="projects"><i data-id="15" data-lucide="folder" class="w-4 h-4"></i> My Projects <span data-id="16" class="nav-badge">6</span></div>
+    <div data-id="17" class="nav-item" data-section="versions"><i data-id="18" data-lucide="git-branch" class="w-4 h-4"></i> Versions & Releases <span data-id="19" class="nav-badge">10</span></div>
+    <div data-id="20" class="nav-item" data-section="contributors"><i data-id="21" data-lucide="users" class="w-4 h-4"></i> Contributors & Ownership</div>
+    <div data-id="22" class="nav-item" data-section="deposit"><i data-id="23" data-lucide="package" class="w-4 h-4"></i> Deposit Builder <span data-id="24" class="nav-badge">1</span></div>
+    <div data-id="25" class="nav-item" data-section="filing"><i data-id="26" data-lucide="clipboard-list" class="w-4 h-4"></i> Filing Tracker <span data-id="27" class="nav-badge">8</span></div>
+    <div data-id="28" class="nav-item" data-section="filenow" style="background:rgba(124,58,237,0.08);"><i data-id="29" data-lucide="folder-input" class="w-4 h-4" style="color:#a78bfa;"></i> <span data-id="30" style="color:#c4b5fd;">File Now</span> <span data-id="31" class="nav-badge" style="background:#7c3aed;color:#fff;">NEW</span></div>
+    <div data-id="32" class="nav-section-label">System</div>
+    <div data-id="33" class="nav-item" data-section="audit"><i data-id="34" data-lucide="scroll-text" class="w-4 h-4"></i> Audit Trail</div>
+    <div data-id="35" class="nav-item" data-section="settings"><i data-id="36" data-lucide="settings" class="w-4 h-4"></i> Settings</div>
+  </nav>
+  <div data-id="37" style="padding:14px 20px;margin-top:auto;border-top:1px solid rgba(255,255,255,0.06);">
+    <div data-id="38" style="font-size:10px;color:#64748b;line-height:1.5;">Not legal advice. All filings at <span data-id="39" style="color:#a78bfa;">copyright.gov</span></div>
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<header data-id="40" class="topbar">
+  <div data-id="41" style="display:flex;align-items:center;gap:14px;">
+    <button data-id="42" class="mobile-menu-btn" id="mobile-menu-toggle" style="background:none;border:none;cursor:pointer;padding:6px;display:none;">
+      <i data-id="43" data-lucide="menu" class="w-6 h-6" style="color:#334155;"></i>
+    </button>
+    <div data-id="44">
+      <div data-id="45" id="topbar-title" style="font-size:16px;font-weight:700;color:#1e293b;">Portfolio Dashboard</div>
+      <div data-id="46" id="topbar-crumb" style="font-size:11px;color:#94a3b8;">CopyRight Ops</div>
+    </div>
+  </div>
+  <div data-id="47" style="display:flex;align-items:center;gap:10px;">
+    <button data-id="48" class="btn btn-primary" id="btn-new-project-top"><i data-id="49" data-lucide="plus" class="w-4 h-4"></i> New Project</button>
+    <button data-id="50" style="background:none;border:none;cursor:pointer;position:relative;padding:6px;" id="notif-bell">
+      <i data-id="51" data-lucide="bell" class="w-5 h-5" style="color:#64748b;"></i>
+      <span data-id="52" style="position:absolute;top:2px;right:2px;width:8px;height:8px;background:#dc2626;border-radius:50%;border:2px solid #fff;"></span>
+    </button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div data-id="53" class="main-content" id="main-content">
+
+<!-- ============== DASHBOARD ============== -->
+<div data-id="54" class="section active" id="sec-dashboard">
+  <div data-id="55" class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-7">
+    <div data-id="56" class="card stat-card"><div data-id="57" class="stat-val" id="s-total">6</div><div data-id="58" class="stat-label">Total Projects</div></div>
+    <div data-id="59" class="card stat-card"><div data-id="60" class="stat-val" id="s-versions">10</div><div data-id="61" class="stat-label">Versions Tracked</div></div>
+    <div data-id="62" class="card stat-card"><div data-id="63" class="stat-val" id="s-ready">0</div><div data-id="64" class="stat-label">Filing Ready</div></div>
+    <div data-id="65" class="card stat-card"><div data-id="66" class="stat-val" id="s-certs">0</div><div data-id="67" class="stat-label">Certificates Issued</div></div>
+  </div>
+  <div data-id="68" class="card mb-7">
+    <h3 data-id="69" style="font-size:14px;font-weight:700;color:#334155;margin-bottom:16px;">Filing Pipeline</h3>
+    <div data-id="70" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;" id="pipeline-funnel">
+      <div data-id="71" class="funnel-step"><div data-id="72" class="funnel-count" style="background:#94a3b8;">4</div><div data-id="73"><div data-id="74" style="font-size:13px;font-weight:600;">Draft</div><div data-id="75" class="funnel-label">matters</div></div></div>
+      <i data-id="76" data-lucide="chevron-right" class="w-5 h-5" style="color:#cbd5e1;"></i>
+      <div data-id="77" class="funnel-step"><div data-id="78" class="funnel-count" style="background:#f59e0b;">4</div><div data-id="79"><div data-id="80" style="font-size:13px;font-weight:600;">In Progress</div><div data-id="81" class="funnel-label">matters</div></div></div>
+      <i data-id="82" data-lucide="chevron-right" class="w-5 h-5" style="color:#cbd5e1;"></i>
+      <div data-id="83" class="funnel-step"><div data-id="84" class="funnel-count" style="background:#3b82f6;">0</div><div data-id="85"><div data-id="86" style="font-size:13px;font-weight:600;">Ready to File</div><div data-id="87" class="funnel-label">matters</div></div></div>
+      <i data-id="88" data-lucide="chevron-right" class="w-5 h-5" style="color:#cbd5e1;"></i>
+      <div data-id="89" class="funnel-step"><div data-id="90" class="funnel-count" style="background:#6366f1;">0</div><div data-id="91"><div data-id="92" style="font-size:13px;font-weight:600;">Submitted</div><div data-id="93" class="funnel-label">matters</div></div></div>
+      <i data-id="94" data-lucide="chevron-right" class="w-5 h-5" style="color:#cbd5e1;"></i>
+      <div data-id="95" class="funnel-step"><div data-id="96" class="funnel-count" style="background:#16a34a;">0</div><div data-id="97"><div data-id="98" style="font-size:13px;font-weight:600;">Certified</div><div data-id="99" class="funnel-label">matters</div></div></div>
+    </div>
+  </div>
+  <h3 data-id="100" style="font-size:14px;font-weight:700;color:#334155;margin-bottom:14px;">Your Projects</h3>
+  <div data-id="101" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-7" id="dash-project-cards"></div>
+  <div data-id="102" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-7">
+    <div data-id="103" class="card" style="padding:18px 20px;"><div data-id="104" style="font-size:22px;font-weight:800;color:#334155;">7</div><div data-id="105" style="font-size:12px;color:#64748b;margin-top:2px;">Versions flagged for registration review</div></div>
+    <div data-id="106" class="card" style="padding:18px 20px;"><div data-id="107" style="font-size:22px;font-weight:800;color:#16a34a;">0</div><div data-id="108" style="font-size:12px;color:#64748b;margin-top:2px;">Matters blocked by ownership gaps</div></div>
+    <div data-id="109" class="card" style="padding:18px 20px;"><div data-id="110" style="font-size:22px;font-weight:800;color:#64748b;">—</div><div data-id="111" style="font-size:12px;color:#64748b;margin-top:2px;">Avg. time from version to filing readiness</div></div>
+    <div data-id="112" class="card" style="padding:18px 20px;">
+      <div data-id="113" style="display:flex;align-items:center;gap:6px;"><div data-id="114" style="font-size:22px;font-weight:800;color:#f59e0b;">6</div><i data-id="115" data-lucide="alert-triangle" class="w-5 h-5" style="color:#f59e0b;"></i></div>
+      <div data-id="116" style="font-size:12px;color:#92400e;margin-top:2px;">AI-generated content disclosures needed</div>
+    </div>
+  </div>
+  <div data-id="117" class="info-banner">
+    <strong data-id="118">© Copyright protection arises automatically</strong> when original work is created. U.S. Copyright Office registration provides additional enforcement benefits including the ability to sue for statutory damages. All filings must be submitted at <strong data-id="119">copyright.gov</strong>. This platform does not file on your behalf and does not constitute legal advice.
+  </div>
+</div>
+
+<!-- ============== PROJECTS ============== -->
+<div data-id="120" class="section" id="sec-projects">
+  <div data-id="121" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h2 data-id="122" style="font-size:18px;font-weight:700;">My Projects</h2>
+    <button data-id="123" class="btn btn-primary" id="btn-add-project"><i data-id="124" data-lucide="plus" class="w-4 h-4"></i> Add Project</button>
+  </div>
+  <div data-id="125" class="card" style="padding:0;overflow:hidden;">
+    <div data-id="126" style="overflow-x:auto;">
+      <table data-id="127" class="tbl" id="projects-table">
+        <thead data-id="128"><tr data-id="129">
+          <th data-id="130" data-sort="name">Project Name <i data-id="131" data-lucide="chevrons-up-down" class="w-3 h-3 inline"></i></th>
+          <th data-id="132">Platform</th><th data-id="133">Owner</th><th data-id="134">Status</th><th data-id="135">Latest Ver</th><th data-id="136">Readiness</th><th data-id="137">Created</th><th data-id="138">Actions</th>
+        </tr></thead>
+        <tbody data-id="139" id="projects-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div data-id="140" id="project-detail" style="display:none;margin-top:20px;">
+    <div data-id="141" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;" id="proj-back-btn">
+      <i data-id="142" data-lucide="arrow-left" class="w-4 h-4" style="color:#7c3aed;"></i>
+      <span data-id="143" style="font-size:13px;color:#7c3aed;font-weight:600;">Back to Projects</span>
+    </div>
+    <div data-id="144" class="card" id="project-detail-content"></div>
+  </div>
+</div>
+
+<!-- ============== VERSIONS ============== -->
+<div data-id="145" class="section" id="sec-versions">
+  <div data-id="146" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h2 data-id="147" style="font-size:18px;font-weight:700;">Versions & Releases</h2>
+    <button data-id="148" class="btn btn-primary" id="btn-add-version"><i data-id="149" data-lucide="plus" class="w-4 h-4"></i> Add Version</button>
+  </div>
+  <div data-id="150" class="card" style="padding:0;overflow:hidden;">
+    <div data-id="151" style="overflow-x:auto;">
+      <table data-id="152" class="tbl" id="versions-table">
+        <thead data-id="153"><tr data-id="154">
+          <th data-id="155">Version</th><th data-id="156">Project</th><th data-id="157">Release Date</th><th data-id="158">Publication</th><th data-id="159">Authorship</th><th data-id="160">New vs Prior</th><th data-id="161">Status</th><th data-id="162">Actions</th>
+        </tr></thead>
+        <tbody data-id="163" id="versions-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div data-id="164" id="version-detail" style="display:none;margin-top:20px;">
+    <div data-id="165" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;" id="ver-back-btn">
+      <i data-id="166" data-lucide="arrow-left" class="w-4 h-4" style="color:#7c3aed;"></i>
+      <span data-id="167" style="font-size:13px;color:#7c3aed;font-weight:600;">Back to Versions</span>
+    </div>
+    <div data-id="168" class="card" id="version-detail-content"></div>
+  </div>
+</div>
+
+<!-- ============== CONTRIBUTORS ============== -->
+<div data-id="169" class="section" id="sec-contributors">
+  <div data-id="170" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h2 data-id="171" style="font-size:18px;font-weight:700;">Contributors & Ownership</h2>
+    <button data-id="172" class="btn btn-primary" id="btn-add-contributor"><i data-id="173" data-lucide="plus" class="w-4 h-4"></i> Add Contributor</button>
+  </div>
+  <div data-id="174" class="card" style="padding:0;overflow:hidden;">
+    <div data-id="175" style="overflow-x:auto;">
+      <table data-id="176" class="tbl">
+        <thead data-id="177"><tr data-id="178"><th data-id="179">Name</th><th data-id="180">Role</th><th data-id="181">Employment</th><th data-id="182">Project(s)</th><th data-id="183">Documents</th><th data-id="184">Ownership</th><th data-id="185">Actions</th></tr></thead>
+        <tbody data-id="186" id="contributors-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div data-id="187" class="card mt-5" id="ownership-warnings">
+    <h3 data-id="188" style="font-size:14px;font-weight:700;color:#334155;margin-bottom:10px;"><i data-id="189" data-lucide="shield-check" class="w-4 h-4 inline" style="color:#16a34a;"></i> Ownership Status</h3>
+    <div data-id="190" style="font-size:13px;color:#16a34a;">✅ All projects have complete ownership documentation. No gaps detected.</div>
+  </div>
+</div>
+
+<!-- ============== DEPOSIT BUILDER ============== -->
+<div data-id="191" class="section" id="sec-deposit">
+  <h2 data-id="192" style="font-size:18px;font-weight:700;margin-bottom:18px;">Deposit Builder</h2>
+  <div data-id="193" class="info-banner mb-5">
+    <strong data-id="194">U.S. Copyright Office Circular 61 — Deposit Requirements:</strong> For most software, you may submit the first 25 pages and last 25 pages of source code. If the code is less than 50 pages total, submit the entire program. Trade secrets may be redacted (blocked out) in limited circumstances. This is general guidance — consult the current version of Circular 61 at copyright.gov.
+  </div>
+  <div data-id="195" class="card mb-5" id="deposit-wizard">
+    <div data-id="196" style="display:flex;align-items:center;gap:16px;margin-bottom:24px;" id="deposit-steps-bar">
+      <div data-id="197" style="display:flex;align-items:center;gap:8px;"><div data-id="198" class="step-indicator active" id="ds-1">1</div><span data-id="199" style="font-size:12px;font-weight:600;color:#334155;">Select Version</span></div>
+      <div data-id="200" style="width:30px;height:2px;background:#e2e8f0;"></div>
+      <div data-id="201" style="display:flex;align-items:center;gap:8px;"><div data-id="202" class="step-indicator" id="ds-2">2</div><span data-id="203" style="font-size:12px;font-weight:600;color:#94a3b8;">Source Code</span></div>
+      <div data-id="204" style="width:30px;height:2px;background:#e2e8f0;"></div>
+      <div data-id="205" style="display:flex;align-items:center;gap:8px;"><div data-id="206" class="step-indicator" id="ds-3">3</div><span data-id="207" style="font-size:12px;font-weight:600;color:#94a3b8;">Redaction</span></div>
+      <div data-id="208" style="width:30px;height:2px;background:#e2e8f0;"></div>
+      <div data-id="209" style="display:flex;align-items:center;gap:8px;"><div data-id="210" class="step-indicator" id="ds-4">4</div><span data-id="211" style="font-size:12px;font-weight:600;color:#94a3b8;">Review</span></div>
+    </div>
+    <div data-id="212" class="wizard-step active" id="dep-step-1">
+      <label data-id="213" class="form-label">Select Project</label>
+      <select data-id="214" class="form-input mb-4" id="dep-project-select"><option data-id="215" value="">Choose project…</option></select>
+      <label data-id="216" class="form-label">Select Version</label>
+      <select data-id="217" class="form-input mb-4" id="dep-version-select"><option data-id="218" value="">Choose version…</option></select>
+      <div data-id="219" id="dep-version-summary" style="display:none;" class="card" style="background:#f8fafc;"></div>
+      <div data-id="220" style="margin-top:16px;text-align:right;"><button data-id="221" class="btn btn-primary" id="dep-next-1">Next <i data-id="222" data-lucide="arrow-right" class="w-4 h-4"></i></button></div>
+    </div>
+    <div data-id="223" class="wizard-step" id="dep-step-2">
+      <label data-id="224" class="form-label">Source Type</label>
+      <select data-id="225" class="form-input mb-4" id="dep-source-type">
+        <option data-id="226" value="zip">Upload ZIP file</option><option data-id="227" value="manual">Enter code manually</option><option data-id="228" value="link">Link to release</option>
+      </select>
+      <div data-id="229" class="mb-4">
+        <label data-id="230" class="form-label">Upload / Reference</label>
+        <input data-id="231" type="file" class="form-input" id="dep-file-upload" accept=".zip,.html,.js,.py,.ts" />
+        <div data-id="232" style="font-size:12px;color:#64748b;margin-top:6px;">Estimated page count will display after upload</div>
+      </div>
+      <div data-id="233" style="display:flex;gap:20px;margin-bottom:16px;">
+        <label data-id="234" style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input data-id="235" type="checkbox" id="dep-readme" checked style="accent-color:#7c3aed;"> Include README</label>
+        <label data-id="236" style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input data-id="237" type="checkbox" id="dep-screenshots" style="accent-color:#7c3aed;"> Include screenshots</label>
+      </div>
+      <div data-id="238" style="display:flex;justify-content:space-between;margin-top:16px;">
+        <button data-id="239" class="btn btn-secondary" id="dep-back-2"><i data-id="240" data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>
+        <button data-id="241" class="btn btn-primary" id="dep-next-2">Next <i data-id="242" data-lucide="arrow-right" class="w-4 h-4"></i></button>
+      </div>
+    </div>
+    <div data-id="243" class="wizard-step" id="dep-step-3">
+      <div data-id="244" class="warn-banner mb-4">
+        <strong data-id="245">Trade-secret redaction:</strong> If your source code contains trade secrets, you may block out certain sections. Redacted portions must not exceed 50% of the deposit. The Copyright Office may question heavy redaction.
+      </div>
+      <label data-id="246" class="form-label">Apply redaction to this deposit?</label>
+      <select data-id="247" class="form-input mb-4" id="dep-redaction"><option data-id="248" value="no">No</option><option data-id="249" value="yes">Yes</option></select>
+      <div data-id="250" id="dep-redaction-details" style="display:none;">
+        <label data-id="251" class="form-label">Describe redacted sections and rationale</label>
+        <textarea data-id="252" class="form-input mb-4" id="dep-redaction-desc" placeholder="e.g., Proprietary scoring algorithm in lines 240–380…"></textarea>
+      </div>
+      <div data-id="253" id="dep-ai-disclosure-box" class="warn-banner mb-4" style="display:none;">
+        <strong data-id="254">⚠️ AI-Generated Content Disclosure Required:</strong> This version contains AI-assisted content. Describe the boundaries of human authorship below.
+        <textarea data-id="255" class="form-input mt-3" id="dep-ai-desc" placeholder="Describe what was AI-generated vs. human-authored…"></textarea>
+      </div>
+      <div data-id="256" style="display:flex;justify-content:space-between;margin-top:16px;">
+        <button data-id="257" class="btn btn-secondary" id="dep-back-3"><i data-id="258" data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>
+        <button data-id="259" class="btn btn-primary" id="dep-next-3">Next <i data-id="260" data-lucide="arrow-right" class="w-4 h-4"></i></button>
+      </div>
+    </div>
+    <div data-id="261" class="wizard-step" id="dep-step-4">
+      <h3 data-id="262" style="font-size:15px;font-weight:700;margin-bottom:14px;">Review & Generate</h3>
+      <div data-id="263" id="dep-review-summary" class="card" style="background:#f8fafc;margin-bottom:16px;"></div>
+      <div data-id="264" style="display:flex;justify-content:space-between;margin-top:16px;">
+        <button data-id="265" class="btn btn-secondary" id="dep-back-4"><i data-id="266" data-lucide="arrow-left" class="w-4 h-4"></i> Back</button>
+        <button data-id="267" class="btn btn-primary" id="dep-generate"><i data-id="268" data-lucide="package" class="w-4 h-4"></i> Generate Deposit Package</button>
+      </div>
+    </div>
+  </div>
+  <h3 data-id="269" style="font-size:14px;font-weight:700;color:#334155;margin-bottom:12px;">Generated Deposits</h3>
+  <div data-id="270" class="card" style="padding:0;overflow:hidden;">
+    <div data-id="271" style="overflow-x:auto;">
+      <table data-id="272" class="tbl">
+        <thead data-id="273"><tr data-id="274"><th data-id="275">Package Name</th><th data-id="276">Version</th><th data-id="277">Generated</th><th data-id="278">Type</th><th data-id="279">Redacted</th><th data-id="280">Hash</th><th data-id="281">Status</th><th data-id="282">Actions</th></tr></thead>
+        <tbody data-id="283" id="deposits-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============== FILING TRACKER ============== -->
+<div data-id="284" class="section" id="sec-filing">
+  <div data-id="285" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h2 data-id="286" style="font-size:18px;font-weight:700;">Filing Tracker</h2>
+    <div data-id="287" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button data-id="288" class="btn btn-primary" id="btn-group-filing-launch" style="background:linear-gradient(135deg,#4f46e5,#4338ca);"><i data-id="289" data-lucide="package" class="w-4 h-4"></i> Group Registration Launcher</button>
+    </div>
+  </div>
+  <div data-id="290" style="display:flex;gap:16px;overflow-x:auto;padding-bottom:12px;margin-bottom:20px;" id="kanban-board">
+    <div data-id="291" class="kanban-col" id="kanban-draft">
+      <div data-id="292" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span data-id="293" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;"></span> Draft</div>
+    </div>
+    <div data-id="294" class="kanban-col" id="kanban-progress">
+      <div data-id="295" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span data-id="296" style="width:8px;height:8px;border-radius:50%;background:#f59e0b;"></span> In Progress</div>
+    </div>
+    <div data-id="297" class="kanban-col" id="kanban-ready">
+      <div data-id="298" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span data-id="299" style="width:8px;height:8px;border-radius:50%;background:#3b82f6;"></span> Ready to File</div>
+      <div data-id="300" style="text-align:center;padding:30px 10px;color:#94a3b8;font-size:13px;">No matters ready yet</div>
+    </div>
+    <div data-id="301" class="kanban-col" id="kanban-submitted">
+      <div data-id="302" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><span data-id="303" style="width:8px;height:8px;border-radius:50%;background:#6366f1;"></span> Submitted / Completed</div>
+      <div data-id="304" style="text-align:center;padding:30px 10px;color:#94a3b8;font-size:13px;">No submissions yet</div>
+    </div>
+  </div>
+  <div data-id="305" id="filing-detail" style="display:none;">
+    <div data-id="306" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;cursor:pointer;" id="filing-back-btn">
+      <i data-id="307" data-lucide="arrow-left" class="w-4 h-4" style="color:#7c3aed;"></i>
+      <span data-id="308" style="font-size:13px;color:#7c3aed;font-weight:600;">Back to Kanban</span>
+    </div>
+    <div data-id="309" id="filing-detail-content"></div>
+  </div>
+</div>
+
+<!-- ============== FILE NOW ============== -->
+<div data-id="310" class="section" id="sec-filenow">
+  <div data-id="311" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h2 data-id="312" style="font-size:18px;font-weight:700;">File Copyright Registration</h2>
+    <div data-id="313" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a data-id="314" class="btn-eco-portal" style="width:auto;padding:10px 20px;font-size:13px;" id="fn-open-eco" href="https://eco.copyright.gov" target="_blank" rel="noopener noreferrer"><i data-id="315" data-lucide="external-link" class="w-4 h-4"></i> Open eCO Portal</a>
+      <button data-id="316" class="btn btn-primary" style="background:linear-gradient(135deg,#4f46e5,#4338ca);" id="fn-group-reg"><i data-id="317" data-lucide="package" class="w-4 h-4"></i> Group Register All</button>
+    </div>
+  </div>
+  <!-- Registration Queue -->
+  <div data-id="318" class="card mb-5" style="padding:0;overflow:hidden;">
+    <div data-id="319" style="overflow-x:auto;">
+      <table data-id="320" class="tbl" id="filenow-table">
+        <thead data-id="321"><tr data-id="322">
+          <th data-id="323">Project</th><th data-id="324">Version</th><th data-id="325">Matter ID</th><th data-id="326">Readiness</th><th data-id="327">Fee</th><th data-id="328">Status</th><th data-id="329">Action</th>
+        </tr></thead>
+        <tbody data-id="330" id="filenow-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Copyright Office Info Card -->
+  <div data-id="331" class="card" style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-color:#ddd6fe;">
+    <div data-id="332" style="display:flex;align-items:flex-start;gap:16px;">
+      <div data-id="333" style="width:48px;height:48px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-id="334" data-lucide="landmark" class="w-6 h-6" style="color:#fff;"></i></div>
+      <div data-id="335" style="flex:1;">
+        <div data-id="336" style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:8px;">U.S. Copyright Office — eCO System</div>
+        <div data-id="337" style="font-size:13px;color:#475569;line-height:1.8;">
+          <div data-id="338"><strong data-id="339">Portal:</strong> eco.copyright.gov</div>
+          <div data-id="340"><strong data-id="341">Phone:</strong> (202) 707-3000 &nbsp;|&nbsp; <strong data-id="342">Toll-free:</strong> 1-877-476-0778</div>
+          <div data-id="343"><strong data-id="344">Hours:</strong> Mon–Fri 8:30am–5pm ET</div>
+          <div data-id="345"><strong data-id="346">Fees:</strong> $45 (single author) · $65 (standard) · $85 (group unpublished, up to 10)</div>
+          <div data-id="347"><strong data-id="348">Processing:</strong> 3–11 months standard</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div data-id="349" class="legal-banner mt-5">
+    <strong data-id="350">⚖️</strong> CopyRight Ops connects you to the U.S. Copyright Office eCO system but cannot file on your behalf. All copyright registration applications are submitted directly at eco.copyright.gov. This platform does not provide legal advice.
+  </div>
+</div>
+
+<!-- ============== AUDIT TRAIL ============== -->
+<div data-id="351" class="section" id="sec-audit">
+  <div data-id="352" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <h2 data-id="353" style="font-size:18px;font-weight:700;">Audit Trail</h2>
+    <button data-id="354" class="btn btn-primary" id="btn-export-matter"><i data-id="355" data-lucide="download" class="w-4 h-4"></i> Export Matter File</button>
+  </div>
+  <div data-id="356" class="card mb-5" style="padding:14px 18px;">
+    <div data-id="357" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <select data-id="358" class="form-input" style="width:auto;min-width:160px;" id="audit-filter-project"><option data-id="359" value="">All Projects</option></select>
+      <select data-id="360" class="form-input" style="width:auto;min-width:160px;" id="audit-filter-type"><option data-id="361" value="">All Event Types</option>
+        <option data-id="362" value="Project Created">Project Created</option><option data-id="363" value="Version Added">Version Added</option><option data-id="364" value="Contributor Added">Contributor Added</option><option data-id="365" value="Document Uploaded">Document Uploaded</option><option data-id="366" value="Deposit Generated">Deposit Generated</option><option data-id="367" value="Filing Created">Filing Created</option><option data-id="368" value="Status Changed">Status Changed</option><option data-id="369" value="Export Generated">Export Generated</option>
+        <option data-id="370" value="Filing Submitted">Filing Submitted</option><option data-id="371" value="Certificate Issued">Certificate Issued</option>
+      </select>
+      <input data-id="372" type="text" class="form-input" style="width:auto;min-width:200px;" placeholder="Search events…" id="audit-search" />
+    </div>
+  </div>
+  <div data-id="373" class="card" style="padding:0;overflow:hidden;">
+    <div data-id="374" style="overflow-x:auto;">
+      <table data-id="375" class="tbl">
+        <thead data-id="376"><tr data-id="377"><th data-id="378">Timestamp</th><th data-id="379">Event Type</th><th data-id="380">Project</th><th data-id="381">Version</th><th data-id="382">Actor</th><th data-id="383">Description</th></tr></thead>
+        <tbody data-id="384" id="audit-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============== SETTINGS ============== -->
+<div data-id="385" class="section" id="sec-settings">
+  <h2 data-id="386" style="font-size:18px;font-weight:700;margin-bottom:18px;">Settings</h2>
+  <div data-id="387" class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+    <div data-id="388" class="card">
+      <h3 data-id="389" style="font-size:14px;font-weight:700;color:#334155;margin-bottom:16px;">Profile</h3>
+      <div data-id="390" class="mb-3"><label data-id="391" class="form-label">Creator / Owner Name</label><input data-id="392" class="form-input" id="set-name" value="Alex" /></div>
+      <div data-id="393" class="mb-3"><label data-id="394" class="form-label">Organization</label><input data-id="395" class="form-input" id="set-org" placeholder="Individual" /></div>
+      <div data-id="396" class="mb-3"><label data-id="397" class="form-label">Email</label><input data-id="398" class="form-input" id="set-email" value="mohalex@gmail.com" /></div>
+      <div data-id="399" class="mb-3"><label data-id="400" class="form-label">Default Copyright Notice</label><input data-id="401" class="form-input" id="set-notice" value="© 2026 Alex. All rights reserved." /></div>
+      <div data-id="402" class="mb-3"><label data-id="403" class="form-label">Default Jurisdiction</label><input data-id="404" class="form-input" id="set-jurisdiction" value="United States" /></div>
+      <button data-id="405" class="btn btn-primary mt-2" id="btn-save-settings"><i data-id="406" data-lucide="save" class="w-4 h-4"></i> Save Profile</button>
+    </div>
+    <div data-id="407" class="card">
+      <h3 data-id="408" style="font-size:14px;font-weight:700;color:#334155;margin-bottom:16px;">Copyright Office Info</h3>
+      <div data-id="409" style="font-size:13px;line-height:2;color:#475569;">
+        <div data-id="410"><strong data-id="411">Official filing portal:</strong> copyright.gov</div>
+        <div data-id="412"><strong data-id="413">Standard online filing fee:</strong> ~$65 (single author, single work) — confirm current fee at copyright.gov</div>
+        <div data-id="414"><strong data-id="415">Expedited processing:</strong> ~$800 (5 business day review)</div>
+        <div data-id="416"><strong data-id="417">Processing time (standard):</strong> 3–11 months</div>
+        <div data-id="418"><strong data-id="419">Circular 61 (computer programs):</strong> copyright.gov/circs/circ61.pdf</div>
+      </div>
+    </div>
+  </div>
+  <div data-id="420" class="legal-banner mb-5">
+    <strong data-id="421">⚖️ Legal Disclaimer:</strong> CopyRight Ops is a software copyright operations and readiness platform. It does not constitute legal advice, does not submit filings to the U.S. Copyright Office, and does not guarantee registration outcomes. Copyright protection arises automatically upon creation of original works fixed in a tangible medium; registration provides additional statutory benefits. Consult a qualified intellectual property attorney for complex ownership, licensing, or infringement matters.
+  </div>
+  <div data-id="422" class="card">
+    <h3 data-id="423" style="font-size:14px;font-weight:700;color:#334155;margin-bottom:16px;">Data Management</h3>
+    <div data-id="424" style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button data-id="425" class="btn btn-secondary" id="btn-export-json"><i data-id="426" data-lucide="download" class="w-4 h-4"></i> Export All Data (JSON)</button>
+      <label data-id="427" class="btn btn-secondary" style="cursor:pointer;"><i data-id="428" data-lucide="upload" class="w-4 h-4"></i> Import Data (JSON)<input data-id="429" type="file" accept=".json" id="btn-import-json" style="display:none;" /></label>
+      <button data-id="430" class="btn btn-danger" id="btn-clear-data"><i data-id="431" data-lucide="trash-2" class="w-4 h-4"></i> Clear All Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div data-id="432" class="app-footer">
+  CopyRight Ops — Software Copyright Operations Platform &nbsp;|&nbsp; Not legal advice &nbsp;|&nbsp; Filings submitted at copyright.gov &nbsp;|&nbsp; © 2026<br data-id="433"/>
+  <span data-id="434" style="margin-top:6px;display:inline-block;">Made by Copilot</span>
+</div>
+</div>
+
+<!-- ============== MODALS ============== -->
+<!-- Welcome Modal -->
+<div data-id="435" class="modal-overlay" id="modal-welcome">
+  <div data-id="436" class="modal-card" style="max-width:540px;">
+    <div data-id="437" class="modal-header" style="border:none;padding-bottom:0;">
+      <div data-id="438"></div>
+    </div>
+    <div data-id="439" class="modal-body" style="text-align:center;padding-top:10px;">
+      <div data-id="440" style="width:56px;height:56px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;">©</div>
+      <h2 data-id="441" style="font-size:22px;font-weight:800;color:#1e293b;margin-bottom:6px;">Welcome to CopyRight Ops</h2>
+      <p data-id="442" style="font-size:14px;color:#64748b;margin-bottom:18px;">Your software copyright operations platform</p>
+      <div data-id="443" style="text-align:left;font-size:13px;color:#475569;line-height:1.7;margin-bottom:18px;">
+        CopyRight Ops helps solo founders and small teams organize their software copyright portfolio — tracking projects, versions, contributor ownership, deposit preparation, and filing readiness.
+      </div>
+      <div data-id="444" class="warn-banner" style="text-align:left;margin-bottom:20px;">
+        <strong data-id="445">Important:</strong> This platform is NOT the U.S. Copyright Office. It does not grant copyright, file registrations, or provide legal advice. All filings must be submitted through the official U.S. Copyright Office portal at copyright.gov. Consult qualified IP counsel for complex matters.
+      </div>
+      <button data-id="446" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;" id="btn-welcome-dismiss">I understand — Let's Get Started</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Project Modal -->
+<div data-id="447" class="modal-overlay" id="modal-project">
+  <div data-id="448" class="modal-card">
+    <div data-id="449" class="modal-header">
+      <h3 data-id="450" style="font-size:16px;font-weight:700;" id="modal-project-title">Add New Project</h3>
+      <button data-id="451" style="background:none;border:none;cursor:pointer;" class="modal-close-btn" data-modal="modal-project"><i data-id="452" data-lucide="x" class="w-5 h-5" style="color:#64748b;"></i></button>
+    </div>
+    <div data-id="453" class="modal-body">
+      <div data-id="454" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div data-id="455"><label data-id="456" class="form-label">Project Name *</label><input data-id="457" class="form-input" id="f-proj-name" /></div>
+        <div data-id="458"><label data-id="459" class="form-label">Internal Project ID</label><input data-id="460" class="form-input" id="f-proj-id" placeholder="Auto-generated" /></div>
+        <div data-id="461"><label data-id="462" class="form-label">Legal Owner / Author *</label><input data-id="463" class="form-input" id="f-proj-owner" value="Alex" /></div>
+        <div data-id="464"><label data-id="465" class="form-label">Platform</label><select data-id="466" class="form-input" id="f-proj-platform"><option data-id="467">Web Application</option><option data-id="468">iOS</option><option data-id="469">Android</option><option data-id="470">Desktop</option><option data-id="471">Backend</option><option data-id="472">Embedded</option><option data-id="473">Other</option></select></div>
+        <div data-id="474"><label data-id="475" class="form-label">Publication Status</label><select data-id="476" class="form-input" id="f-proj-pubstatus"><option data-id="477">Published</option><option data-id="478">Unpublished</option><option data-id="479">Mixed/Uncertain</option></select></div>
+        <div data-id="480"><label data-id="481" class="form-label">First Publication Date</label><input data-id="482" type="date" class="form-input" id="f-proj-pubdate" /></div>
+        <div data-id="483" class="md:col-span-2"><label data-id="484" class="form-label">Repository Location</label><input data-id="485" class="form-input" id="f-proj-repo" placeholder="GitHub URL or N/A" /></div>
+        <div data-id="486" class="md:col-span-2"><label data-id="487" class="form-label">Product Description</label><textarea data-id="488" class="form-input" id="f-proj-desc"></textarea></div>
+        <div data-id="489" class="md:col-span-2"><label data-id="490" class="form-label">Copyright Notice</label><input data-id="491" class="form-input" id="f-proj-notice" value="© 2026 Alex. All rights reserved." /></div>
+        <div data-id="492"><label data-id="493" class="form-label">AI-Generated Content?</label><select data-id="494" class="form-input" id="f-proj-ai"><option data-id="495">No</option><option data-id="496">Yes</option><option data-id="497">Partial</option></select></div>
+        <div data-id="498"><label data-id="499" class="form-label">Tags (comma separated)</label><input data-id="500" class="form-input" id="f-proj-tags" /></div>
+      </div>
+      <div data-id="501" id="f-proj-ai-warn" class="warn-banner mt-4" style="display:none;">⚠️ AI-generated content requires disclosure in your copyright registration application.</div>
+    </div>
+    <div data-id="502" class="modal-footer">
+      <button data-id="503" class="btn btn-secondary modal-close-btn" data-modal="modal-project">Cancel</button>
+      <button data-id="504" class="btn btn-primary" id="btn-save-project">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Version Modal -->
+<div data-id="505" class="modal-overlay" id="modal-version">
+  <div data-id="506" class="modal-card">
+    <div data-id="507" class="modal-header">
+      <h3 data-id="508" style="font-size:16px;font-weight:700;">Add Version</h3>
+      <button data-id="509" style="background:none;border:none;cursor:pointer;" class="modal-close-btn" data-modal="modal-version"><i data-id="510" data-lucide="x" class="w-5 h-5" style="color:#64748b;"></i></button>
+    </div>
+    <div data-id="511" class="modal-body">
+      <div data-id="512" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div data-id="513"><label data-id="514" class="form-label">Project *</label><select data-id="515" class="form-input" id="f-ver-project"></select></div>
+        <div data-id="516"><label data-id="517" class="form-label">Version Tag *</label><input data-id="518" class="form-input" id="f-ver-tag" placeholder="e.g., v2.0" /></div>
+        <div data-id="519"><label data-id="520" class="form-label">Release Date *</label><input data-id="521" type="date" class="form-input" id="f-ver-date" /></div>
+        <div data-id="522"><label data-id="523" class="form-label">Publication Status</label><select data-id="524" class="form-input" id="f-ver-pub"><option data-id="525">Published</option><option data-id="526">Unpublished</option><option data-id="527">Uncertain</option></select></div>
+        <div data-id="528" class="md:col-span-2"><label data-id="529" class="form-label">Summary of Authorship Changes *</label><textarea data-id="530" class="form-input" id="f-ver-summary"></textarea></div>
+        <div data-id="531"><label data-id="532" class="form-label">New Authorship vs Prior</label><select data-id="533" class="form-input" id="f-ver-authorship"><option data-id="534">Significant</option><option data-id="535">Incremental</option><option data-id="536">Minimal</option><option data-id="537">Unknown</option></select></div>
+        <div data-id="538"><label data-id="539" class="form-label">AI-Generated Content</label><select data-id="540" class="form-input" id="f-ver-ai"><option data-id="541">No</option><option data-id="542">Yes</option><option data-id="543">Partial</option></select></div>
+        <div data-id="544"><label data-id="545" class="form-label">Source Code Available</label><select data-id="546" class="form-input" id="f-ver-source"><option data-id="547" value="yes">Yes</option><option data-id="548" value="no">No</option></select></div>
+        <div data-id="549" class="md:col-span-2"><label data-id="550" class="form-label">Notes</label><textarea data-id="551" class="form-input" id="f-ver-notes"></textarea></div>
+      </div>
+    </div>
+    <div data-id="552" class="modal-footer">
+      <button data-id="553" class="btn btn-secondary modal-close-btn" data-modal="modal-version">Cancel</button>
+      <button data-id="554" class="btn btn-primary" id="btn-save-version">Save Version</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Contributor Modal -->
+<div data-id="555" class="modal-overlay" id="modal-contributor">
+  <div data-id="556" class="modal-card">
+    <div data-id="557" class="modal-header">
+      <h3 data-id="558" style="font-size:16px;font-weight:700;">Add Contributor</h3>
+      <button data-id="559" style="background:none;border:none;cursor:pointer;" class="modal-close-btn" data-modal="modal-contributor"><i data-id="560" data-lucide="x" class="w-5 h-5" style="color:#64748b;"></i></button>
+    </div>
+    <div data-id="561" class="modal-body">
+      <div data-id="562" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div data-id="563"><label data-id="564" class="form-label">Name *</label><input data-id="565" class="form-input" id="f-con-name" /></div>
+        <div data-id="566"><label data-id="567" class="form-label">Email</label><input data-id="568" class="form-input" id="f-con-email" /></div>
+        <div data-id="569"><label data-id="570" class="form-label">Role</label><select data-id="571" class="form-input" id="f-con-role"><option data-id="572">Author</option><option data-id="573">Co-Author</option><option data-id="574">Contractor</option><option data-id="575">Employee</option><option data-id="576">Other</option></select></div>
+        <div data-id="577"><label data-id="578" class="form-label">Employment Status</label><select data-id="579" class="form-input" id="f-con-employment"><option data-id="580">Individual (Self)</option><option data-id="581">Employee</option><option data-id="582">Contractor</option><option data-id="583">Volunteer</option><option data-id="584">Other</option></select></div>
+        <div data-id="585" class="md:col-span-2"><label data-id="586" class="form-label">Notes</label><textarea data-id="587" class="form-input" id="f-con-notes"></textarea></div>
+      </div>
+    </div>
+    <div data-id="588" class="modal-footer">
+      <button data-id="589" class="btn btn-secondary modal-close-btn" data-modal="modal-contributor">Cancel</button>
+      <button data-id="590" class="btn btn-primary" id="btn-save-contributor">Save Contributor</button>
+    </div>
+  </div>
+</div>
+
+<!-- Filing Detail Modal -->
+<div data-id="591" class="modal-overlay" id="modal-filing">
+  <div data-id="592" class="modal-card" style="max-width:800px;">
+    <div data-id="593" class="modal-header">
+      <h3 data-id="594" style="font-size:16px;font-weight:700;" id="filing-modal-title">Filing Matter</h3>
+      <button data-id="595" style="background:none;border:none;cursor:pointer;" class="modal-close-btn" data-modal="modal-filing"><i data-id="596" data-lucide="x" class="w-5 h-5" style="color:#64748b;"></i></button>
+    </div>
+    <div data-id="597" class="modal-body" id="filing-modal-body"></div>
+  </div>
+</div>
+
+<!-- Confirm Clear Modal -->
+<div data-id="598" class="modal-overlay" id="modal-confirm-clear">
+  <div data-id="599" class="modal-card" style="max-width:420px;">
+    <div data-id="600" class="modal-header">
+      <h3 data-id="601" style="font-size:16px;font-weight:700;color:#991b1b;">Clear All Data</h3>
+      <button data-id="602" style="background:none;border:none;cursor:pointer;" class="modal-close-btn" data-modal="modal-confirm-clear"><i data-id="603" data-lucide="x" class="w-5 h-5" style="color:#64748b;"></i></button>
+    </div>
+    <div data-id="604" class="modal-body" style="text-align:center;">
+      <p data-id="605" style="font-size:14px;color:#475569;margin-bottom:16px;">This will permanently delete all projects, versions, filings, and audit data. This action cannot be undone.</p>
+    </div>
+    <div data-id="606" class="modal-footer">
+      <button data-id="607" class="btn btn-secondary modal-close-btn" data-modal="modal-confirm-clear">Cancel</button>
+      <button data-id="608" class="btn btn-danger" id="btn-confirm-clear">Yes, Clear Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============== FILING LAUNCH MODAL ============== -->
+<div data-id="609" class="filing-modal-overlay" id="filing-launch-modal">
+  <div data-id="610" class="filing-modal-card">
+    <div data-id="611" class="filing-modal-header" id="flm-header">
+      <div data-id="612">
+        <div data-id="613" style="font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;"><i data-id="614" data-lucide="folder-input" class="w-5 h-5"></i> eCO Copyright Registration — Filing Launcher</div>
+        <div data-id="615" style="font-size:13px;opacity:0.85;margin-top:4px;" id="flm-subtitle">Loading…</div>
+      </div>
+      <button data-id="616" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;border-radius:8px;padding:6px;color:#fff;" id="flm-close-btn"><i data-id="617" data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div data-id="618" class="fm-tab-pills" id="flm-tabs">
+      <button data-id="619" class="fm-tab-pill active" data-fmtab="tab-checklist">📋 Pre-Filing Checklist</button>
+      <button data-id="620" class="fm-tab-pill" data-fmtab="tab-datasheet">📄 eCO Data Sheet</button>
+      <button data-id="621" class="fm-tab-pill" data-fmtab="tab-fees">💰 Fee Calculator</button>
+      <button data-id="622" class="fm-tab-pill" data-fmtab="tab-guide">🪜 eCO Guide</button>
+      <button data-id="623" class="fm-tab-pill" data-fmtab="tab-postfiling">✅ Post-Filing</button>
+    </div>
+    <div data-id="624" class="filing-modal-body" id="flm-body">
+      <!-- Tab panels rendered by JS -->
+      <div data-id="625" class="fm-tab-panel active" id="tab-checklist"></div>
+      <div data-id="626" class="fm-tab-panel" id="tab-datasheet"></div>
+      <div data-id="627" class="fm-tab-panel" id="tab-fees"></div>
+      <div data-id="628" class="fm-tab-panel" id="tab-guide"></div>
+      <div data-id="629" class="fm-tab-panel" id="tab-postfiling"></div>
+    </div>
+    <div data-id="630" class="filing-modal-footer">
+      <div data-id="631" style="font-size:11px;color:#94a3b8;text-align:center;width:100;">⚖️ This platform does not file on your behalf. All filings at <a data-id="632" href="https://eco.copyright.gov" target="_blank" rel="noopener noreferrer" style="color:#7c3aed;text-decoration:underline;">eco.copyright.gov</a>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== GROUP FILING MODAL ============== -->
+<div data-id="633" class="filing-modal-overlay" id="group-filing-modal">
+  <div data-id="634" class="filing-modal-card" style="max-width:800px;">
+    <div data-id="635" class="filing-modal-header">
+      <div data-id="636">
+        <div data-id="637" style="font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px;"><i data-id="638" data-lucide="package" class="w-5 h-5"></i> Group Registration Launcher</div>
+        <div data-id="639" style="font-size:13px;opacity:0.85;margin-top:4px;">Register multiple works in one eCO filing — $85 for up to 10 works</div>
+      </div>
+      <button data-id="640" style="background:rgba(255,255,255,0.15);border:none;cursor:pointer;border-radius:8px;padding:6px;color:#fff;" id="gfm-close-btn"><i data-id="641" data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div data-id="642" style="padding:24px;" id="gfm-body"></div>
+    <div data-id="643" class="filing-modal-footer">
+      <div data-id="644" style="font-size:11px;color:#94a3b8;text-align:center;width:100;">⚖️ This platform does not file on your behalf. All filings at <a data-id="645" href="https://eco.copyright.gov" target="_blank" rel="noopener noreferrer" style="color:#7c3aed;text-decoration:underline;">eco.copyright.gov</a>.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===========================
+// DATA & STATE
+// ===========================
+const KEYS = {
+  projects:'cr_projects', versions:'cr_versions', contributors:'cr_contributors',
+  deposits:'cr_deposits', filings:'cr_filings', events:'cr_events', settings:'cr_settings', init:'cr_initialized', section:'cr_active_section', filingChecklist:'cr_filing_checklist', filingPost:'cr_filing_post'
+};
+
+function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } }
+function save(k,v) { localStorage.setItem(k, JSON.stringify(v)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+}
+function fmtTS(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'numeric', minute:'2-digit', timeZoneName:'short' });
+}
+function fmtMMDDYYYY(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T00:00:00');
+  return String(dt.getMonth()+1).padStart(2,'0') + '/' + String(dt.getDate()).padStart(2,'0') + '/' + dt.getFullYear();
+}
+function todayMMDDYYYY() {
+  const d = new Date(); return String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0') + '/' + d.getFullYear();
+}
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function genHash(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+  return Math.abs(h).toString(16).padStart(8,'0') + 'a3f8c2d9e4b1';
+}
+function nextMatterId() {
+  const filings = load(KEYS.filings);
+  const num = filings.length + 1;
+  return 'CR-2026-' + String(num).padStart(3,'0');
+}
+function addEvent(type, project, version, actor, desc) {
+  const events = load(KEYS.events);
+  events.push({ id: uid(), timestamp: new Date().toISOString(), type, project, version, actor, description: desc });
+  save(KEYS.events, events);
+}
+function getProgressColor(score) {
+  if (score >= 90) return '#16a34a';
+  if (score >= 70) return '#3b82f6';
+  if (score >= 40) return '#f59e0b';
+  return '#dc2626';
+}
+function statusBadge(st) {
+  const m = { 'Draft':'badge-draft','In Progress':'badge-progress','Ready to File':'badge-ready','Submitted':'badge-submitted','Certificate Issued':'badge-certified','Blocked':'badge-blocked','Rejected':'badge-blocked' };
+  return '<span class="badge '+(m[st]||'badge-draft')+'">'+st+'</span>';
+}
+function computeReadiness(version) {
+  const contributors = load(KEYS.contributors);
+  let score = 0; const rules = [];
+  if (version.authorshipLevel === 'Significant') { score += 20; rules.push({pass:true, msg:'Significant new authorship identified'}); }
+  else if (version.authorshipLevel === 'Incremental') { score += 12; rules.push({pass:'warn', msg:'Incremental authorship — review whether separate registration is warranted'}); }
+  else { score += 5; rules.push({pass:false, msg:'Authorship level unclear — review required'}); }
+  const contWithGaps = contributors.filter(c => c.employment === 'Contractor' && !c.docsComplete);
+  if (contWithGaps.length === 0) { score += 25; rules.push({pass:true, msg:'Ownership documentation complete'}); }
+  else { rules.push({pass:false, msg:contWithGaps.length+' contributor(s) missing signed assignment'}); }
+  if (version.publicationStatus === 'Published' || version.publicationStatus === 'Unpublished') { score += 15; rules.push({pass:true, msg:'Publication status confirmed'}); }
+  else { rules.push({pass:'warn', msg:'Publication status uncertain — manual review required'}); }
+  if (version.sourceAvailable === 'yes') { score += 15; rules.push({pass:true, msg:'Source code available for deposit'}); }
+  else { score += 5; rules.push({pass:'warn', msg:'Source code not yet uploaded — deposit cannot be generated'}); }
+  if (version.aiContent === 'No') { score += 15; rules.push({pass:true, msg:'No AI-generated content — no disclosure required'}); }
+  else if ((version.aiContent === 'Partial' || version.aiContent === 'Yes') && version.aiDisclosure) { score += 10; rules.push({pass:'warn', msg:'AI-generated content disclosed — authorship boundaries defined'}); }
+  else if (version.aiContent === 'Partial' || version.aiContent === 'Yes') { score += 5; rules.push({pass:'warn', msg:'AI-generated content — disclosure recommended before filing'}); }
+  const deposits = load(KEYS.deposits);
+  if (deposits.find(d => d.versionId === version.id)) { score += 10; rules.push({pass:true, msg:'Deposit package generated'}); }
+  else { rules.push({pass:'warn', msg:'No deposit package generated yet'}); }
+  return { score: Math.min(score, 100), rules };
+}
+
+// ===========================
+// CLIPBOARD COPY
+// ===========================
+function copyToClipboard(text, btnEl) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btnEl.textContent;
+    btnEl.textContent = '✓ Copied!';
+    btnEl.classList.add('copied');
+    setTimeout(() => { btnEl.textContent = orig; btnEl.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    const orig = btnEl.textContent;
+    btnEl.textContent = '✓ Copied!'; btnEl.classList.add('copied');
+    setTimeout(() => { btnEl.textContent = orig; btnEl.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ===========================
+// FILING LAUNCH MODAL LOGIC
+// ===========================
+let currentFilingProjectId = null;
+
+function getProjectFilingData(pid) {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const filings = load(KEYS.filings);
+  const settings = load(KEYS.settings);
+  const p = projects.find(x => x.id === pid);
+  if (!p) return null;
+  const pVersions = versions.filter(v => v.projectId === pid);
+  const latestV = pVersions[pVersions.length - 1];
+  const filing = filings.find(f => f.projectId === pid && (latestV ? f.versionId === latestV.id : true));
+  const readiness = latestV ? computeReadiness(latestV) : { score: 0, rules: [] };
+  return { project: p, version: latestV, filing, readiness, settings: (typeof settings === 'object' && !Array.isArray(settings)) ? settings : {} };
+}
+
+function openFilingLaunchModal(pid) {
+  currentFilingProjectId = pid;
+  const data = getProjectFilingData(pid);
+  if (!data || !data.project) return;
+  const { project: p, version: v, filing: f } = data;
+  document.getElementById('flm-subtitle').textContent = p.name + (v ? ' — ' + v.tag : '') + (f ? ' — ' + f.matterId : '');
+  renderFilingTab1(pid);
+  renderFilingTab2(pid);
+  renderFilingTab3(pid);
+  renderFilingTab4(pid);
+  renderFilingTab5(pid);
+  // Reset to tab 1
+  document.querySelectorAll('.fm-tab-pill').forEach((t,i) => t.classList.toggle('active', i===0));
+  document.querySelectorAll('.fm-tab-panel').forEach((p,i) => p.classList.toggle('active', i===0));
+  document.getElementById('filing-launch-modal').classList.add('show');
+  lucide.createIcons();
+}
+
+function renderFilingTab1(pid) {
+  const data = getProjectFilingData(pid);
+  if (!data) return;
+  const { project: p, version: v } = data;
+  const ckKey = 'flm_ck_' + pid;
+  let ckState = {};
+  try { ckState = JSON.parse(localStorage.getItem(ckKey)) || {}; } catch { ckState = {}; }
+  const items = [
+    'Project title and version confirmed',
+    'Year of completion confirmed',
+    'Author name and legal entity type confirmed (individual vs. organization)',
+    'Copyright claimant name confirmed (same as author for self-authored works)',
+    'Publication status confirmed (Published / Unpublished)',
+    'Publication date confirmed (if published)',
+    'AI-generated content disclosure text prepared',
+    'Deposit copy ready (source code ZIP — first 25 + last 25 pages per Circular 61)',
+    'Payment method ready ($45 single/not-for-hire OR $65 Standard Application)',
+    'Copyright Office account created at copyright.gov (or ready to create)'
+  ];
+  const checked = Object.values(ckState).filter(Boolean).length;
+  const panel = document.getElementById('tab-checklist');
+  panel.innerHTML = `
+    <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">Complete these steps before opening the eCO portal</h3>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px;">Pre-filing readiness checklist for <strong>${p.name}</strong></p>
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:6px;"><span style="color:#475569;">Progress</span><span style="color:${checked>=10?'#16a34a':'#f59e0b'}">${checked} of 10 complete</span></div>
+      <div class="progress-bar" style="height:10px;"><div class="fill" style="width:${checked*10}%;background:${checked>=10?'#16a34a':checked>=5?'#f59e0b':'#dc2626'};"></div></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Readiness Checks</div>
+    ${items.map((item,i) => `<div class="checklist-item"><input type="checkbox" class="flm-ck" data-ckidx="${i}" ${ckState[i]?'checked':''} /><span style="font-size:13px;${ckState[i]?'color:#16a34a;':'color:#1e293b;'}">${item}</span></div>`).join('')}
+    <div class="warn-banner" style="margin-top:20px;">
+      <strong>💰 Recommended Fee for ${p.name}:</strong><br>
+      • If sole author, same claimant, single work, not-for-hire → <strong>$45</strong> (Single Author eCO application)<br>
+      • Standard Application → <strong>$65</strong><br>
+      • Group Registration (up to 10 unpublished works on one application) → <strong>$85 total</strong><br>
+      ✅ Your project qualifies for the <strong>$45 Single Author</strong> rate — you are the sole author and claimant.
+    </div>
+    ${(p.aiContent === 'Partial' || p.aiContent === 'Yes') ? `<div class="warn-banner" style="margin-top:12px;">
+      <strong>⚠️ AI-Generated Content Disclosure Required</strong><br>
+      Per U.S. Copyright Office guidance (88 Fed. Reg. 16190, March 16, 2023), you must disclose AI-generated content in your application. In the eCO "Other" field or correspondence, include:<br>
+      <em>"This work was created with AI assistance (Microsoft Copilot). The human author's copyrightable contributions include: concept design, requirement specification, prompt engineering, feature selection, content curation, and editorial review."</em>
+    </div>` : ''}
+    <div style="margin-top:20px;text-align:right;">
+      <button class="btn btn-primary" id="flm-ready-btn" style="background:#16a34a;"><i data-lucide="check-circle" class="w-4 h-4"></i> Ready to File — Go to Data Sheet</button>
+    </div>
+  `;
+  panel.querySelectorAll('.flm-ck').forEach(cb => {
+    cb.addEventListener('change', function() {
+      ckState[this.dataset.ckidx] = this.checked;
+      localStorage.setItem(ckKey, JSON.stringify(ckState));
+      renderFilingTab1(pid);
+      lucide.createIcons();
+    });
+  });
+  const readyBtn = panel.querySelector('#flm-ready-btn');
+  if (readyBtn) readyBtn.addEventListener('click', () => switchFilingTab('tab-datasheet'));
+}
+
+function renderFilingTab2(pid) {
+  const data = getProjectFilingData(pid);
+  if (!data) return;
+  const { project: p, version: v, settings: s } = data;
+  const ownerName = p.owner || s.name || 'Alex';
+  const email = s.email || 'mohalex@gmail.com';
+  const pubYear = p.pubDate ? new Date(p.pubDate+'T00:00:00').getFullYear() : 2026;
+  const pubDateFmt = p.pubDate ? fmtMMDDYYYY(p.pubDate) : '—';
+  const isPublished = p.pubStatus === 'Published' ? 'Yes' : 'No';
+  const fields = [
+    { section:'Type of Work', rows: [
+      ['Type of Work', 'Literary Work'],
+      ['Work Subcategory', 'Computer Program']
+    ]},
+    { section:'Titles', rows: [
+      ['Title of This Work', p.name],
+      ['Previous / Alternate Title', p.name + (v ? ' '+v.tag : '')],
+      ['Content Title (if applicable)', p.name + (v ? ' — '+v.tag : '')]
+    ]},
+    { section:'Publication', rows: [
+      ['Year of Completion', String(pubYear)],
+      ['Published?', isPublished],
+      ['Date of First Publication', pubDateFmt],
+      ['Nation of First Publication', 'United States']
+    ]},
+    { section:'Author', rows: [
+      ['Author Name', ownerName],
+      ['Author Pseudonym', '(leave blank)'],
+      ['Was This a Work Made For Hire?', 'No'],
+      ['Citizenship / Domicile', 'United States'],
+      ['Year of Birth', '(enter your birth year)'],
+      ['Nature of Authorship', 'Computer program: selection, coordination, and arrangement of text, user interface, application logic, and functional architecture'],
+      ["Author's Contribution", 'Entire work']
+    ]},
+    { section:'Copyright Claimant', rows: [
+      ['Claimant Name', ownerName],
+      ['Claimant Address', '(enter your address)'],
+      ['Transfer Statement', 'N/A — Author is the claimant']
+    ]},
+    { section:'Limitation of Claim', rows: [
+      ['Material Excluded', '(leave blank unless building on prior registered version)'],
+      ['New Material Included', 'Computer program code, user interface design, application architecture, and textual content']
+    ]},
+    { section:'Rights & Permissions Contact', rows: [
+      ['Name', ownerName],
+      ['Email', email]
+    ]},
+    { section:'Correspondence', rows: [
+      ['Correspondence Name', ownerName],
+      ['Correspondence Email', email]
+    ]},
+    { section:'Certification', rows: [
+      ['Applicant Name', ownerName],
+      ['Date', todayMMDDYYYY()],
+      ['Certification Statement', 'I, the undersigned, hereby certify that I am the author and copyright claimant of the work identified in this application and that the information given in this application is correct to the best of my knowledge.']
+    ]},
+    { section:'AI Disclosure (paste into Correspondence / Note field in eCO)', rows: [
+      ['AI Disclosure Note', 'This work was created with AI assistance (Microsoft Copilot). The human author\'s copyrightable contributions include: concept design, requirement specification, prompt engineering, feature selection, content curation, and editorial review and arrangement decisions. AI-generated elements are disclosed per U.S. Copyright Office guidance (88 Fed. Reg. 16190, 2023).']
+    ]},
+    { section:'Deposit Instructions', rows: [
+      ['Deposit Type', 'Electronic upload via eCO'],
+      ['Deposit Format', 'Source code (.zip) — first 25 pages + last 25 pages per Circular 61'],
+      ['If total < 50 pages', 'Submit entire source code'],
+      ['Trade Secret Redaction', 'Not applicable']
+    ]}
+  ];
+
+  const panel = document.getElementById('tab-datasheet');
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <div>
+        <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">Your Pre-Filled eCO Application Data</h3>
+        <p style="font-size:13px;color:#64748b;">Copy each field value directly into the eCO portal at eco.copyright.gov</p>
+      </div>
+      <button class="btn btn-primary btn-sm" id="flm-copy-all"><i data-lucide="clipboard-copy" class="w-3 h-3"></i> Copy All to Clipboard</button>
+    </div>
+  `;
+  fields.forEach((sec, si) => {
+    html += `<div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:${si>0?'20':'8'}px 0 8px;padding:6px 14px;background:#f5f3ff;border-radius:8px;">Section ${si+1} — ${sec.section}</div>`;
+    html += '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:4px;">';
+    sec.rows.forEach(([field, val]) => {
+      html += `<div class="eco-data-row"><span class="eco-field-name">${field}</span><span class="eco-field-val">${val}</span><button class="copy-btn" data-copyval="${val.replace(/"/g,'&quot;')}">📋 Copy</button></div>`;
+    });
+    html += '</div>';
+  });
+  html += `<div style="background:#f1f5f9;border-radius:10px;padding:14px 18px;margin-top:20px;font-size:12px;color:#64748b;line-height:1.6;">📌 <strong>Note:</strong> The eCO portal does not accept pre-filled data via URL. You must manually enter these values into the online form. Use the Copy buttons above to paste each value directly. This data sheet has been saved to your audit trail.</div>`;
+  panel.innerHTML = html;
+
+  panel.querySelectorAll('.copy-btn[data-copyval]').forEach(btn => {
+    btn.addEventListener('click', function(e) { e.stopPropagation(); copyToClipboard(this.dataset.copyval, this); });
+  });
+  const copyAllBtn = panel.querySelector('#flm-copy-all');
+  if (copyAllBtn) copyAllBtn.addEventListener('click', function() { copyAllFieldsForProject(pid, this); });
+}
+
+function copyAllFieldsForProject(pid, btnEl) {
+  const data = getProjectFilingData(pid);
+  if (!data) return;
+  const { project: p, version: v, settings: s } = data;
+  const ownerName = p.owner || s.name || 'Alex';
+  const email = s.email || 'mohalex@gmail.com';
+  const pubYear = p.pubDate ? new Date(p.pubDate+'T00:00:00').getFullYear() : 2026;
+  const pubDateFmt = p.pubDate ? fmtMMDDYYYY(p.pubDate) : '—';
+  const text = `COPYRIGHT REGISTRATION DATA SHEET — CopyRight Ops
+================================================
+Project: ${p.name}
+Version: ${v ? v.tag : '—'}
+Generated: ${new Date().toLocaleDateString()}
+
+TYPE OF WORK: Literary Work — Computer Program
+
+TITLE: ${p.name}
+ALTERNATE TITLE: ${p.name} ${v ? v.tag : ''}
+YEAR OF COMPLETION: ${pubYear}
+PUBLISHED: ${p.pubStatus === 'Published' ? 'Yes' : 'No'}
+DATE OF FIRST PUBLICATION: ${pubDateFmt}
+NATION OF FIRST PUBLICATION: United States
+
+AUTHOR NAME: ${ownerName}
+WORK MADE FOR HIRE: No
+CITIZENSHIP: United States
+NATURE OF AUTHORSHIP: Computer program: selection, coordination, and arrangement of text, user interface, application logic, and functional architecture
+
+CLAIMANT NAME: ${ownerName}
+TRANSFER STATEMENT: N/A — Author is the claimant
+
+NEW MATERIAL INCLUDED: Computer program code, user interface design, application architecture, and textual content
+
+RIGHTS CONTACT: ${ownerName} — ${email}
+CORRESPONDENCE: ${ownerName} — ${email}
+
+AI DISCLOSURE: This work was created with AI assistance (Microsoft Copilot). The human author's copyrightable contributions include: concept design, requirement specification, prompt engineering, feature selection, content curation, and editorial review and arrangement decisions. AI-generated elements are disclosed per U.S. Copyright Office guidance (88 Fed. Reg. 16190, 2023).
+
+RECOMMENDED FEE: $45 (Single Author eCO application)
+PORTAL: https://eco.copyright.gov
+================================================`;
+  copyToClipboard(text, btnEl);
+}
+
+function renderFilingTab3(pid) {
+  const data = getProjectFilingData(pid);
+  if (!data) return;
+  const { project: p } = data;
+  const projects = load(KEYS.projects);
+  const unpubCount = projects.filter(pr => pr.pubStatus === 'Unpublished').length;
+  const feeKey = 'flm_fee_' + pid;
+  let selectedFee = localStorage.getItem(feeKey) || 'single';
+  const panel = document.getElementById('tab-fees');
+  panel.innerHTML = `
+    <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">Registration Fee Selector</h3>
+    <p style="font-size:13px;color:#64748b;margin-bottom:20px;">Based on official copyright.gov fee schedule (verify current fees at copyright.gov/about/fees.html)</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="fee-card ${selectedFee==='single'?'selected':''}" data-fee="single">
+        <div class="fee-check">✓</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><span class="badge" style="background:#dcfce7;color:#166534;">Recommended ✅</span><span class="badge" style="background:#dbeafe;color:#1e40af;">Best Value</span></div>
+        <div style="font-size:24px;font-weight:800;color:#1e293b;">$45</div>
+        <div style="font-size:14px;font-weight:600;color:#334155;margin-top:4px;">Single Author Application</div>
+        <div style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6;">
+          Single author, same claimant, one work, not made for hire<br>
+          <span style="color:#16a34a;">✅ Alex is sole author</span><br>
+          <span style="color:#16a34a;">✅ Alex is claimant</span><br>
+          <span style="color:#16a34a;">✅ Single work</span><br>
+          <span style="color:#16a34a;">✅ Not for hire</span>
+        </div>
+        <div style="font-size:11px;color:#7c3aed;margin-top:10px;font-weight:600;">eCO: "Register One Work" → "Single Author"</div>
+      </div>
+      <div class="fee-card ${selectedFee==='standard'?'selected':''}" data-fee="standard">
+        <div class="fee-check">✓</div>
+        <span class="badge" style="background:#e0e7ff;color:#3730a3;margin-bottom:8px;">Most Flexible</span>
+        <div style="font-size:24px;font-weight:800;color:#1e293b;">$65</div>
+        <div style="font-size:14px;font-weight:600;color:#334155;margin-top:4px;">Standard Application</div>
+        <div style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6;">
+          Best for: Multiple authors, works made for hire, or when claimant differs from author
+        </div>
+        <div style="font-size:11px;color:#7c3aed;margin-top:10px;font-weight:600;">eCO: "Register One Work" → "Standard Application"</div>
+      </div>
+      <div class="fee-card ${selectedFee==='group'?'selected':''}" data-fee="group">
+        <div class="fee-check">✓</div>
+        <span class="badge" style="background:#fef3c7;color:#92400e;margin-bottom:8px;">Best for Bulk Filing</span>
+        <div style="font-size:24px;font-weight:800;color:#1e293b;">$85</div>
+        <div style="font-size:14px;font-weight:600;color:#334155;margin-top:4px;">Group of Unpublished Works</div>
+        <div style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6;">
+          Up to 10 unpublished works in one filing<br>
+          You have <strong>${unpubCount}</strong> unpublished project(s).
+        </div>
+        <div style="font-size:11px;color:#7c3aed;margin-top:10px;font-weight:600;">eCO: "Register a Group of Works"</div>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+      <table class="tbl" style="font-size:12px;">
+        <thead><tr><th></th><th style="text-align:center;">Single $45</th><th style="text-align:center;">Standard $65</th><th style="text-align:center;">Group $85</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600;">Works per filing</td><td style="text-align:center;">1</td><td style="text-align:center;">1</td><td style="text-align:center;">Up to 10</td></tr>
+          <tr><td style="font-weight:600;">Multiple authors</td><td style="text-align:center;color:#dc2626;">✗</td><td style="text-align:center;color:#16a34a;">✓</td><td style="text-align:center;color:#dc2626;">✗</td></tr>
+          <tr><td style="font-weight:600;">Published works</td><td style="text-align:center;color:#16a34a;">✓</td><td style="text-align:center;color:#16a34a;">✓</td><td style="text-align:center;color:#dc2626;">✗</td></tr>
+          <tr><td style="font-weight:600;">AI disclosure</td><td style="text-align:center;color:#16a34a;">✓</td><td style="text-align:center;color:#16a34a;">✓</td><td style="text-align:center;color:#16a34a;">✓</td></tr>
+          <tr><td style="font-weight:600;">Processing time</td><td style="text-align:center;">3–11 mo</td><td style="text-align:center;">3–11 mo</td><td style="text-align:center;">3–11 mo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:13px;color:#475569;margin-bottom:12px;"><strong>Payment methods accepted by copyright.gov:</strong> Credit card, debit card, ACH bank transfer, or Copyright Office deposit account.</div>
+    <div style="background:#f1f5f9;border-radius:10px;padding:14px 18px;font-size:12px;color:#64748b;line-height:1.6;">⚠️ Fees shown are from the official copyright.gov fee schedule as of 2026. Always verify current fees at copyright.gov/about/fees.html before filing. Fees are non-refundable.</div>
+  `;
+  panel.querySelectorAll('.fee-card').forEach(card => {
+    card.addEventListener('click', function() {
+      panel.querySelectorAll('.fee-card').forEach(c => c.classList.remove('selected'));
+      this.classList.add('selected');
+      localStorage.setItem(feeKey, this.dataset.fee);
+    });
+  });
+}
+
+function renderFilingTab4(pid) {
+  const data = getProjectFilingData(pid);
+  if (!data) return;
+  const { project: p, version: v } = data;
+  const pubDateFmt = p.pubDate ? fmtMMDDYYYY(p.pubDate) : 'MM/DD/YYYY';
+  const steps = [
+    { title:'Create or Log In to Your Copyright Office Account', detail:`Go to <strong>eco.copyright.gov</strong>. Click "New User" to create a free account, or log in if you have one. You'll need: your name, email address, mailing address. After logging in, you'll see the eCO dashboard.` },
+    { title:'Start a New Registration', detail:`From the eCO dashboard, click <strong>"Register a New Claim"</strong>. Select "Register One Work" for a single app. Application type: Select <strong>"Single Author Application" ($45)</strong> — your project qualifies. ✅` },
+    { title:'Type of Work', detail:`Select <strong>"Literary Work"</strong> from the Type of Work dropdown. Sub-type: Select <strong>"Computer Program"</strong>. Do NOT select "Audiovisual" or "Website" — computer programs are Literary Works per U.S. Copyright Act 17 U.S.C. § 101.` },
+    { title:'Title Information', detail:`Enter the Title of Work: <strong>${p.name}</strong>. Version / Edition: <strong>${v?v.tag:'—'}</strong>. Content Title: leave blank or repeat title. Previous title: leave blank.` },
+    { title:'Publication Information', detail:`Has the work been published? Select: <strong>${p.pubStatus === 'Published' ? 'Yes' : 'No'}</strong>. Date of First Publication: <strong>${pubDateFmt}</strong>. Nation of First Publication: <strong>United States</strong>.` },
+    { title:'Author Information', detail:`Author Name: <strong>${p.owner}</strong>. Work made for hire: <strong>No</strong> (self-authored). Citizenship: <strong>United States</strong>. Nature of Authorship: Type in the text from your Tab 2 Data Sheet. ⚠️ AI Disclosure: Paste the AI disclosure text from Tab 2 Section 10 into the "Nature of Authorship" or note field.` },
+    { title:'Copyright Claimant', detail:`Name: <strong>${p.owner}</strong>. Transfer statement: Leave blank (no transfer — you are the original author/claimant). Enter your mailing address.` },
+    { title:'Limitation of Claim', detail:`"Material Excluded": Leave blank for initial registration. "New Material Included": <strong>Computer program code, user interface design, application architecture, and textual content</strong>.` },
+    { title:'Rights & Permissions Contact', detail:`Name: <strong>${p.owner}</strong>. Email: <strong>mohalex@gmail.com</strong>.` },
+    { title:'Upload Deposit Copy', detail:`After the form, upload your deposit copy. Format: <strong>ZIP file of source code</strong>. Per Circular 61: first 25 pages + last 25 pages (or full code if under 50 pages). File size limit: 500MB. Accepted: .zip, .txt, .pdf. ⚠️ Do not include trade secrets unless redacted.` },
+    { title:'Pay the Fee', detail:`Select your fee: <strong>$45</strong> (Single Author) or <strong>$65</strong> (Standard). Pay by credit card, debit card, or ACH bank transfer. After payment you receive an email confirmation with a Claim Number.` },
+    { title:'Record Your Confirmation Number', detail:`Copy your Claim Number / Confirmation Number immediately. Paste it into the <strong>"Post-Filing"</strong> tab (Tab 5) of this modal to track it in CopyRight Ops. Processing time: 3–11 months standard / ~5 business days for $800 expedited processing.` }
+  ];
+  const panel = document.getElementById('tab-guide');
+  let html = `
+    <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">How to File in the eCO System — Step by Step</h3>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px;">Based on U.S. Copyright Office eCO portal at eco.copyright.gov</p>
+    <div class="info-banner mb-5">eCO is the U.S. Copyright Office's Electronic Copyright Office system. Filings are completed manually at eco.copyright.gov. CopyRight Ops cannot submit on your behalf — but your data sheet in Tab 2 has everything you need.</div>
+  `;
+  steps.forEach((step, i) => {
+    html += `<div class="step-guide-card" data-stepcard="${i}">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="step-num-circle">${i+1}</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:700;color:#1e293b;">${step.title}</div>
+        </div>
+        <i data-lucide="chevron-down" class="w-4 h-4" style="color:#94a3b8;flex-shrink:0;"></i>
+      </div>
+      <div class="step-detail">${step.detail}</div>
+    </div>`;
+  });
+  html += `<a href="https://eco.copyright.gov" target="_blank" rel="noopener noreferrer" class="btn-eco-portal" style="margin-top:20px;text-decoration:none;display:flex;"><i data-lucide="external-link" class="w-5 h-5"></i> Open eCO Portal Now</a>`;
+  panel.innerHTML = html;
+  panel.querySelectorAll('.step-guide-card').forEach(card => {
+    card.addEventListener('click', function() { this.classList.toggle('expanded'); });
+  });
+}
+
+function renderFilingTab5(pid) {
+  const data = getProjectFilingData(pid);
+  if (!data) return;
+  const { project: p, version: v, filing: f } = data;
+  const postKey = 'flm_post_' + pid;
+  let postData = {};
+  try { postData = JSON.parse(localStorage.getItem(postKey)) || {}; } catch { postData = {}; }
+  const panel = document.getElementById('tab-postfiling');
+  const isSaved = postData.saved;
+  let html = `
+    <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">Record Your Filing Confirmation</h3>
+    <p style="font-size:13px;color:#64748b;margin-bottom:20px;">After completing your filing at eco.copyright.gov, enter your confirmation details here.</p>
+  `;
+  if (isSaved) {
+    const estDate = new Date(); estDate.setMonth(estDate.getMonth() + 11);
+    html += `<div style="background:#f0fdf4;border:2px solid #86efac;border-radius:14px;padding:20px;margin-bottom:20px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:8px;">✅</div>
+      <div style="font-size:16px;font-weight:700;color:#166534;">Filing Recorded!</div>
+      <div style="font-size:13px;color:#166534;margin-top:6px;">Matter <strong>${f ? f.matterId : '—'}</strong> updated to "Submitted".</div>
+      <div style="font-size:12px;color:#475569;margin-top:6px;">Estimated certificate: ~${fmtDate(estDate.toISOString())}. Check your email for the official Copyright Office acknowledgment.</div>
+    </div>`;
+  }
+  html += `
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div><label class="form-label">eCO Claim / Confirmation Number</label><input class="form-input" id="pf-confirm-${pid}" value="${postData.confirmNum||''}" placeholder="e.g., 1-12345678" /></div>
+      <div><label class="form-label">Filing Date</label><input type="date" class="form-input" id="pf-date-${pid}" value="${postData.filingDate||todayISO()}" /></div>
+      <div><label class="form-label">Fee Paid</label><select class="form-input" id="pf-fee-${pid}"><option ${postData.fee==='$45'?'selected':''}>$45</option><option ${postData.fee==='$65'?'selected':''}>$65</option><option ${postData.fee==='$85'?'selected':''}>$85</option><option ${postData.fee==='Other'?'selected':''}>Other</option></select></div>
+      <div><label class="form-label">Application Type</label><select class="form-input" id="pf-type-${pid}"><option ${postData.appType==='Single Author $45'?'selected':''}>Single Author $45</option><option ${postData.appType==='Standard $65'?'selected':''}>Standard $65</option><option ${postData.appType==='Group Unpublished $85'?'selected':''}>Group Unpublished $85</option></select></div>
+      <div><label class="form-label">Deposit Uploaded</label><select class="form-input" id="pf-deposit-${pid}"><option ${postData.depositUploaded==='Yes'?'selected':''}>Yes</option><option ${postData.depositUploaded==='No'?'selected':''}>No</option></select></div>
+      <div><label class="form-label">Certificate Number (when received)</label><input class="form-input" id="pf-certnum-${pid}" value="${postData.certNum||''}" placeholder="Fill when certificate arrives" /></div>
+      <div><label class="form-label">Certificate Issue Date</label><input type="date" class="form-input" id="pf-certdate-${pid}" value="${postData.certDate||''}" /></div>
+      <div class="md:col-span-2"><label class="form-label">Notes / Correspondence</label><textarea class="form-input" id="pf-notes-${pid}">${postData.notes||''}</textarea></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" id="pf-save-${pid}"><i data-lucide="save" class="w-4 h-4"></i> Save Filing Record</button>
+      ${postData.certNum ? '' : `<button class="btn btn-secondary" id="pf-save-cert-${pid}" style="display:${postData.saved?'inline-flex':'none'};"><i data-lucide="award" class="w-4 h-4"></i> Save Certificate Info</button>`}
+    </div>
+    <div class="card mt-5" style="background:#f8fafc;">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:10px;">What happens next?</h4>
+      <div style="font-size:13px;color:#475569;line-height:1.8;">
+        <strong>Week 1:</strong> You receive email acknowledgment from the Copyright Office<br>
+        <strong>Months 1–3:</strong> Application assigned to an examiner<br>
+        <strong>Months 3–11:</strong> Examiner reviews; may send correspondence requesting clarification<br>
+        <strong>Upon approval:</strong> Certificate of Registration mailed to your address on file<br>
+        <strong>If rejected:</strong> You receive written notice with reasons; you may respond or appeal
+      </div>
+    </div>
+  `;
+  panel.innerHTML = html;
+
+  const saveBtn = panel.querySelector('#pf-save-' + pid);
+  if (saveBtn) saveBtn.addEventListener('click', function() {
+    const confirmNum = document.getElementById('pf-confirm-'+pid).value.trim();
+    const filingDate = document.getElementById('pf-date-'+pid).value;
+    const fee = document.getElementById('pf-fee-'+pid).value;
+    const appType = document.getElementById('pf-type-'+pid).value;
+    const depositUploaded = document.getElementById('pf-deposit-'+pid).value;
+    const notes = document.getElementById('pf-notes-'+pid).value;
+    const pd = { confirmNum, filingDate, fee, appType, depositUploaded, notes, saved: true };
+    localStorage.setItem(postKey, JSON.stringify(pd));
+    // Update filing status to Submitted
+    if (f) {
+      const filings = load(KEYS.filings);
+      const fi = filings.find(x => x.id === f.id);
+      if (fi) {
+        fi.status = 'Submitted';
+        fi.updated = new Date().toISOString();
+        fi.tracking = fi.tracking || {};
+        fi.tracking.confirmNum = confirmNum;
+        fi.tracking.filingDate = filingDate;
+        save(KEYS.filings, filings);
+      }
+    }
+    addEvent('Filing Submitted', p.name, v ? v.tag : '', 'Alex', 'eCO filing submitted — Confirmation: ' + (confirmNum || 'N/A') + '. Fee: ' + fee + '. Application type: ' + appType + '.');
+    renderFilingTab5(pid);
+    lucide.createIcons();
+  });
+
+  const saveCertBtn = panel.querySelector('#pf-save-cert-' + pid);
+  if (saveCertBtn) saveCertBtn.addEventListener('click', function() {
+    const certNum = document.getElementById('pf-certnum-'+pid).value.trim();
+    const certDate = document.getElementById('pf-certdate-'+pid).value;
+    if (!certNum) { alert('Please enter the certificate number.'); return; }
+    const pd = JSON.parse(localStorage.getItem(postKey)) || {};
+    pd.certNum = certNum; pd.certDate = certDate;
+    localStorage.setItem(postKey, JSON.stringify(pd));
+    if (f) {
+      const filings = load(KEYS.filings);
+      const fi = filings.find(x => x.id === f.id);
+      if (fi) { fi.status = 'Certificate Issued'; fi.updated = new Date().toISOString(); fi.tracking = fi.tracking || {}; fi.tracking.certNum = certNum; fi.tracking.certDate = certDate; save(KEYS.filings, filings); }
+    }
+    addEvent('Certificate Issued', p.name, v ? v.tag : '', 'Alex', 'Copyright certificate received — Certificate No: ' + certNum + '. Issue date: ' + (certDate || '—') + '.');
+    renderFilingTab5(pid);
+    lucide.createIcons();
+  });
+}
+
+function switchFilingTab(tabId) {
+  document.querySelectorAll('.fm-tab-pill').forEach(t => t.classList.toggle('active', t.dataset.fmtab === tabId));
+  document.querySelectorAll('.fm-tab-panel').forEach(p => p.classList.toggle('active', p.id === tabId));
+}
+
+// ===========================
+// GROUP FILING MODAL
+// ===========================
+function openGroupFilingModal() {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const filings = load(KEYS.filings);
+  const body = document.getElementById('gfm-body');
+  let html = `
+    <h3 style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px;">Select Projects for Group Registration</h3>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px;">Select up to 10 unpublished projects to register together for <strong>$85 total</strong>.</p>
+    <div style="margin-bottom:16px;">
+  `;
+  projects.forEach(p => {
+    const pv = versions.filter(v => v.projectId === p.id);
+    const lv = pv[pv.length - 1];
+    const pf = filings.find(f => f.projectId === p.id);
+    html += `<div class="checklist-item" style="padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:6px;">
+      <input type="checkbox" class="gfm-proj-ck" data-pid="${p.id}" style="accent-color:#7c3aed;" />
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:#1e293b;">${p.name}</div>
+        <div style="font-size:11px;color:#64748b;">${lv?lv.tag:'—'} · ${p.pubStatus} · ${pf?pf.matterId:'—'}</div>
+      </div>
+    </div>`;
+  });
+  html += `</div>
+    <div class="info-banner mb-4"><strong>Fee:</strong> $85 for all selected works in one group registration. Select "Register a Group of Works" → "Group Registration of Unpublished Works" in eCO, then enter each work title and authorship details in sequence.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" id="gfm-copy-all"><i data-lucide="clipboard-copy" class="w-4 h-4"></i> Copy Group Data Sheet</button>
+      <a href="https://eco.copyright.gov" target="_blank" rel="noopener noreferrer" class="btn-eco-portal" style="width:auto;padding:12px 20px;font-size:13px;text-decoration:none;"><i data-lucide="external-link" class="w-4 h-4"></i> Open eCO Portal for Group Filing</a>
+    </div>
+  `;
+  body.innerHTML = html;
+  const copyBtn = body.querySelector('#gfm-copy-all');
+  if (copyBtn) copyBtn.addEventListener('click', function() {
+    const selected = [];
+    body.querySelectorAll('.gfm-proj-ck:checked').forEach(cb => {
+      const p = projects.find(x => x.id === cb.dataset.pid);
+      if (p) selected.push(p);
+    });
+    if (selected.length === 0) { alert('Please select at least one project.'); return; }
+    let txt = 'GROUP REGISTRATION DATA SHEET — CopyRight Ops\n' + '='.repeat(50) + '\nGenerated: ' + new Date().toLocaleDateString() + '\nFee: $85 (Group of Unpublished Works)\n\n';
+    selected.forEach((p, i) => {
+      const pv = versions.filter(v => v.projectId === p.id);
+      const lv = pv[pv.length - 1];
+      txt += `WORK ${i+1}: ${p.name}\nVersion: ${lv?lv.tag:'—'}\nAuthor: ${p.owner}\nYear: ${p.pubDate ? new Date(p.pubDate+'T00:00:00').getFullYear() : 2026}\nNature of Authorship: Computer program\n\n`;
+    });
+    txt += 'PORTAL: https://eco.copyright.gov\n';
+    copyToClipboard(txt, this);
+  });
+  document.getElementById('group-filing-modal').classList.add('show');
+  lucide.createIcons();
+}
+
+// ===========================
+// SEED DATA
+// ===========================
+function seedData() {
+  const ts = '2026-05-14T19:02:00-07:00';
+  const ts2 = '2026-05-15T05:30:00-07:00';
+  const projects = [
+    { id:'p1', name:'Pre-Op Readiness Hub', platform:'Web Application', owner:'Alex', status:'In Progress', description:'A comprehensive preoperative patient education web application with specialty-specific content for spine, orthopedic, neurological, cardiac, and general surgery. Includes readiness scoring, interactive checklists, medication guidance, and printable patient summary reports.', notice:'© 2026 Alex. All rights reserved.', pubDate:'2026-05-14', pubStatus:'Published', repo:'N/A (generated via Copilot AI platform)', aiContent:'Partial', tags:'medical,preoperative,education', created:ts },
+    { id:'p2', name:'NeuroSpine Wound Monitor', platform:'Web Application', owner:'Alex', status:'In Progress', description:'A wound photomonitoring and escalation app for spine and neurosurgical post-operative patients. Features the original NeuroWound Assessment Tool (NWAT) scoring engine (0–100), 4-tier escalation system, AI-assisted CDC SSI classification (superficial/deep/organ space), photo check-in workflow, and specialty-specific red flag guides for 16 surgery types.', notice:'© 2026 Alex. All rights reserved.', pubDate:'2026-05-14', pubStatus:'Published', repo:'N/A (generated via Copilot AI platform)', aiContent:'Partial', tags:'medical,wound,monitoring', created:ts },
+    { id:'p3', name:'SurgicalCare — Unified Surgical Patient Platform', platform:'Web Application', owner:'Alex', status:'Draft', description:'A unified surgical patient platform merging the Pre-Op Readiness Hub and NeuroSpine Wound Monitor into a single seamless patient journey application. Features MultiCare NeuroScience Institute branding, dual-mode (pre-op/wound monitor), AI wound SSI classifier, AI patient Q&A assistant, 19 surgery types, NWAT scoring, and printable patient summary reports.', notice:'© 2026 Alex. All rights reserved. MultiCare NeuroScience Institute.', pubDate:'2026-05-14', pubStatus:'Published', repo:'N/A (generated via Copilot AI platform)', aiContent:'Partial', tags:'medical,surgical,unified', created:ts },
+    { id:'p4', name:'NecessityIQ', platform:'Web Application', owner:'Alex', status:'In Progress', description:'An intelligent necessity analysis and prioritization web application built with Microsoft Copilot. NecessityIQ helps users evaluate, rank, and manage competing needs and priorities using AI-assisted decision frameworks, weighted scoring matrices, and visual priority dashboards.', notice:'© 2026 Alex. All rights reserved.', pubDate:'2026-05-15', pubStatus:'Published', repo:'N/A (generated via Microsoft Copilot)', aiContent:'Partial', tags:'AI-assisted,productivity,decision-support,web', created:ts2 },
+    { id:'p5', name:'Op Coder Assist', platform:'Web Application', owner:'Alex', status:'Draft', description:'A surgical procedure coding assistance web application built with Microsoft Copilot. Op Coder Assist supports surgical teams and medical coders with procedure code lookup, ICD-10-PCS and CPT code guidance, operative note parsing assistance, and coding accuracy checklists for neurosurgical and spine procedures.', notice:'© 2026 Alex. All rights reserved.', pubDate:'2026-05-15', pubStatus:'Published', repo:'N/A (generated via Microsoft Copilot)', aiContent:'Partial', tags:'AI-assisted,medical coding,surgical,healthcare,web', created:ts2 },
+    { id:'p6', name:'Stock Growth Predictor', platform:'Web Application', owner:'Alex', status:'Draft', description:'A stock market growth analysis and prediction visualization web application built with Microsoft Copilot. Stock Growth Predictor features interactive charting, trend analysis indicators, historical performance comparison, portfolio tracking, and growth scenario modeling tools for individual investors.', notice:'© 2026 Alex. All rights reserved.', pubDate:'2026-05-15', pubStatus:'Published', repo:'N/A (generated via Microsoft Copilot)', aiContent:'Partial', tags:'AI-assisted,finance,stocks,investing,web', created:ts2 }
+  ];
+  const versions = [
+    { id:'v1', projectId:'p1', tag:'v1.0', date:'2026-05-14', publicationStatus:'Published', summary:'10 educational sections, fasting/meds/hygiene/anesthesia/recovery, 15-question readiness assessment, readiness scoring system', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'', sourceAvailable:'yes', notes:'Initial release', status:'Draft' },
+    { id:'v2', projectId:'p1', tag:'v1.1', date:'2026-05-14', publicationStatus:'Published', summary:'Added specialty-specific content for 5 surgery types (Spine, Ortho, Neuro, Cardiac, General). New My Surgery Guide tab. Specialty medications, prep steps, checklists, assessment questions.', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'', sourceAvailable:'yes', notes:'Specialty customization', status:'In Progress' },
+    { id:'v3', projectId:'p1', tag:'v1.2', date:'2026-05-14', publicationStatus:'Published', summary:'Added printable 2-page patient summary report with print CSS, dynamic report generation from patient data.', authorshipLevel:'Incremental', aiContent:'Partial', aiDisclosure:'', sourceAvailable:'yes', notes:'Print report', status:'In Progress' },
+    { id:'v4', projectId:'p2', tag:'v1.0', date:'2026-05-14', publicationStatus:'Published', summary:'Original NeuroWound Assessment Tool (NWAT) scoring engine, 4-tier escalation, photo check-in wizard, CSF leak guide, 16 surgery types, specialty red flag guides, wound education, SVG trend chart, photo comparison', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'', sourceAvailable:'yes', notes:'Initial release with NWAT engine', status:'In Progress' },
+    { id:'v5', projectId:'p3', tag:'v1.0', date:'2026-05-14', publicationStatus:'Published', summary:'Merged Pre-Op Readiness Hub + NeuroSpine Wound Monitor into unified single HTML app. Dual-mode switcher, unified localStorage, surgery type mapper, 19 surgery types.', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'', sourceAvailable:'yes', notes:'Initial merge', status:'Draft' },
+    { id:'v6', projectId:'p3', tag:'v1.1', date:'2026-05-14', publicationStatus:'Published', summary:'Added MultiCare NeuroScience Institute branding, AI SSI wound classifier (CDC criteria, original classification engine), AI Q&A patient assistant with 15+ topic knowledge base, 6th wound monitor tab.', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'', sourceAvailable:'yes', notes:'AI features + MultiCare branding', status:'Draft' },
+    { id:'v7', projectId:'p4', tag:'v1.0', date:'2026-05-15', publicationStatus:'Published', summary:'Original release. Necessity analysis engine, weighted priority scoring matrix, AI-assisted ranking algorithms, visual priority dashboard, user-configurable weighting system, export functionality.', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'Application generated with Microsoft Copilot AI assistance. Human authorship includes concept design, requirement specification, prompt engineering, feature selection, and editorial review.', sourceAvailable:'no', notes:'Initial release. Built with Microsoft Copilot AI assistance.', status:'In Progress' },
+    { id:'v8', projectId:'p5', tag:'v1.0', date:'2026-05-15', publicationStatus:'Published', summary:'Original release. CPT/ICD-10-PCS surgical code lookup, operative note coding checklist, neurosurgical and spine procedure code library, coding accuracy guidance, documentation review workflow.', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'Application generated with Microsoft Copilot AI assistance. Human authorship includes domain expertise in surgical coding, feature specification, content curation, prompt design, and editorial decisions.', sourceAvailable:'no', notes:'Initial release. Built with Microsoft Copilot AI assistance. Contains domain-specific medical coding knowledge curated by Alex.', status:'Draft' },
+    { id:'v9', projectId:'p6', tag:'v1.0', date:'2026-05-15', publicationStatus:'Published', summary:'Original release. Interactive stock trend charting, growth scenario modeling, historical performance comparison engine, portfolio tracking dashboard, custom indicator visualization, investor summary reports.', authorshipLevel:'Significant', aiContent:'Partial', aiDisclosure:'Application generated with Microsoft Copilot AI assistance. Human authorship includes investment analysis framework design, feature selection, UI/UX decisions, prompt engineering, and content curation.', sourceAvailable:'no', notes:'Initial release. Built with Microsoft Copilot AI assistance.', status:'Draft' }
+  ];
+  const contributors = [
+    { id:'c1', name:'Alex', email:'mohalex@gmail.com', role:'Creator / Author', employment:'Individual (Self)', projects:['p1','p2','p3','p4','p5','p6'], docsComplete:true, notes:'Sole author of all projects' }
+  ];
+  const deposits = [
+    { id:'d1', versionId:'v6', projectId:'p3', name:'SurgicalCare_v1.1_Deposit_2026-05-14', date:'2026-05-14', type:'First 25 + Last 25', redacted:'No', hash:'3a8f2cd9e4b17f60', status:'Draft' }
+  ];
+  const filings = [
+    { id:'f1', matterId:'CR-2026-001', projectId:'p1', versionId:'v1', status:'In Progress', readiness:72, created:ts, updated:ts, checklist:{}, tracking:{}, notes:[] },
+    { id:'f2', matterId:'CR-2026-002', projectId:'p1', versionId:'v2', status:'In Progress', readiness:72, created:ts, updated:ts, checklist:{}, tracking:{}, notes:[] },
+    { id:'f3', matterId:'CR-2026-003', projectId:'p2', versionId:'v4', status:'In Progress', readiness:68, created:ts, updated:ts, checklist:{}, tracking:{}, notes:[] },
+    { id:'f4', matterId:'CR-2026-004', projectId:'p3', versionId:'v5', status:'Draft', readiness:75, created:ts, updated:ts, checklist:{}, tracking:{}, notes:[] },
+    { id:'f5', matterId:'CR-2026-005', projectId:'p3', versionId:'v6', status:'Draft', readiness:81, created:ts, updated:ts, checklist:{}, tracking:{}, notes:[] },
+    { id:'f6', matterId:'CR-2026-006', projectId:'p4', versionId:'v7', status:'In Progress', readiness:65, created:ts2, updated:ts2, checklist:{}, tracking:{}, notes:[] },
+    { id:'f7', matterId:'CR-2026-007', projectId:'p5', versionId:'v8', status:'Draft', readiness:58, created:ts2, updated:ts2, checklist:{}, tracking:{}, notes:[] },
+    { id:'f8', matterId:'CR-2026-008', projectId:'p6', versionId:'v9', status:'Draft', readiness:62, created:ts2, updated:ts2, checklist:{}, tracking:{}, notes:[] }
+  ];
+  const events = [
+    { id:uid(), timestamp:'2026-05-14T18:30:00-07:00', type:'Project Created', project:'Pre-Op Readiness Hub', version:'—', actor:'Alex', description:'Initial project record created' },
+    { id:uid(), timestamp:'2026-05-14T18:31:00-07:00', type:'Version Added', project:'Pre-Op Readiness Hub', version:'v1.0', actor:'Alex', description:'Version v1.0 added — Initial release' },
+    { id:uid(), timestamp:'2026-05-14T18:32:00-07:00', type:'Version Added', project:'Pre-Op Readiness Hub', version:'v1.1', actor:'Alex', description:'Version v1.1 added — Specialty customization' },
+    { id:uid(), timestamp:'2026-05-14T18:33:00-07:00', type:'Version Added', project:'Pre-Op Readiness Hub', version:'v1.2', actor:'Alex', description:'Version v1.2 added — Print report' },
+    { id:uid(), timestamp:'2026-05-14T18:35:00-07:00', type:'Project Created', project:'NeuroSpine Wound Monitor', version:'—', actor:'Alex', description:'Initial project record created' },
+    { id:uid(), timestamp:'2026-05-14T18:36:00-07:00', type:'Version Added', project:'NeuroSpine Wound Monitor', version:'v1.0', actor:'Alex', description:'Version v1.0 added — Initial release with NWAT engine' },
+    { id:uid(), timestamp:'2026-05-14T18:38:00-07:00', type:'Project Created', project:'SurgicalCare Unified Platform', version:'—', actor:'Alex', description:'Initial project record created' },
+    { id:uid(), timestamp:'2026-05-14T18:39:00-07:00', type:'Version Added', project:'SurgicalCare Unified Platform', version:'v1.0', actor:'Alex', description:'Version v1.0 added — Merged platform' },
+    { id:uid(), timestamp:'2026-05-14T18:40:00-07:00', type:'Version Added', project:'SurgicalCare Unified Platform', version:'v1.1', actor:'Alex', description:'Version v1.1 added — AI features + MultiCare branding' },
+    { id:uid(), timestamp:'2026-05-14T18:45:00-07:00', type:'Deposit Generated', project:'SurgicalCare Unified Platform', version:'v1.1', actor:'Alex', description:'Draft deposit package created — Hash: 3a8f2cd9e4b17f60' },
+    { id:uid(), timestamp:'2026-05-14T18:50:00-07:00', type:'Filing Created', project:'Pre-Op Readiness Hub', version:'v1.0', actor:'Alex', description:'Matter CR-2026-001 created' },
+    { id:uid(), timestamp:'2026-05-14T18:51:00-07:00', type:'Filing Created', project:'Pre-Op Readiness Hub', version:'v1.1', actor:'Alex', description:'Matter CR-2026-002 created' },
+    { id:uid(), timestamp:'2026-05-14T18:52:00-07:00', type:'Filing Created', project:'NeuroSpine Wound Monitor', version:'v1.0', actor:'Alex', description:'Matter CR-2026-003 created' },
+    { id:uid(), timestamp:'2026-05-14T18:53:00-07:00', type:'Filing Created', project:'SurgicalCare Unified Platform', version:'v1.0', actor:'Alex', description:'Matter CR-2026-004 created' },
+    { id:uid(), timestamp:'2026-05-14T18:54:00-07:00', type:'Filing Created', project:'SurgicalCare Unified Platform', version:'v1.1', actor:'Alex', description:'Matter CR-2026-005 created' },
+    { id:uid(), timestamp:'2026-05-15T05:30:00-07:00', type:'Project Created', project:'NecessityIQ', version:'—', actor:'Alex', description:'Initial project record created' },
+    { id:uid(), timestamp:'2026-05-15T05:31:00-07:00', type:'Version Added', project:'NecessityIQ', version:'v1.0', actor:'Alex', description:'Version v1.0 added — Initial release. AI-assisted (Microsoft Copilot). Priority analysis engine, weighted scoring matrix, visual dashboard.' },
+    { id:uid(), timestamp:'2026-05-15T05:32:00-07:00', type:'Filing Created', project:'NecessityIQ', version:'v1.0', actor:'Alex', description:'Matter CR-2026-006 created' },
+    { id:uid(), timestamp:'2026-05-15T05:33:00-07:00', type:'Project Created', project:'Op Coder Assist', version:'—', actor:'Alex', description:'Initial project record created' },
+    { id:uid(), timestamp:'2026-05-15T05:34:00-07:00', type:'Version Added', project:'Op Coder Assist', version:'v1.0', actor:'Alex', description:'Version v1.0 added — Initial release. AI-assisted (Microsoft Copilot). CPT/ICD-10-PCS code lookup, coding checklist, neurosurgical code library.' },
+    { id:uid(), timestamp:'2026-05-15T05:35:00-07:00', type:'Filing Created', project:'Op Coder Assist', version:'v1.0', actor:'Alex', description:'Matter CR-2026-007 created' },
+    { id:uid(), timestamp:'2026-05-15T05:36:00-07:00', type:'Project Created', project:'Stock Growth Predictor', version:'—', actor:'Alex', description:'Initial project record created' },
+    { id:uid(), timestamp:'2026-05-15T05:37:00-07:00', type:'Version Added', project:'Stock Growth Predictor', version:'v1.0', actor:'Alex', description:'Version v1.0 added — Initial release. AI-assisted (Microsoft Copilot). Interactive charting, growth scenario modeling, portfolio tracking dashboard.' },
+    { id:uid(), timestamp:'2026-05-15T05:38:00-07:00', type:'Filing Created', project:'Stock Growth Predictor', version:'v1.0', actor:'Alex', description:'Matter CR-2026-008 created' }
+  ];
+
+  save(KEYS.projects, projects);
+  save(KEYS.versions, versions);
+  save(KEYS.contributors, contributors);
+  save(KEYS.deposits, deposits);
+  save(KEYS.filings, filings);
+  save(KEYS.events, events);
+  save(KEYS.settings, { name:'Alex', org:'', email:'mohalex@gmail.com', notice:'© 2026 Alex. All rights reserved.', jurisdiction:'United States' });
+  localStorage.setItem(KEYS.init, 'true');
+}
+
+// ===========================
+// NAVIGATION
+// ===========================
+const sections = ['dashboard','projects','versions','contributors','deposit','filing','filenow','audit','settings'];
+const sectionTitles = { dashboard:'Portfolio Dashboard', projects:'My Projects', versions:'Versions & Releases', contributors:'Contributors & Ownership', deposit:'Deposit Builder', filing:'Filing Tracker', filenow:'File Now', audit:'Audit Trail', settings:'Settings' };
+
+function showSection(name) {
+  sections.forEach(s => {
+    const el = document.getElementById('sec-' + s);
+    if (el) el.classList.toggle('active', s === name);
+  });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.section === name));
+  document.getElementById('topbar-title').textContent = sectionTitles[name] || name;
+  document.getElementById('topbar-crumb').textContent = 'CopyRight Ops → ' + (sectionTitles[name] || name);
+  localStorage.setItem(KEYS.section, name);
+  const pd = document.getElementById('project-detail'); if(pd) pd.style.display='none';
+  const vd = document.getElementById('version-detail'); if(vd) vd.style.display='none';
+  const fd = document.getElementById('filing-detail'); if(fd) fd.style.display='none';
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'projects') renderProjects();
+  if (name === 'versions') renderVersions();
+  if (name === 'contributors') renderContributors();
+  if (name === 'deposit') renderDeposits();
+  if (name === 'filing') renderFiling();
+  if (name === 'filenow') renderFileNow();
+  if (name === 'audit') renderAudit();
+  if (name === 'settings') loadSettings();
+  document.getElementById('sidebar').classList.remove('open');
+  lucide.createIcons();
+}
+
+function updateDynamicCounts() {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const filings = load(KEYS.filings);
+  const projBadge = document.querySelector('[data-section="projects"] .nav-badge');
+  if (projBadge) projBadge.textContent = projects.length;
+  const verBadge = document.querySelector('[data-section="versions"] .nav-badge');
+  if (verBadge) verBadge.textContent = versions.length;
+  const filBadge = document.querySelector('[data-section="filing"] .nav-badge');
+  if (filBadge) filBadge.textContent = filings.length;
+}
+
+// ===========================
+// RENDERERS
+// ===========================
+function renderDashboard() {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const filings = load(KEYS.filings);
+  document.getElementById('s-total').textContent = projects.length;
+  document.getElementById('s-versions').textContent = versions.length;
+  const readyCount = filings.filter(f => f.status === 'Ready to File').length;
+  document.getElementById('s-ready').textContent = readyCount;
+  const certCount = filings.filter(f => f.status === 'Certificate Issued').length;
+  document.getElementById('s-certs').textContent = certCount;
+
+  const draftCount = filings.filter(f => f.status === 'Draft').length;
+  const progressCount = filings.filter(f => f.status === 'In Progress').length;
+  const submittedCount = filings.filter(f => f.status === 'Submitted' || f.status === 'Certificate Issued').length;
+  const funnelEl = document.getElementById('pipeline-funnel');
+  if (funnelEl) {
+    const funnelCounts = funnelEl.querySelectorAll('.funnel-count');
+    if (funnelCounts[0]) funnelCounts[0].textContent = draftCount;
+    if (funnelCounts[1]) funnelCounts[1].textContent = progressCount;
+    if (funnelCounts[2]) funnelCounts[2].textContent = readyCount;
+    if (funnelCounts[3]) funnelCounts[3].textContent = submittedCount;
+    if (funnelCounts[4]) funnelCounts[4].textContent = certCount;
+  }
+
+  const flaggedVersions = versions.filter(v => v.status === 'Draft' || v.status === 'In Progress').length;
+  const aiDisclosuresNeeded = projects.filter(p => p.aiContent === 'Partial' || p.aiContent === 'Yes').length;
+  const metricsCards = document.querySelectorAll('#sec-dashboard .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-4 .card');
+  if (metricsCards[0]) metricsCards[0].querySelector('div[style*="font-size:22px"]').textContent = flaggedVersions;
+  if (metricsCards[3]) metricsCards[3].querySelector('div[style*="font-size:22px"]').textContent = aiDisclosuresNeeded;
+
+  const container = document.getElementById('dash-project-cards');
+  container.innerHTML = '';
+  projects.forEach(p => {
+    const pVersions = versions.filter(v => v.projectId === p.id);
+    const latestV = pVersions[pVersions.length - 1];
+    const readiness = latestV ? computeReadiness(latestV) : { score: 0 };
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <h3 style="font-size:15px;font-weight:700;color:#1e293b;flex:1;">${p.name}</h3>
+        ${statusBadge(p.status)}
+      </div>
+      <div style="margin-bottom:10px;"><span class="badge" style="background:#f5f3ff;color:#6d28d9;font-size:10px;">${p.platform}</span></div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:14px;">Latest: ${latestV ? latestV.tag : '—'}</div>
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:4px;">
+          <span style="color:#475569;">Readiness</span><span style="color:${getProgressColor(readiness.score)}">${readiness.score}%</span>
+        </div>
+        <div class="progress-bar"><div class="fill" style="width:${readiness.score}%;background:${getProgressColor(readiness.score)};"></div></div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:12px;color:#64748b;margin-top:12px;">
+        <span><i data-lucide="git-branch" class="w-3 h-3 inline"></i> ${pVersions.length}</span>
+        <span><i data-lucide="users" class="w-3 h-3 inline"></i> 1</span>
+        <span style="color:#16a34a;"><i data-lucide="shield-check" class="w-3 h-3 inline"></i> 0 gaps</span>
+      </div>
+      ${(p.aiContent === 'Partial' || p.aiContent === 'Yes') ? '<div style="margin-top:10px;font-size:11px;color:#92400e;display:flex;align-items:center;gap:4px;"><i data-lucide="alert-triangle" class="w-3 h-3"></i> AI Disclosure Required</div>' : ''}
+      <div style="display:flex;gap:6px;margin-top:12px;">
+        <button class="btn btn-secondary btn-sm" data-goto-project="${p.id}" style="flex:1;justify-content:center;">Open Project →</button>
+        <button class="btn-file-reg" data-file-reg="${p.id}"><i data-lucide="folder-input" class="w-3 h-3"></i> File</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  container.querySelectorAll('[data-goto-project]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showSection('projects');
+      setTimeout(() => showProjectDetail(btn.dataset.gotoProject), 50);
+    });
+  });
+  container.querySelectorAll('[data-file-reg]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openFilingLaunchModal(btn.dataset.fileReg); });
+  });
+  updateDynamicCounts();
+  lucide.createIcons();
+}
+
+function renderProjects() {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const tbody = document.getElementById('projects-tbody');
+  tbody.innerHTML = '';
+  projects.forEach(p => {
+    const pVersions = versions.filter(v => v.projectId === p.id);
+    const latestV = pVersions[pVersions.length - 1];
+    const readiness = latestV ? computeReadiness(latestV) : { score: 0 };
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;color:#1e293b;">${p.name}</td>
+      <td><span class="badge" style="background:#f5f3ff;color:#6d28d9;font-size:10px;">${p.platform}</span></td>
+      <td>${p.owner}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td>${latestV ? latestV.tag : '—'}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="progress-bar" style="width:80px;"><div class="fill" style="width:${readiness.score}%;background:${getProgressColor(readiness.score)};"></div></div>
+          <span style="font-size:12px;font-weight:600;color:${getProgressColor(readiness.score)};">${readiness.score}%</span>
+        </div>
+      </td>
+      <td style="font-size:12px;color:#64748b;">${fmtDate(p.created)}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-secondary btn-sm" data-view-project="${p.id}">View</button>
+          <button class="btn-file-reg" data-file-reg="${p.id}"><i data-lucide="folder-input" class="w-3 h-3"></i> File</button>
+          <button class="btn btn-secondary btn-sm" data-del-project="${p.id}" style="color:#991b1b;">Del</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-view-project]').forEach(b => b.addEventListener('click', () => showProjectDetail(b.dataset.viewProject)));
+  tbody.querySelectorAll('[data-file-reg]').forEach(b => b.addEventListener('click', () => openFilingLaunchModal(b.dataset.fileReg)));
+  tbody.querySelectorAll('[data-del-project]').forEach(b => b.addEventListener('click', () => {
+    if (confirm('Delete this project and all related data?')) {
+      let ps = load(KEYS.projects).filter(x => x.id !== b.dataset.delProject);
+      save(KEYS.projects, ps);
+      addEvent('Status Changed', '', '', 'Alex', 'Project deleted');
+      renderProjects();
+    }
+  }));
+  lucide.createIcons();
+}
+
+function showProjectDetail(pid) {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const p = projects.find(x => x.id === pid);
+  if (!p) return;
+  const pVersions = versions.filter(v => v.projectId === pid);
+  document.getElementById('project-detail').style.display = 'block';
+  const c = document.getElementById('project-detail-content');
+  c.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <h2 style="font-size:20px;font-weight:800;color:#1e293b;">${p.name}</h2>
+        <div style="font-size:12px;color:#64748b;margin-top:2px;">ID: ${p.id} &nbsp;|&nbsp; ${p.platform} &nbsp;|&nbsp; ${statusBadge(p.status)}</div>
+      </div>
+    </div>
+    ${(p.aiContent === 'Partial' || p.aiContent === 'Yes') ? `<div class="warn-banner mb-5">
+      <strong>⚠️ AI-Generated Content:</strong> This application was created with AI assistance (Microsoft Copilot). Per U.S. Copyright Office guidance (Copyright Registration Guidance: Works Containing Material Generated by Artificial Intelligence, 88 Fed. Reg. 16190, 2023), only the human-authored portions of a work are eligible for copyright protection. You must disclose AI-generated content in your registration application and define the boundaries of your original human authorship (selection, arrangement, prompting, editing contributions).
+    </div>` : ''}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+      <div><span class="form-label">Owner</span><div style="font-size:14px;">${p.owner}</div></div>
+      <div><span class="form-label">Publication Status</span><div style="font-size:14px;">${p.pubStatus}</div></div>
+      <div><span class="form-label">First Publication Date</span><div style="font-size:14px;">${fmtDate(p.pubDate)}</div></div>
+      <div><span class="form-label">Repository</span><div style="font-size:14px;">${p.repo}</div></div>
+      <div class="md:col-span-2"><span class="form-label">Copyright Notice</span><div style="font-size:14px;">${p.notice}</div></div>
+      <div class="md:col-span-2"><span class="form-label">Description</span><div style="font-size:13px;line-height:1.6;color:#475569;">${p.description}</div></div>
+    </div>
+    <h3 style="font-size:14px;font-weight:700;color:#334155;margin-bottom:10px;">Versions (${pVersions.length})</h3>
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr><th>Version</th><th>Date</th><th>Authorship Level</th><th>Status</th></tr></thead>
+        <tbody>${pVersions.map(v => '<tr><td style="font-weight:600;">'+v.tag+'</td><td>'+fmtDate(v.date)+'</td><td>'+v.authorshipLevel+'</td><td>'+statusBadge(v.status)+'</td></tr>').join('')}</tbody>
+      </table>
+    </div>
+  `;
+  lucide.createIcons();
+}
+
+function renderVersions() {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const tbody = document.getElementById('versions-tbody');
+  tbody.innerHTML = '';
+  versions.forEach(v => {
+    const p = projects.find(x => x.id === v.projectId);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;">${v.tag}</td>
+      <td>${p ? p.name : '—'}</td>
+      <td>${fmtDate(v.date)}</td>
+      <td>${v.publicationStatus}</td>
+      <td style="max-width:200px;font-size:12px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.summary}</td>
+      <td>${v.authorshipLevel}</td>
+      <td>${statusBadge(v.status)}</td>
+      <td><button class="btn btn-secondary btn-sm" data-view-version="${v.id}">View</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-view-version]').forEach(b => b.addEventListener('click', () => showVersionDetail(b.dataset.viewVersion)));
+}
+
+function showVersionDetail(vid) {
+  const versions = load(KEYS.versions);
+  const projects = load(KEYS.projects);
+  const v = versions.find(x => x.id === vid);
+  if (!v) return;
+  const p = projects.find(x => x.id === v.projectId);
+  const readiness = computeReadiness(v);
+  document.getElementById('version-detail').style.display = 'block';
+  const c = document.getElementById('version-detail-content');
+  c.innerHTML = `
+    <h2 style="font-size:18px;font-weight:800;color:#1e293b;margin-bottom:4px;">${p ? p.name : ''} — ${v.tag}</h2>
+    <div style="font-size:12px;color:#64748b;margin-bottom:18px;">Released ${fmtDate(v.date)} &nbsp;|&nbsp; ${v.publicationStatus} &nbsp;|&nbsp; ${v.authorshipLevel} new authorship</div>
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;">
+        <span>Registration Readiness</span><span style="color:${getProgressColor(readiness.score)}">${readiness.score}%</span>
+      </div>
+      <div class="progress-bar" style="height:10px;"><div class="fill" style="width:${readiness.score}%;background:${getProgressColor(readiness.score)};"></div></div>
+    </div>
+    <div class="card mb-4" style="background:#f8fafc;">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:10px;">Rules Engine Assessment</h4>
+      ${readiness.rules.map(r => `
+        <div class="rule-item">
+          <span>${r.pass === true ? '✅' : r.pass === 'warn' ? '⚠️' : '🔴'}</span>
+          <span style="color:${r.pass === true ? '#16a34a' : r.pass === 'warn' ? '#92400e' : '#991b1b'};">${r.msg}</span>
+        </div>
+      `).join('')}
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;">
+        <span class="badge ${readiness.score >= 90 ? 'badge-ready' : readiness.score >= 60 ? 'badge-progress' : 'badge-draft'}">
+          ${readiness.score >= 90 ? 'READY FOR FILING' : readiness.score >= 60 ? 'REVIEW REQUIRED' : 'BLOCKED'}
+        </span>
+      </div>
+    </div>
+    <div class="mb-4"><span class="form-label">Authorship Summary</span><div style="font-size:13px;line-height:1.6;color:#475569;">${v.summary}</div></div>
+    ${v.notes ? '<div class="mb-4"><span class="form-label">Notes</span><div style="font-size:13px;color:#475569;">'+v.notes+'</div></div>' : ''}
+    ${v.aiContent !== 'No' ? '<div class="warn-banner">⚠️ AI-generated content flagged ('+v.aiContent+'). Disclosure required for copyright registration.'+(v.aiDisclosure ? '<br><strong>Disclosure:</strong> '+v.aiDisclosure : '')+'</div>' : ''}
+  `;
+  lucide.createIcons();
+}
+
+function renderContributors() {
+  const contributors = load(KEYS.contributors);
+  const projects = load(KEYS.projects);
+  const tbody = document.getElementById('contributors-tbody');
+  tbody.innerHTML = '';
+  contributors.forEach(c => {
+    const pNames = (c.projects || []).map(pid => { const p = projects.find(x => x.id === pid); return p ? p.name : pid; }).join(', ');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;">${c.name}</td>
+      <td>${c.role}</td>
+      <td>${c.employment}</td>
+      <td style="font-size:12px;">${pNames || 'All'}</td>
+      <td><span style="font-size:12px;color:#64748b;">${c.employment === 'Individual (Self)' ? 'N/A (self-authored)' : 'Required'}</span></td>
+      <td><span style="color:#16a34a;font-size:13px;font-weight:600;">✅ Complete</span></td>
+      <td><button class="btn btn-secondary btn-sm">View</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderDeposits() {
+  const deposits = load(KEYS.deposits);
+  const versions = load(KEYS.versions);
+  const projects = load(KEYS.projects);
+  const tbody = document.getElementById('deposits-tbody');
+  tbody.innerHTML = '';
+  deposits.forEach(d => {
+    const v = versions.find(x => x.id === d.versionId);
+    const p = v ? projects.find(x => x.id === v.projectId) : null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;font-size:12px;">${d.name}</td>
+      <td>${p ? p.name : ''} ${v ? v.tag : ''}</td>
+      <td>${fmtDate(d.date)}</td>
+      <td>${d.type}</td>
+      <td>${d.redacted}</td>
+      <td style="font-family:monospace;font-size:11px;color:#64748b;">${d.hash ? d.hash.slice(0,16)+'…' : '—'}</td>
+      <td>${statusBadge(d.status)}</td>
+      <td><div style="display:flex;gap:6px;"><button class="btn btn-secondary btn-sm" data-export-deposit="${d.id}">Export</button></div></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const projSel = document.getElementById('dep-project-select');
+  projSel.innerHTML = '<option value="">Choose project…</option>';
+  projects.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name; projSel.appendChild(o); });
+  tbody.querySelectorAll('[data-export-deposit]').forEach(b => b.addEventListener('click', () => exportDeposit(b.dataset.exportDeposit)));
+}
+
+function exportDeposit(did) {
+  const deposits = load(KEYS.deposits);
+  const d = deposits.find(x => x.id === did);
+  if (!d) return;
+  const txt = 'DEPOSIT PACKAGE SUMMARY\n'+'='.repeat(40)+'\nPackage: '+d.name+'\nDate: '+d.date+'\nType: '+d.type+'\nRedacted: '+d.redacted+'\nHash: '+d.hash+'\nStatus: '+d.status+'\n';
+  downloadText(d.name + '.txt', txt);
+}
+
+function renderFiling() {
+  const filings = load(KEYS.filings);
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  ['draft','progress','ready','submitted'].forEach(col => {
+    const el = document.getElementById('kanban-' + col);
+    const header = el.children[0];
+    el.innerHTML = '';
+    el.appendChild(header);
+  });
+  const colMap = { 'Draft':'kanban-draft', 'In Progress':'kanban-progress', 'Ready to File':'kanban-ready', 'Submitted':'kanban-submitted', 'Certificate Issued':'kanban-submitted' };
+  filings.forEach(f => {
+    const p = projects.find(x => x.id === f.projectId);
+    const v = versions.find(x => x.id === f.versionId);
+    const colId = colMap[f.status] || 'kanban-draft';
+    const col = document.getElementById(colId);
+    const card = document.createElement('div');
+    card.className = 'kanban-card';
+    card.dataset.filingId = f.id;
+    const readiness = v ? computeReadiness(v) : { score: f.readiness || 0 };
+    card.innerHTML = `
+      <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">${p ? p.name : ''}</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;">${v ? v.tag : ''} &nbsp;|&nbsp; ${f.matterId}</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span style="color:#64748b;">Readiness</span><span style="font-weight:600;color:${getProgressColor(readiness.score)};">${readiness.score}%</span></div>
+      <div class="progress-bar" style="margin-bottom:8px;"><div class="fill" style="width:${readiness.score}%;background:${getProgressColor(readiness.score)};"></div></div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">Updated ${fmtDate(f.updated)}</div>
+      <button class="btn-file-reg" style="width:100%;justify-content:center;" data-kanban-file="${p?p.id:''}"><i data-lucide="folder-input" class="w-3 h-3"></i> File Registration</button>
+    `;
+    col.appendChild(card);
+  });
+  ['kanban-ready','kanban-submitted'].forEach(colId => {
+    const col = document.getElementById(colId);
+    if (col.children.length <= 1) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'text-align:center;padding:30px 10px;color:#94a3b8;font-size:13px;';
+      empty.textContent = colId === 'kanban-ready' ? 'No matters ready yet' : 'No submissions yet';
+      col.appendChild(empty);
+    }
+  });
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('[data-kanban-file]')) return;
+      openFilingDetail(card.dataset.filingId);
+    });
+  });
+  document.querySelectorAll('[data-kanban-file]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); if (btn.dataset.kanbanFile) openFilingLaunchModal(btn.dataset.kanbanFile); });
+  });
+  lucide.createIcons();
+}
+
+function openFilingDetail(fid) {
+  const filings = load(KEYS.filings);
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const f = filings.find(x => x.id === fid);
+  if (!f) return;
+  const p = projects.find(x => x.id === f.projectId);
+  const v = versions.find(x => x.id === f.versionId);
+  const readiness = v ? computeReadiness(v) : { score: 0, rules: [] };
+
+  document.getElementById('filing-modal-title').textContent = f.matterId+' — '+(p ? p.name : '')+' '+(v ? v.tag : '');
+  const body = document.getElementById('filing-modal-body');
+  body.innerHTML = `
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+      <div><span class="form-label">Matter ID</span><div style="font-size:14px;font-weight:600;">${f.matterId}</div></div>
+      <div><span class="form-label">Status</span><div>${statusBadge(f.status)}</div></div>
+      <div><span class="form-label">Created</span><div style="font-size:13px;">${fmtTS(f.created)}</div></div>
+    </div>
+    <button class="btn-eco-portal" style="margin-bottom:16px;" id="fm-begin-eco" data-pid="${p?p.id:''}"><i data-lucide="folder-input" class="w-5 h-5"></i> Begin eCO Filing →</button>
+    <div class="info-banner mb-4">
+      <strong>📋 Filing Worksheet — For Reference Only.</strong> Complete official registration at copyright.gov.
+    </div>
+    <div class="card mb-4" style="background:#f8fafc;">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Pre-filled Filing Worksheet</h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3" style="font-size:13px;">
+        <div><strong>Title of work:</strong> ${p ? p.name : '—'}</div>
+        <div><strong>Version/edition:</strong> ${v ? v.tag : '—'}</div>
+        <div><strong>Nature of work:</strong> Computer Program</div>
+        <div><strong>Year of completion:</strong> 2026</div>
+        <div><strong>Date of first publication:</strong> ${p ? fmtDate(p.pubDate) : '—'}</div>
+        <div><strong>Nation of first publication:</strong> United States</div>
+        <div><strong>Author:</strong> ${p ? p.owner : '—'}</div>
+        <div><strong>Author's contribution:</strong> Entire work</div>
+        <div><strong>Work made for hire:</strong> No (self-authored)</div>
+        <div><strong>Copyright claimant:</strong> ${p ? p.owner : '—'}</div>
+        <div><strong>Transfer statement:</strong> N/A (original author)</div>
+        <div><strong>AI-generated content:</strong> ${v ? v.aiContent : '—'}</div>
+      </div>
+    </div>
+    <div class="card mb-4" style="background:#f8fafc;">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Filing Checklist</h4>
+      <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:8px;">Pre-Filing</div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-1" ${f.checklist?.['1'] ? 'checked' : ''} /><span style="font-size:13px;">Project and version data complete</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-2" ${f.checklist?.['2'] ? 'checked' : ''} /><span style="font-size:13px;">Ownership documentation verified</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-3" ${f.checklist?.['3'] ? 'checked' : ''} /><span style="font-size:13px;">AI-generated content disclosed (if applicable)</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-4" ${f.checklist?.['4'] ? 'checked' : ''} /><span style="font-size:13px;">Deposit package generated</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-5" ${f.checklist?.['5'] ? 'checked' : ''} /><span style="font-size:13px;">Filing worksheet reviewed and accurate</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-6" ${f.checklist?.['6'] ? 'checked' : ''} /><span style="font-size:13px;">Registration fee ready (~$65 single online / ~$45 basic claim — confirm at copyright.gov)</span></div>
+      <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;margin:16px 0 8px;">Submission</div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-7" ${f.checklist?.['7'] ? 'checked' : ''} /><span style="font-size:13px;">Account created at copyright.gov</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-8" ${f.checklist?.['8'] ? 'checked' : ''} /><span style="font-size:13px;">Application submitted online (eCO system)</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-9" ${f.checklist?.['9'] ? 'checked' : ''} /><span style="font-size:13px;">Deposit uploaded to copyright.gov</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-10" ${f.checklist?.['10'] ? 'checked' : ''} /><span style="font-size:13px;">Fee paid</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-11" ${f.checklist?.['11'] ? 'checked' : ''} /><span style="font-size:13px;">Confirmation number recorded</span></div>
+      <div style="font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;margin:16px 0 8px;">Post-Submission</div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-12" ${f.checklist?.['12'] ? 'checked' : ''} /><span style="font-size:13px;">Status monitored (3–11 months standard / 5 business days expedited)</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-13" ${f.checklist?.['13'] ? 'checked' : ''} /><span style="font-size:13px;">Correspondence from Copyright Office addressed</span></div>
+      <div class="checklist-item"><input type="checkbox" data-ck="${f.id}-14" ${f.checklist?.['14'] ? 'checked' : ''} /><span style="font-size:13px;">Certificate number recorded upon issuance</span></div>
+    </div>
+    <div class="card mb-4" style="background:#f8fafc;">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Portal Tracking</h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div><label class="form-label">Confirmation Number</label><input class="form-input" id="trk-confirm-${f.id}" value="${f.tracking?.confirmNum||''}" /></div>
+        <div><label class="form-label">Filing Date</label><input type="date" class="form-input" id="trk-date-${f.id}" value="${f.tracking?.filingDate||''}" /></div>
+        <div><label class="form-label">Certificate Number</label><input class="form-input" id="trk-cert-${f.id}" value="${f.tracking?.certNum||''}" /></div>
+        <div><label class="form-label">Certificate Issue Date</label><input type="date" class="form-input" id="trk-certdate-${f.id}" value="${f.tracking?.certDate||''}" /></div>
+        <div class="md:col-span-2"><label class="form-label">Notes / Correspondence</label><textarea class="form-input" id="trk-notes-${f.id}">${f.tracking?.notes||''}</textarea></div>
+      </div>
+      <button class="btn btn-primary btn-sm mt-3" data-save-tracking="${f.id}"><i data-lucide="save" class="w-3 h-3"></i> Save Tracking Info</button>
+    </div>
+    <div class="card" style="background:#f8fafc;">
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:12px;">Matter Timeline</h4>
+      <div class="timeline-item"><div class="timeline-dot"></div><div style="font-size:12px;font-weight:600;">Matter Created</div><div style="font-size:11px;color:#64748b;">${fmtTS(f.created)}</div></div>
+      <div class="timeline-item"><div class="timeline-dot ${readiness.score >= 60 ? '' : 'empty'}"></div><div style="font-size:12px;font-weight:600;">Fields Completed</div><div style="font-size:11px;color:#64748b;">${readiness.score >= 60 ? 'Data reviewed' : 'Pending'}</div></div>
+      <div class="timeline-item"><div class="timeline-dot empty"></div><div style="font-size:12px;font-weight:600;">Deposit Generated</div><div style="font-size:11px;color:#64748b;">Pending</div></div>
+      <div class="timeline-item"><div class="timeline-dot empty"></div><div style="font-size:12px;font-weight:600;">Ready to File</div><div style="font-size:11px;color:#64748b;">Pending</div></div>
+      <div class="timeline-item"><div class="timeline-dot empty"></div><div style="font-size:12px;font-weight:600;">Filed</div><div style="font-size:11px;color:#64748b;">Pending</div></div>
+      <div class="timeline-item"><div class="timeline-dot empty"></div><div style="font-size:12px;font-weight:600;">Certificate Issued</div><div style="font-size:11px;color:#64748b;">Pending</div></div>
+    </div>
+    <div class="legal-banner mt-4">
+      <strong>⚖️ Legal Notice:</strong> This filing worksheet is for organizational purposes only. It does not constitute a copyright registration. Complete all official filings through the U.S. Copyright Office eCO system at copyright.gov.
+    </div>
+  `;
+  body.querySelectorAll('[data-ck]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const key = cb.dataset.ck.split('-')[1];
+      const filings2 = load(KEYS.filings);
+      const fi = filings2.find(x => x.id === fid);
+      if (fi) { if (!fi.checklist) fi.checklist = {}; fi.checklist[key] = cb.checked; fi.updated = new Date().toISOString(); save(KEYS.filings, filings2); }
+    });
+  });
+  body.querySelectorAll('[data-save-tracking]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const filings2 = load(KEYS.filings);
+      const fi = filings2.find(x => x.id === fid);
+      if (fi) {
+        fi.tracking = { confirmNum: document.getElementById('trk-confirm-'+fid)?.value||'', filingDate: document.getElementById('trk-date-'+fid)?.value||'', certNum: document.getElementById('trk-cert-'+fid)?.value||'', certDate: document.getElementById('trk-certdate-'+fid)?.value||'', notes: document.getElementById('trk-notes-'+fid)?.value||'' };
+        fi.updated = new Date().toISOString();
+        save(KEYS.filings, filings2);
+        addEvent('Status Changed', p ? p.name : '', v ? v.tag : '', 'Alex', 'Tracking info updated for '+fi.matterId);
+        alert('Tracking info saved!');
+      }
+    });
+  });
+  const beginEcoBtn = body.querySelector('#fm-begin-eco');
+  if (beginEcoBtn) beginEcoBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    closeModal('modal-filing');
+    if (beginEcoBtn.dataset.pid) openFilingLaunchModal(beginEcoBtn.dataset.pid);
+  });
+  openModal('modal-filing');
+  lucide.createIcons();
+}
+
+function renderFileNow() {
+  const projects = load(KEYS.projects);
+  const versions = load(KEYS.versions);
+  const filings = load(KEYS.filings);
+  const tbody = document.getElementById('filenow-tbody');
+  tbody.innerHTML = '';
+  projects.forEach(p => {
+    const pv = versions.filter(v => v.projectId === p.id);
+    const lv = pv[pv.length - 1];
+    const pf = filings.find(f => f.projectId === p.id);
+    const readiness = lv ? computeReadiness(lv) : { score: 0 };
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;color:#1e293b;">${p.name}</td>
+      <td>${lv ? lv.tag : '—'}</td>
+      <td style="font-size:12px;">${pf ? pf.matterId : '—'}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="progress-bar" style="width:60px;"><div class="fill" style="width:${readiness.score}%;background:${getProgressColor(readiness.score)};"></div></div>
+          <span style="font-size:12px;font-weight:600;color:${getProgressColor(readiness.score)};">${readiness.score}%</span>
+        </div>
+      </td>
+      <td><span style="font-size:12px;font-weight:600;color:#16a34a;">$45</span></td>
+      <td>${pf ? statusBadge(pf.status) : statusBadge('Draft')}</td>
+      <td><button class="btn-file-reg" data-fn-file="${p.id}"><i data-lucide="folder-input" class="w-3 h-3"></i> File</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-fn-file]').forEach(btn => {
+    btn.addEventListener('click', () => openFilingLaunchModal(btn.dataset.fnFile));
+  });
+  lucide.createIcons();
+}
+
+function renderAudit() {
+  const events = load(KEYS.events);
+  const projects = load(KEYS.projects);
+  const tbody = document.getElementById('audit-tbody');
+  const filterProj = document.getElementById('audit-filter-project').value;
+  const filterType = document.getElementById('audit-filter-type').value;
+  const search = (document.getElementById('audit-search').value || '').toLowerCase();
+
+  const projFilter = document.getElementById('audit-filter-project');
+  if (projFilter.options.length <= 1) {
+    projects.forEach(p => { const o = document.createElement('option'); o.value = p.name; o.textContent = p.name; projFilter.appendChild(o); });
+  }
+
+  let filtered = [...events].reverse();
+  if (filterProj) filtered = filtered.filter(e => e.project === filterProj);
+  if (filterType) filtered = filtered.filter(e => e.type === filterType);
+  if (search) filtered = filtered.filter(e => (e.description + e.project + e.type).toLowerCase().includes(search));
+
+  tbody.innerHTML = '';
+  const icons = { 'Project Created':'📁', 'Version Added':'➕', 'Contributor Added':'👤', 'Document Uploaded':'📄', 'Deposit Generated':'📦', 'Filing Created':'📋', 'Status Changed':'✏️', 'Record Viewed':'🔍', 'Export Generated':'📤', 'Filing Submitted':'📤', 'Certificate Issued':'🏆' };
+  filtered.forEach(e => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:12px;color:#64748b;white-space:nowrap;">${fmtTS(e.timestamp)}</td>
+      <td><span style="font-size:13px;">${icons[e.type]||'📝'} ${e.type}</span></td>
+      <td style="font-size:13px;">${e.project || '—'}</td>
+      <td style="font-size:13px;">${e.version || '—'}</td>
+      <td style="font-size:13px;">${e.actor}</td>
+      <td style="font-size:12px;color:#475569;max-width:260px;">${e.description}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadSettings() {
+  const s = load(KEYS.settings);
+  if (s && typeof s === 'object' && !Array.isArray(s)) {
+    document.getElementById('set-name').value = s.name || '';
+    document.getElementById('set-org').value = s.org || '';
+    document.getElementById('set-email').value = s.email || '';
+    document.getElementById('set-notice').value = s.notice || '';
+    document.getElementById('set-jurisdiction').value = s.jurisdiction || '';
+  }
+}
+
+// ===========================
+// MODALS
+// ===========================
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ===========================
+// DOWNLOAD HELPERS
+// ===========================
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+function downloadJSON(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ===========================
+// INIT & EVENT BINDINGS
+// ===========================
+document.addEventListener('DOMContentLoaded', () => {
+  const existingProjects = load(KEYS.projects);
+  if (!localStorage.getItem(KEYS.init) || (existingProjects.length > 0 && existingProjects.length < 6 && !existingProjects.find(p => p.id === 'p4'))) {
+    Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+    seedData();
+    if (!localStorage.getItem(KEYS.init + '_welcomed')) {
+      openModal('modal-welcome');
+      localStorage.setItem(KEYS.init + '_welcomed', 'true');
+    }
+  }
+
+  // Nav
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => showSection(item.dataset.section));
+  });
+  document.getElementById('mobile-menu-toggle').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+  document.querySelectorAll('.modal-close-btn').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(btn.dataset.modal));
+  });
+  document.getElementById('btn-welcome-dismiss').addEventListener('click', () => closeModal('modal-welcome'));
+
+  // New Project
+  document.getElementById('btn-new-project-top').addEventListener('click', () => {
+    document.getElementById('f-proj-name').value = '';
+    document.getElementById('f-proj-id').value = '';
+    document.getElementById('f-proj-desc').value = '';
+    document.getElementById('f-proj-tags').value = '';
+    openModal('modal-project');
+  });
+  document.getElementById('btn-add-project').addEventListener('click', () => {
+    document.getElementById('f-proj-name').value = '';
+    document.getElementById('f-proj-id').value = '';
+    document.getElementById('f-proj-desc').value = '';
+    document.getElementById('f-proj-tags').value = '';
+    openModal('modal-project');
+  });
+  document.getElementById('f-proj-ai').addEventListener('change', function() {
+    document.getElementById('f-proj-ai-warn').style.display = (this.value === 'Yes' || this.value === 'Partial') ? 'block' : 'none';
+  });
+  document.getElementById('btn-save-project').addEventListener('click', () => {
+    const name = document.getElementById('f-proj-name').value.trim();
+    if (!name) { alert('Project name is required.'); return; }
+    const owner = document.getElementById('f-proj-owner').value.trim() || 'Alex';
+    const projects = load(KEYS.projects);
+    const np = {
+      id: uid(), name, platform: document.getElementById('f-proj-platform').value,
+      owner, status: 'Draft',
+      description: document.getElementById('f-proj-desc').value,
+      notice: document.getElementById('f-proj-notice').value,
+      pubDate: document.getElementById('f-proj-pubdate').value,
+      pubStatus: document.getElementById('f-proj-pubstatus').value,
+      repo: document.getElementById('f-proj-repo').value || 'N/A',
+      aiContent: document.getElementById('f-proj-ai').value,
+      tags: document.getElementById('f-proj-tags').value,
+      created: new Date().toISOString()
+    };
+    projects.push(np);
+    save(KEYS.projects, projects);
+    addEvent('Project Created', np.name, '—', 'Alex', 'New project record created');
+    closeModal('modal-project');
+    showSection('projects');
+  });
+
+  // Version
+  document.getElementById('btn-add-version').addEventListener('click', () => {
+    const projects = load(KEYS.projects);
+    const sel = document.getElementById('f-ver-project');
+    sel.innerHTML = '<option value="">Choose project…</option>';
+    projects.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); });
+    document.getElementById('f-ver-tag').value = '';
+    document.getElementById('f-ver-date').value = '';
+    document.getElementById('f-ver-summary').value = '';
+    document.getElementById('f-ver-notes').value = '';
+    openModal('modal-version');
+  });
+  document.getElementById('btn-save-version').addEventListener('click', () => {
+    const projectId = document.getElementById('f-ver-project').value;
+    const tag = document.getElementById('f-ver-tag').value.trim();
+    const date = document.getElementById('f-ver-date').value;
+    const summary = document.getElementById('f-ver-summary').value.trim();
+    if (!projectId || !tag || !date || !summary) { alert('Please fill all required fields.'); return; }
+    const versions = load(KEYS.versions);
+    const projects = load(KEYS.projects);
+    const p = projects.find(x => x.id === projectId);
+    const nv = {
+      id: uid(), projectId, tag, date,
+      publicationStatus: document.getElementById('f-ver-pub').value, summary,
+      authorshipLevel: document.getElementById('f-ver-authorship').value,
+      aiContent: document.getElementById('f-ver-ai').value, aiDisclosure: '',
+      sourceAvailable: document.getElementById('f-ver-source').value,
+      notes: document.getElementById('f-ver-notes').value, status: 'Draft'
+    };
+    versions.push(nv);
+    save(KEYS.versions, versions);
+    addEvent('Version Added', p ? p.name : '', tag, 'Alex', 'Version '+tag+' added — '+summary.slice(0,60)+'…');
+    closeModal('modal-version');
+    showSection('versions');
+  });
+
+  // Contributor
+  document.getElementById('btn-add-contributor').addEventListener('click', () => {
+    document.getElementById('f-con-name').value = '';
+    document.getElementById('f-con-email').value = '';
+    document.getElementById('f-con-notes').value = '';
+    openModal('modal-contributor');
+  });
+  document.getElementById('btn-save-contributor').addEventListener('click', () => {
+    const name = document.getElementById('f-con-name').value.trim();
+    if (!name) { alert('Name is required.'); return; }
+    const contributors = load(KEYS.contributors);
+    contributors.push({
+      id: uid(), name, email: document.getElementById('f-con-email').value,
+      role: document.getElementById('f-con-role').value,
+      employment: document.getElementById('f-con-employment').value,
+      projects: [], docsComplete: false, notes: document.getElementById('f-con-notes').value
+    });
+    save(KEYS.contributors, contributors);
+    addEvent('Contributor Added', '', '', 'Alex', 'Contributor '+name+' added');
+    closeModal('modal-contributor');
+    showSection('contributors');
+  });
+
+  // Back buttons
+  document.getElementById('proj-back-btn').addEventListener('click', () => { document.getElementById('project-detail').style.display = 'none'; });
+  document.getElementById('ver-back-btn').addEventListener('click', () => { document.getElementById('version-detail').style.display = 'none'; });
+
+  // Deposit Wizard
+  let depWizardStep = 1;
+  function showDepStep(n) {
+    depWizardStep = n;
+    document.querySelectorAll('.wizard-step').forEach((s,i) => s.classList.toggle('active', i === n - 1));
+    ['ds-1','ds-2','ds-3','ds-4'].forEach((id,i) => {
+      const el = document.getElementById(id);
+      el.className = 'step-indicator' + (i + 1 === n ? ' active' : (i + 1 < n ? ' done' : ''));
+    });
+  }
+  document.getElementById('dep-project-select').addEventListener('change', function() {
+    const versions = load(KEYS.versions).filter(v => v.projectId === this.value);
+    const sel = document.getElementById('dep-version-select');
+    sel.innerHTML = '<option value="">Choose version…</option>';
+    versions.forEach(v => { const o = document.createElement('option'); o.value = v.id; o.textContent = v.tag+' — '+v.summary.slice(0,50); sel.appendChild(o); });
+  });
+  document.getElementById('dep-next-1').addEventListener('click', () => {
+    if (!document.getElementById('dep-version-select').value) { alert('Please select a version.'); return; }
+    const vid = document.getElementById('dep-version-select').value;
+    const v = load(KEYS.versions).find(x => x.id === vid);
+    document.getElementById('dep-ai-disclosure-box').style.display = (v && (v.aiContent === 'Partial' || v.aiContent === 'Yes')) ? 'block' : 'none';
+    showDepStep(2);
+  });
+  document.getElementById('dep-next-2').addEventListener('click', () => showDepStep(3));
+  document.getElementById('dep-next-3').addEventListener('click', () => {
+    const vid = document.getElementById('dep-version-select').value;
+    const v = load(KEYS.versions).find(x => x.id === vid);
+    const p = v ? load(KEYS.projects).find(x => x.id === v.projectId) : null;
+    document.getElementById('dep-review-summary').innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3" style="font-size:13px;">
+        <div><strong>Project:</strong> ${p ? p.name : '—'}</div>
+        <div><strong>Version:</strong> ${v ? v.tag : '—'}</div>
+        <div><strong>Source Type:</strong> ${document.getElementById('dep-source-type').value}</div>
+        <div><strong>Deposit Strategy:</strong> First 25 + Last 25 pages</div>
+        <div><strong>Redaction:</strong> ${document.getElementById('dep-redaction').value}</div>
+        <div><strong>AI Disclosure:</strong> ${v && v.aiContent !== 'No' ? 'Required — included' : 'Not required'}</div>
+        <div><strong>Include README:</strong> ${document.getElementById('dep-readme').checked ? 'Yes' : 'No'}</div>
+        <div><strong>Include Screenshots:</strong> ${document.getElementById('dep-screenshots').checked ? 'Yes' : 'No'}</div>
+      </div>`;
+    showDepStep(4);
+  });
+  document.getElementById('dep-back-2').addEventListener('click', () => showDepStep(1));
+  document.getElementById('dep-back-3').addEventListener('click', () => showDepStep(2));
+  document.getElementById('dep-back-4').addEventListener('click', () => showDepStep(3));
+  document.getElementById('dep-redaction').addEventListener('change', function() {
+    document.getElementById('dep-redaction-details').style.display = this.value === 'yes' ? 'block' : 'none';
+  });
+  document.getElementById('dep-generate').addEventListener('click', () => {
+    const vid = document.getElementById('dep-version-select').value;
+    const v = load(KEYS.versions).find(x => x.id === vid);
+    const p = v ? load(KEYS.projects).find(x => x.id === v.projectId) : null;
+    if (!v || !p) return;
+    const deposits = load(KEYS.deposits);
+    const depName = p.name.replace(/\s+/g,'')+'_'+v.tag+'_Deposit_'+new Date().toISOString().slice(0,10);
+    const nd = { id: uid(), versionId: v.id, projectId: p.id, name: depName, date: new Date().toISOString().slice(0,10), type: 'First 25 + Last 25', redacted: document.getElementById('dep-redaction').value === 'yes' ? 'Yes' : 'No', hash: genHash(depName+Date.now()), status: 'Generated' };
+    deposits.push(nd);
+    save(KEYS.deposits, deposits);
+    addEvent('Deposit Generated', p.name, v.tag, 'Alex', 'Deposit package generated — '+depName);
+    alert('✅ Deposit package generated and saved to audit trail!');
+    showDepStep(1);
+    renderDeposits();
+  });
+
+  // Audit filters
+  document.getElementById('audit-filter-project').addEventListener('change', renderAudit);
+  document.getElementById('audit-filter-type').addEventListener('change', renderAudit);
+  document.getElementById('audit-search').addEventListener('input', renderAudit);
+
+  // Export matter file
+  document.getElementById('btn-export-matter').addEventListener('click', () => {
+    const projects = load(KEYS.projects);
+    const versions = load(KEYS.versions);
+    const filings = load(KEYS.filings);
+    const events = load(KEYS.events);
+    let txt = 'COPYRIGHT OPS — MATTER FILE EXPORT\n'+'='.repeat(50)+'\n';
+    txt += 'Generated: '+new Date().toLocaleString()+'\n\n';
+    projects.forEach(p => {
+      txt += '\n'+'─'.repeat(50)+'\n';
+      txt += 'PROJECT: '+p.name+'\n';
+      txt += 'Owner: '+p.owner+' | Platform: '+p.platform+' | Status: '+p.status+'\n';
+      txt += 'Description: '+p.description+'\n';
+      txt += 'Copyright Notice: '+p.notice+'\n';
+      txt += 'Publication: '+p.pubStatus+' — '+p.pubDate+'\n\n';
+      const pv = versions.filter(v => v.projectId === p.id);
+      pv.forEach(v => {
+        txt += '  VERSION: '+v.tag+' ('+v.date+') — '+v.authorshipLevel+'\n';
+        txt += '  Summary: '+v.summary+'\n';
+        txt += '  AI Content: '+v.aiContent+'\n';
+        if (v.aiDisclosure) txt += '  AI Disclosure: '+v.aiDisclosure+'\n';
+        txt += '\n';
+      });
+      const pf = filings.filter(f => f.projectId === p.id);
+      pf.forEach(f => {
+        const v = versions.find(x => x.id === f.versionId);
+        txt += '  FILING: '+f.matterId+' — '+(v?v.tag:'')+' — Status: '+f.status+'\n';
+      });
+      txt += '\n';
+    });
+    txt += '\nAUDIT TRAIL\n'+'─'.repeat(50)+'\n';
+    events.forEach(e => { txt += e.timestamp+' | '+e.type+' | '+e.project+' | '+e.version+' | '+e.actor+' | '+e.description+'\n'; });
+    txt += '\n\nDISCLAIMER: This export is for organizational purposes only.\n';
+    downloadText('CopyRightOps_MatterFile_'+new Date().toISOString().slice(0,10)+'.txt', txt);
+    addEvent('Export Generated', '', '', 'Alex', 'Full matter file exported');
+  });
+
+  // Settings
+  document.getElementById('btn-save-settings').addEventListener('click', () => {
+    const s = { name: document.getElementById('set-name').value, org: document.getElementById('set-org').value, email: document.getElementById('set-email').value, notice: document.getElementById('set-notice').value, jurisdiction: document.getElementById('set-jurisdiction').value };
+    save(KEYS.settings, s);
+    alert('Settings saved!');
+  });
+  document.getElementById('btn-export-json').addEventListener('click', () => {
+    const data = {};
+    Object.entries(KEYS).forEach(([k,v]) => { if (v !== 'cr_initialized' && v !== 'cr_active_section') data[k] = load(v); });
+    downloadJSON('CopyRightOps_Backup_'+new Date().toISOString().slice(0,10)+'.json', data);
+    addEvent('Export Generated', '', '', 'Alex', 'Full data backup exported as JSON');
+  });
+  document.getElementById('btn-import-json').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        Object.entries(KEYS).forEach(([k,v]) => { if (data[k]) save(v, data[k]); });
+        localStorage.setItem(KEYS.init, 'true');
+        alert('Data imported successfully!');
+        showSection('dashboard');
+      } catch { alert('Invalid JSON file.'); }
+    };
+    reader.readAsText(file);
+  });
+  document.getElementById('btn-clear-data').addEventListener('click', () => openModal('modal-confirm-clear'));
+  document.getElementById('btn-confirm-clear').addEventListener('click', () => {
+    Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem(KEYS.init);
+    closeModal('modal-confirm-clear');
+    seedData();
+    showSection('dashboard');
+    alert('All data cleared and reset to defaults.');
+  });
+
+  // Notification bell
+  document.getElementById('notif-bell').addEventListener('click', () => {
+    alert('⚠️ 6 projects require AI-generated content disclosure.\n📦 7 versions flagged for registration review.\n📋 8 filing matters active.\n\nReview your Filing Tracker for details.');
+  });
+
+  // Overlay click to close modals
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
+  });
+
+  // Filing Launch Modal — tabs
+  document.querySelectorAll('.fm-tab-pill').forEach(pill => {
+    pill.addEventListener('click', function() { switchFilingTab(this.dataset.fmtab); });
+  });
+  document.getElementById('flm-close-btn').addEventListener('click', () => {
+    document.getElementById('filing-launch-modal').classList.remove('show');
+  });
+  document.getElementById('filing-launch-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('filing-launch-modal')) document.getElementById('filing-launch-modal').classList.remove('show');
+  });
+
+  // Group Filing Modal
+  document.getElementById('btn-group-filing-launch').addEventListener('click', () => openGroupFilingModal());
+  document.getElementById('gfm-close-btn').addEventListener('click', () => {
+    document.getElementById('group-filing-modal').classList.remove('show');
+  });
+  document.getElementById('group-filing-modal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('group-filing-modal')) document.getElementById('group-filing-modal').classList.remove('show');
+  });
+  // File Now section group reg button
+  const fnGroupBtn = document.getElementById('fn-group-reg');
+  if (fnGroupBtn) fnGroupBtn.addEventListener('click', () => openGroupFilingModal());
+
+  // Load last section
+  const lastSection = localStorage.getItem(KEYS.section) || 'dashboard';
+  showSection(lastSection);
+
+  lucide.createIcons();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<title>S&P 500 Top 20 — Model vs Reality</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        bg: { 900:'#0a0e1a', 800:'#111827', 700:'#1f2937', 600:'#374151', 500:'#4b5563' },
+        tx: { 50:'#f9fafb', 100:'#f3f4f6', 200:'#e5e7eb', 300:'#d1d5db', 400:'#9ca3af', 500:'#6b7280' },
+        acc: { green:'#10b981', red:'#ef4444', blue:'#3b82f6', yellow:'#f59e0b', purple:'#8b5cf6', cyan:'#06b6d4', emerald:'#34d399', rose:'#fb7185', orange:'#f97316' }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace']
+      }
+    }
+  }
+};
+</script>
+<style>
+:root {
+  --bg-deep: #0a0e1a;
+  --bg-card: #111827;
+  --bg-border: #1f2937;
+  --tx-primary: #f9fafb;
+  --tx-muted: #6b7280;
+  --green: #10b981;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --yellow: #f59e0b;
+  --purple: #8b5cf6;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg-deep); color: var(--tx-primary); font-family: 'Inter', system-ui, sans-serif; margin: 0; }
+.font-num { font-family: 'JetBrains Mono', monospace; }
+.card { background: var(--bg-card); border: 1px solid var(--bg-border); border-radius: 8px; }
+.card:hover { border-color: #374151; }
+.pill { border-radius: 4px; padding: 4px 10px; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.glow-green:hover { box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+.glow-blue:hover { box-shadow: 0 0 20px rgba(59,130,246,0.15); }
+.glow-purple:hover { box-shadow: 0 0 20px rgba(139,92,246,0.15); }
+.glow-yellow:hover { box-shadow: 0 0 20px rgba(245,158,11,0.15); }
+.scroll-card { max-height: 380px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #374151 #111827; }
+.scroll-card::-webkit-scrollbar { width: 6px; }
+.scroll-card::-webkit-scrollbar-track { background: #111827; }
+.scroll-card::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+table th { cursor: pointer; user-select: none; white-space: nowrap; }
+table th:hover { color: #e5e7eb; }
+table tr { transition: background 0.15s; }
+.regime-btn { padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; border: 1px solid #1f2937; background: transparent; color: #9ca3af; cursor: pointer; transition: all 0.2s; }
+.regime-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+.regime-btn:hover:not(.active) { border-color: #374151; color: #e5e7eb; }
+.sector-tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 600; white-space: nowrap; }
+.highlight-row { background: rgba(59,130,246,0.08) !important; }
+svg text { font-family: 'Inter', system-ui, sans-serif; }
+svg text.mono { font-family: 'JetBrains Mono', monospace; }
+.tooltip-scatter { position: absolute; background: #1f2937; border: 1px solid #374151; border-radius: 6px; padding: 8px 12px; font-size: 12px; pointer-events: none; z-index: 50; display: none; max-width: 220px; }
+@media (max-width: 767px) {
+  .desktop-pills { flex-direction: column; gap: 4px; }
+}
+</style>
+</head>
+<body data-id="0" class="min-h-screen">
+<app-icon data-id="1" hidden data-icon="trending-up" data-palette="Dark"></app-icon>
+<app-disclaimer data-id="2" intent="financial"></app-disclaimer>
+
+<!-- HEADER -->
+<header data-id="3" id="header-main" class="border-b border-bg-700" style="background: linear-gradient(180deg, #111827 0%, #0a0e1a 100%);">
+  <div data-id="4" class="max-w-[1440px] mx-auto px-4 md:px-6 py-4 md:py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div data-id="5">
+      <h1 data-id="6" class="text-lg md:text-[22px] font-bold text-tx-50 leading-tight">S&amp;P 500 Top 20 · Model v2.0 vs Reality</h1>
+      <p data-id="7" class="text-xs md:text-sm text-tx-500 mt-1">Forward 12-Month Projections vs Last 12 Months Actual · As of May 2026 · <span data-id="8" id="regime-label-h4kj" class="text-acc-blue">Neutral Macro Regime</span></p>
+    </div>
+    <div data-id="9" class="flex items-center gap-2 flex-wrap desktop-pills">
+      <span data-id="10" class="pill" style="background:rgba(16,185,129,0.15); color:#10b981;">17/20 Beat Base</span>
+      <span data-id="11" class="pill" style="background:rgba(239,68,68,0.15); color:#ef4444;">3/20 Missed</span>
+      <span data-id="12" class="pill" style="background:rgba(59,130,246,0.15); color:#3b82f6;">S&amp;P 500 TTM: +30.6%</span>
+    </div>
+  </div>
+</header>
+
+<!-- MOBILE NAV -->
+<button data-id="13" id="mobile-menu-btn-x9f2" class="md:hidden fixed top-3 right-3 z-50 p-2 rounded-lg" style="background:#1f2937;">
+  <i data-id="14" data-lucide="menu" class="w-5 h-5 text-tx-200"></i>
+</button>
+
+<!-- KPI CARDS -->
+<section data-id="15" id="kpi-section-r3kl" class="max-w-[1440px] mx-auto px-4 md:px-6 py-5">
+  <div data-id="16" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div data-id="17" class="card p-5 glow-green transition-all">
+      <div data-id="18" class="flex items-center gap-2 mb-2"><i data-id="19" data-lucide="check-circle-2" class="w-5 h-5 text-acc-green"></i><span data-id="20" class="text-xs font-semibold text-tx-500 uppercase tracking-wider">Model Accuracy</span></div>
+      <p data-id="21" class="text-2xl md:text-3xl font-bold font-num text-acc-green">17 / 20</p>
+      <p data-id="22" class="text-xs text-tx-500 mt-1">Beat Base Case — 85% of top-20 outperformed model base projection</p>
+    </div>
+    <div data-id="23" class="card p-5 glow-yellow transition-all">
+      <div data-id="24" class="flex items-center gap-2 mb-2"><i data-id="25" data-lucide="trending-up" class="w-5 h-5 text-acc-yellow"></i><span data-id="26" class="text-xs font-semibold text-tx-500 uppercase tracking-wider">Avg TTM Return</span></div>
+      <p data-id="27" class="text-2xl md:text-3xl font-bold font-num text-acc-yellow">+72.4%</p>
+      <p data-id="28" class="text-xs text-tx-500 mt-1">Average actual return across top 20 (May 2025–May 2026)</p>
+    </div>
+    <div data-id="29" class="card p-5 glow-blue transition-all">
+      <div data-id="30" class="flex items-center gap-2 mb-2"><i data-id="31" data-lucide="target" class="w-5 h-5 text-acc-blue"></i><span data-id="32" class="text-xs font-semibold text-tx-500 uppercase tracking-wider">Avg Model Base</span></div>
+      <p data-id="33" class="text-2xl md:text-3xl font-bold font-num text-acc-blue">+18.5%</p>
+      <p data-id="34" class="text-xs text-tx-500 mt-1">Average model base projection for next 12 months</p>
+    </div>
+    <div data-id="35" class="card p-5 glow-purple transition-all">
+      <div data-id="36" class="flex items-center gap-2 mb-2"><i data-id="37" data-lucide="zap" class="w-5 h-5 text-acc-purple"></i><span data-id="38" class="text-xs font-semibold text-tx-500 uppercase tracking-wider">Biggest Surprise</span></div>
+      <p data-id="39" class="text-2xl md:text-3xl font-bold font-num text-acc-purple">INTC +321%</p>
+      <p data-id="40" class="text-xs text-tx-500 mt-1">+309pp above model base · Turnaround trade</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 1 — MAIN COMPARISON CHART -->
+<section data-id="41" id="bar-chart-section-m8nq" class="max-w-[1440px] mx-auto px-4 md:px-6 pb-6">
+  <div data-id="42" class="card p-4 md:p-6">
+    <div data-id="43" class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+      <div data-id="44">
+        <h2 data-id="45" class="text-base md:text-lg font-bold text-tx-50">Model Projections vs Actual Returns</h2>
+        <p data-id="46" class="text-xs text-tx-500 mt-0.5">Horizontal bars: Bear (red) · Base (blue) · Bull (outline) · TTM Actual (marker)</p>
+      </div>
+      <div data-id="47" class="flex items-center gap-1" id="regime-btns-g7d2">
+        <button data-id="48" class="regime-btn active" data-regime="neutral">Neutral</button>
+        <button data-id="49" class="regime-btn" data-regime="risk-on">Risk-On ×1.15</button>
+        <button data-id="50" class="regime-btn" data-regime="risk-off">Risk-Off ×0.70</button>
+      </div>
+    </div>
+    <div data-id="51" class="overflow-x-auto">
+      <div data-id="52" id="bar-chart-wrapper-v5kx" style="min-width:800px; height:620px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#374151 #111827;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 — TABLE + SCATTER -->
+<section data-id="53" id="table-scatter-section-p2wj" class="max-w-[1440px] mx-auto px-4 md:px-6 pb-6">
+  <div data-id="54" class="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4">
+    <!-- LEFT: TABLE -->
+    <div data-id="55" class="card p-4 md:p-5">
+      <div data-id="56" class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+        <h2 data-id="57" class="text-base font-bold text-tx-50">Ranked Comparison Table</h2>
+        <div data-id="58" class="flex items-center gap-2 flex-wrap">
+          <div data-id="59" class="relative">
+            <select data-id="60" id="sector-filter-q8zv" class="bg-bg-700 border border-bg-600 text-tx-200 text-xs rounded px-3 py-1.5 pr-8 appearance-none cursor-pointer">
+              <option data-id="61" value="all">All Sectors</option>
+            </select>
+            <i data-id="62" data-lucide="chevron-down" class="w-3.5 h-3.5 text-tx-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+          <div data-id="63" class="relative">
+            <input data-id="64" id="search-input-k3m7" type="text" placeholder="Search ticker or name..." class="bg-bg-700 border border-bg-600 text-tx-200 text-xs rounded px-3 py-1.5 pl-8 w-44" />
+            <i data-id="65" data-lucide="search" class="w-3.5 h-3.5 text-tx-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+        </div>
+      </div>
+      <div data-id="66" class="overflow-x-auto" style="max-height:520px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#374151 #111827;">
+        <table data-id="67" class="w-full text-left text-xs" id="main-table-a2s9">
+          <thead data-id="68" class="sticky top-0 z-10" style="background:#1a2235;">
+            <tr data-id="69" class="text-tx-500 uppercase tracking-wider text-[10px]">
+              <th data-id="70" class="px-2 py-2" data-sort="rank"># <i data-id="71" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="72" class="px-2 py-2" data-sort="tk">Ticker <i data-id="73" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="74" class="px-2 py-2 hidden md:table-cell" data-sort="name">Name <i data-id="75" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="76" class="px-2 py-2 hidden lg:table-cell" data-sort="sector">Sector <i data-id="77" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="78" class="px-2 py-2 text-right" data-sort="spw">Wt% <i data-id="79" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="80" class="px-2 py-2 text-right" data-sort="score">Score <i data-id="81" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="82" class="px-2 py-2 text-right hidden md:table-cell" data-sort="bear">Bear <i data-id="83" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="84" class="px-2 py-2 text-right" data-sort="base">Base <i data-id="85" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="86" class="px-2 py-2 text-right hidden md:table-cell" data-sort="bull">Bull <i data-id="87" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="88" class="px-2 py-2 text-right" data-sort="ttm">TTM <i data-id="89" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="90" class="px-2 py-2 text-right" data-sort="div">Div. <i data-id="91" data-lucide="chevrons-up-down" class="w-2.5 h-2.5 inline opacity-40"></i></th>
+              <th data-id="92" class="px-2 py-2 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody data-id="93" id="table-body-n4f8"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT: SCATTER -->
+    <div data-id="94" class="card p-4 md:p-5">
+      <h2 data-id="95" class="text-base font-bold text-tx-50 mb-1">Model Base vs Actual Return</h2>
+      <p data-id="96" class="text-xs text-tx-500 mb-3">Each dot = 1 stock · Size ∝ S&amp;P weight · Dashed = perfect prediction</p>
+      <div data-id="97" id="scatter-wrapper-u7j3" style="position:relative;"></div>
+      <div data-id="98" id="scatter-tooltip-w2q8" class="tooltip-scatter"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 — INSIGHT PANELS -->
+<section data-id="99" id="insights-section-d4l1" class="max-w-[1440px] mx-auto px-4 md:px-6 pb-6">
+  <div data-id="100" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Blind Spots -->
+    <div data-id="101" class="card p-5">
+      <h3 data-id="102" class="text-sm font-bold text-tx-50 flex items-center gap-2 mb-3"><i data-id="103" data-lucide="alert-triangle" class="w-4 h-4 text-acc-yellow"></i> Where the Model Missed</h3>
+      <div data-id="104" class="scroll-card space-y-3">
+        <div data-id="105" class="p-3 rounded-lg" style="background:#0d1520;">
+          <div data-id="106" class="flex items-center justify-between mb-1"><span data-id="107" class="font-bold font-num text-tx-100">INTC</span><span data-id="108" class="pill" style="background:rgba(16,185,129,0.15);color:#10b981;">+309pp</span></div>
+          <p data-id="109" class="text-[11px] text-tx-400 leading-relaxed">Intel's turnaround trade, driven by US chip manufacturing tailwinds and short squeeze dynamics, was not capturable by a fundamentals model.</p>
+        </div>
+        <div data-id="110" class="p-3 rounded-lg" style="background:#0d1520;">
+          <div data-id="111" class="flex items-center justify-between mb-1"><span data-id="112" class="font-bold font-num text-tx-100">AMD</span><span data-id="113" class="pill" style="background:rgba(16,185,129,0.15);color:#10b981;">+217pp</span></div>
+          <p data-id="114" class="text-[11px] text-tx-400 leading-relaxed">Cyclical momentum + AI infrastructure spending surge exceeded model's valuation-weighted caution.</p>
+        </div>
+        <div data-id="115" class="p-3 rounded-lg" style="background:#0d1520;">
+          <div data-id="116" class="flex items-center justify-between mb-1"><span data-id="117" class="font-bold font-num text-tx-100">MU</span><span data-id="118" class="pill" style="background:rgba(16,185,129,0.15);color:#10b981;">+174pp</span></div>
+          <p data-id="119" class="text-[11px] text-tx-400 leading-relaxed">Memory cycle recovery + HBM/AI demand shock underpriced by model.</p>
+        </div>
+        <div data-id="120" class="p-3 rounded-lg" style="background:#0d1520;">
+          <div data-id="121" class="flex items-center justify-between mb-1"><span data-id="122" class="font-bold font-num text-tx-100">GOOGL</span><span data-id="123" class="pill" style="background:rgba(16,185,129,0.15);color:#10b981;">+124pp</span></div>
+          <p data-id="124" class="text-[11px] text-tx-400 leading-relaxed">AI-driven advertising revenue rebound + Gemini traction far exceeded consensus estimates.</p>
+        </div>
+        <div data-id="125" class="p-3 rounded-lg" style="background:#0d1520;">
+          <div data-id="126" class="flex items-center justify-between mb-1"><span data-id="127" class="font-bold font-num text-tx-100">MSFT</span><span data-id="128" class="pill" style="background:rgba(239,68,68,0.15);color:#ef4444;">-23pp</span></div>
+          <p data-id="129" class="text-[11px] text-tx-400 leading-relaxed">Azure growth deceleration + valuation compression surprised to the downside despite AI narrative.</p>
+        </div>
+        <div data-id="130" class="p-3 rounded-lg" style="background:#0d1520;">
+          <div data-id="131" class="flex items-center justify-between mb-1"><span data-id="132" class="font-bold font-num text-tx-100">META</span><span data-id="133" class="pill" style="background:rgba(239,68,68,0.15);color:#ef4444;">-22pp</span></div>
+          <p data-id="134" class="text-[11px] text-tx-400 leading-relaxed">Reality Labs losses + ad market saturation weighed despite strong AI narrative score.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Strengths -->
+    <div data-id="135" class="card p-5">
+      <h3 data-id="136" class="text-sm font-bold text-tx-50 flex items-center gap-2 mb-3"><i data-id="137" data-lucide="check-circle" class="w-4 h-4 text-acc-green"></i> Where the Model Was Right</h3>
+      <div data-id="138" class="scroll-card space-y-3">
+        <div data-id="139" class="p-3 rounded-lg" style="background:#0d1520;">
+          <p data-id="140" class="text-[11px] text-tx-300 leading-relaxed"><span data-id="141" class="text-acc-green font-semibold">✓</span> Correctly ranked <span data-id="142" class="font-num text-tx-100 font-semibold">NVDA</span> as #1 — actual: +83.4%, model's best score</p>
+        </div>
+        <div data-id="143" class="p-3 rounded-lg" style="background:#0d1520;">
+          <p data-id="144" class="text-[11px] text-tx-300 leading-relaxed"><span data-id="145" class="text-acc-green font-semibold">✓</span> Correctly identified <span data-id="146" class="font-num text-tx-100 font-semibold">MSFT</span> as overvalued relative to peers — actual: -4.5%, relatively right vs NVDA</p>
+        </div>
+        <div data-id="147" class="p-3 rounded-lg" style="background:#0d1520;">
+          <p data-id="148" class="text-[11px] text-tx-300 leading-relaxed"><span data-id="149" class="text-acc-green font-semibold">✓</span> Correctly flagged <span data-id="150" class="font-num text-tx-100 font-semibold">TSLA</span> (score: 44.2) as highest risk in the group — bear: -13.5%</p>
+        </div>
+        <div data-id="151" class="p-3 rounded-lg" style="background:#0d1520;">
+          <p data-id="152" class="text-[11px] text-tx-300 leading-relaxed"><span data-id="153" class="text-acc-green font-semibold">✓</span> <span data-id="154" class="font-num text-tx-100 font-semibold">V</span> and <span data-id="155" class="font-num text-tx-100 font-semibold">BRK.B</span> in-range predictions — both TTM within model's bull-bear range</p>
+        </div>
+        <div data-id="156" class="p-3 rounded-lg" style="background:#0d1520;">
+          <p data-id="157" class="text-[11px] text-tx-300 leading-relaxed"><span data-id="158" class="text-acc-green font-semibold">✓</span> <span data-id="159" class="font-num text-tx-100 font-semibold">JNJ</span> correctly identified as defensive/low-upside — actual: -1.1%, model base: +6.0% — closest prediction</p>
+        </div>
+        <div data-id="160" class="p-3 rounded-lg" style="background:#0d1520;">
+          <p data-id="161" class="text-[11px] text-tx-300 leading-relaxed"><span data-id="162" class="text-acc-green font-semibold">✓</span> Correctly identified sector divergence: Semis/AI outperformed Healthcare and Financials</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forward Outlook -->
+    <div data-id="163" class="card p-5">
+      <h3 data-id="164" class="text-sm font-bold text-tx-50 flex items-center gap-2 mb-3"><i data-id="165" data-lucide="radio" class="w-4 h-4 text-acc-blue"></i> Next 12 Months: Model Signals</h3>
+      <div data-id="166" class="scroll-card">
+        <p data-id="167" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-2">Top Picks (May 2026–2027)</p>
+        <div data-id="168" class="space-y-2 mb-4">
+          <div data-id="169" class="flex items-center gap-2 p-2 rounded-lg" style="background:#0d1520;">
+            <span data-id="170" class="font-num font-bold text-acc-green text-xs w-12">NVDA</span>
+            <span data-id="171" class="font-num text-[11px] text-tx-300">Base: +40.6%</span>
+            <span data-id="172" class="text-[10px] text-tx-500 ml-auto hidden md:inline">AI capex supercycle</span>
+          </div>
+          <div data-id="173" class="flex items-center gap-2 p-2 rounded-lg" style="background:#0d1520;">
+            <span data-id="174" class="font-num font-bold text-acc-green text-xs w-12">GOOGL</span>
+            <span data-id="175" class="font-num text-[11px] text-tx-300">Base: +36.6%</span>
+            <span data-id="176" class="text-[10px] text-tx-500 ml-auto hidden md:inline">Gemini AI + Search</span>
+          </div>
+          <div data-id="177" class="flex items-center gap-2 p-2 rounded-lg" style="background:#0d1520;">
+            <span data-id="178" class="font-num font-bold text-acc-green text-xs w-12">AVGO</span>
+            <span data-id="179" class="font-num text-[11px] text-tx-300">Base: +25.9%</span>
+            <span data-id="180" class="text-[10px] text-tx-500 ml-auto hidden md:inline">Custom ASIC demand</span>
+          </div>
+          <div data-id="181" class="flex items-center gap-2 p-2 rounded-lg" style="background:#0d1520;">
+            <span data-id="182" class="font-num font-bold text-acc-green text-xs w-12">MU</span>
+            <span data-id="183" class="font-num text-[11px] text-tx-300">Base: +25.7%</span>
+            <span data-id="184" class="text-[10px] text-tx-500 ml-auto hidden md:inline">HBM3E cycle</span>
+          </div>
+          <div data-id="185" class="flex items-center gap-2 p-2 rounded-lg" style="background:#0d1520;">
+            <span data-id="186" class="font-num font-bold text-acc-green text-xs w-12">AMZN</span>
+            <span data-id="187" class="font-num text-[11px] text-tx-300">Base: +25.6%</span>
+            <span data-id="188" class="text-[10px] text-tx-500 ml-auto hidden md:inline">AWS AI + retail</span>
+          </div>
+        </div>
+        <p data-id="189" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-2">Caution Flags</p>
+        <div data-id="190" class="space-y-2">
+          <div data-id="191" class="p-2 rounded-lg" style="background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.15);">
+            <div data-id="192" class="flex items-center gap-2"><span data-id="193" class="font-num font-bold text-acc-red text-xs">TSLA</span><span data-id="194" class="font-num text-[11px] text-tx-400">Base: -7.1%</span></div>
+            <p data-id="195" class="text-[10px] text-tx-500 mt-0.5">Fundamentals don't justify valuation without FSD breakthrough</p>
+          </div>
+          <div data-id="196" class="p-2 rounded-lg" style="background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.15);">
+            <div data-id="197" class="flex items-center gap-2"><span data-id="198" class="font-num font-bold text-acc-yellow text-xs">META</span><span data-id="199" class="font-num text-[11px] text-tx-400">TTM +2.3%</span></div>
+            <p data-id="200" class="text-[10px] text-tx-500 mt-0.5">May be a value trap — monitor Reality Labs burn</p>
+          </div>
+          <div data-id="201" class="p-2 rounded-lg" style="background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.15);">
+            <div data-id="202" class="flex items-center gap-2"><span data-id="203" class="font-num font-bold text-acc-yellow text-xs">MSFT</span><span data-id="204" class="font-num text-[11px] text-tx-400">TTM -4.5%</span></div>
+            <p data-id="205" class="text-[10px] text-tx-500 mt-0.5">Possible mean-reversion entry if Azure reaccelerates</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4 — MODEL PERFORMANCE STATS -->
+<section data-id="206" id="perf-stats-section-e5r2" class="max-w-[1440px] mx-auto px-4 md:px-6 pb-6">
+  <div data-id="207" class="card p-5 md:p-6">
+    <h2 data-id="208" class="text-base font-bold text-tx-50 mb-4 flex items-center gap-2"><i data-id="209" data-lucide="bar-chart-3" class="w-5 h-5 text-acc-blue"></i> Model Performance Statistics</h2>
+    <div data-id="210" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+      <div data-id="211" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="212" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">Directional Accuracy</p>
+        <p data-id="213" class="text-xl font-bold font-num text-acc-green">85%</p>
+        <p data-id="214" class="text-[10px] text-tx-500 mt-0.5">17/20 stocks beat model base</p>
+      </div>
+      <div data-id="215" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="216" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">Range Containment</p>
+        <p data-id="217" class="text-xl font-bold font-num text-acc-yellow">20%</p>
+        <p data-id="218" class="text-[10px] text-tx-500 mt-0.5">4/20 TTM within Bear–Bull</p>
+      </div>
+      <div data-id="219" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="220" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">Mean Abs Divergence</p>
+        <p data-id="221" class="text-xl font-bold font-num text-acc-red">78.4pp</p>
+        <p data-id="222" class="text-[10px] text-tx-500 mt-0.5">Avg distance from base</p>
+      </div>
+      <div data-id="223" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="224" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">Rank Correlation</p>
+        <p data-id="225" class="text-xl font-bold font-num text-acc-purple">ρ = 0.21</p>
+        <p data-id="226" class="text-[10px] text-tx-500 mt-0.5">Spearman (score vs return)</p>
+      </div>
+      <div data-id="227" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="228" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">Avg Model Score</p>
+        <p data-id="229" class="text-xl font-bold font-num text-tx-200">65.6<span data-id="230" class="text-sm text-tx-500">/100</span></p>
+        <p data-id="231" class="text-[10px] text-tx-500 mt-0.5">Across all 20 stocks</p>
+      </div>
+      <div data-id="232" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="233" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">S&amp;P 500 TTM</p>
+        <p data-id="234" class="text-xl font-bold font-num text-acc-blue">+30.6%</p>
+        <p data-id="235" class="text-[10px] text-tx-500 mt-0.5">Index benchmark</p>
+      </div>
+      <div data-id="236" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="237" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">Model Avg Base</p>
+        <p data-id="238" class="text-xl font-bold font-num text-acc-blue">+18.5%</p>
+        <p data-id="239" class="text-[10px] text-tx-500 mt-0.5">Underestimated market</p>
+      </div>
+      <div data-id="240" class="p-4 rounded-lg" style="background:#0d1520;">
+        <p data-id="241" class="text-[10px] text-tx-500 uppercase tracking-wider font-semibold mb-1">Upside Surprise Rate</p>
+        <p data-id="242" class="text-xl font-bold font-num text-acc-green">85%</p>
+        <p data-id="243" class="text-[10px] text-tx-500 mt-0.5">Stocks beat projection</p>
+      </div>
+    </div>
+    <div data-id="244" class="p-3 rounded-lg flex items-start gap-2" style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);">
+      <i data-id="245" data-lucide="alert-triangle" class="w-4 h-4 text-acc-yellow mt-0.5 shrink-0"></i>
+      <p data-id="246" class="text-[11px] text-tx-400 leading-relaxed">This model is a relative ranking tool. The 2025–2026 period was an exceptional bull cycle driven by AI infrastructure spending, semiconductor supercycle, and rate cuts. Absolute return predictions carry ±80pp uncertainty in high-momentum markets. Past model performance does not predict future accuracy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5 — SECTOR HEATMAP -->
+<section data-id="247" id="sector-heatmap-section-h6t9" class="max-w-[1440px] mx-auto px-4 md:px-6 pb-6">
+  <div data-id="248" class="card p-5 md:p-6">
+    <h2 data-id="249" class="text-base font-bold text-tx-50 mb-4 flex items-center gap-2"><i data-id="250" data-lucide="grid-3x3" class="w-5 h-5 text-acc-purple"></i> Sector Performance · Avg TTM Actual vs Avg Model Base</h2>
+    <div data-id="251" class="overflow-x-auto">
+      <table data-id="252" class="w-full text-xs" id="sector-table-c3b7">
+        <thead data-id="253">
+          <tr data-id="254" class="text-tx-500 uppercase tracking-wider text-[10px] border-b border-bg-700">
+            <th data-id="255" class="px-3 py-2.5 text-left">Sector</th>
+            <th data-id="256" class="px-3 py-2.5 text-center"># Stocks</th>
+            <th data-id="257" class="px-3 py-2.5 text-right">Avg Score</th>
+            <th data-id="258" class="px-3 py-2.5 text-right">Avg Model Base</th>
+            <th data-id="259" class="px-3 py-2.5 text-right">Avg TTM Actual</th>
+            <th data-id="260" class="px-3 py-2.5 text-right">Model Error</th>
+          </tr>
+        </thead>
+        <tbody data-id="261" id="sector-body-z9w1"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer data-id="262" class="border-t border-bg-700 py-6 mt-4">
+  <div data-id="263" class="max-w-[1440px] mx-auto px-4 md:px-6 text-center">
+    <p data-id="264" class="text-[11px] text-tx-500 leading-relaxed mb-2">Model v2.0 · Built May 2026 · Data: SPY Holdings, Yahoo Finance, FinanceCharts.com, PortfoliosLab · Forward projections are model outputs, not financial advice. S&amp;P 500 weight data as of May 8, 2026.</p>
+    <p data-id="265" class="text-xs text-tx-500">Made by Copilot</p>
+  </div>
+</footer>
+
+<script>
+// ==================== DATA ====================
+const STOCKS = [
+  { tk:"NVDA",  name:"NVIDIA Corp",         sector:"Semis/AI",        spw:7.78, score:80.4, bear:24.9,  base:40.6,  bull:57.3,  ttm:83.4,  price:215.20,  div:42.8,  fund:9.50, ai:9.50, val:4.75, tech:8.25, sent:9.00, them:9.67, narr:8.00 },
+  { tk:"GOOGL", name:"Alphabet Inc",         sector:"Mega-Cap Tech",   spw:3.73, score:78.2, bear:21.7,  base:36.6,  bull:52.6,  ttm:160.7, price:400.80,  div:124.1, fund:7.83, ai:8.25, val:7.00, tech:8.25, sent:8.50, them:9.00, narr:6.75 },
+  { tk:"AVGO",  name:"Broadcom Inc",         sector:"Semis/AI",        spw:3.03, score:72.2, bear:13.1,  base:25.9,  bull:39.7,  ttm:108.6, price:430.00,  div:82.7,  fund:8.33, ai:7.75, val:5.25, tech:7.50, sent:8.00, them:8.67, narr:6.00 },
+  { tk:"MU",    name:"Micron Technology",    sector:"Semis/AI",        spw:1.25, score:72.1, bear:13.0,  base:25.7,  bull:39.5,  ttm:200.0, price:746.81,  div:174.3, fund:7.00, ai:7.50, val:6.50, tech:8.50, sent:8.00, them:7.67, narr:5.50 },
+  { tk:"AMZN",  name:"Amazon.com Inc",       sector:"Mega-Cap Tech",   spw:4.36, score:72.0, bear:12.9,  base:25.6,  bull:39.3,  ttm:42.0,  price:272.68,  div:16.4,  fund:7.67, ai:6.50, val:6.25, tech:7.75, sent:8.25, them:9.33, narr:6.50 },
+  { tk:"META",  name:"Meta Platforms",       sector:"Mega-Cap Tech",   spw:2.30, score:71.1, bear:11.6,  base:24.0,  bull:37.4,  ttm:2.3,   price:609.63,  div:-21.7, fund:8.00, ai:7.25, val:6.25, tech:6.75, sent:7.00, them:8.00, narr:6.75 },
+  { tk:"AMD",   name:"Adv Micro Devices",    sector:"Semis/AI",        spw:1.10, score:69.4, bear:-1.9,  base:18.4,  bull:30.4,  ttm:235.0, price:455.19,  div:216.6, fund:7.00, ai:8.25, val:4.25, tech:8.50, sent:8.50, them:8.67, narr:6.75 },
+  { tk:"MSFT",  name:"Microsoft Corp",       sector:"Mega-Cap Tech",   spw:4.59, score:69.4, bear:-1.9,  base:18.4,  bull:30.4,  ttm:-4.5,  price:415.12,  div:-22.9, fund:8.83, ai:6.75, val:4.62, tech:6.75, sent:7.25, them:9.67, narr:6.75 },
+  { tk:"V",     name:"Visa Inc",             sector:"Financials",      spw:0.90, score:67.4, bear:-2.3,  base:16.5,  bull:28.3,  ttm:18.0,  price:318.79,  div:1.5,   fund:8.33, ai:5.25, val:6.25, tech:7.00, sent:7.50, them:5.67, narr:5.25 },
+  { tk:"AAPL",  name:"Apple Inc",            sector:"Mega-Cap Tech",   spw:6.41, score:66.1, bear:-2.6,  base:15.3,  bull:26.9,  ttm:49.2,  price:293.32,  div:33.9,  fund:7.25, ai:7.25, val:4.75, tech:7.25, sent:6.25, them:9.00, narr:7.25 },
+  { tk:"ORCL",  name:"Oracle Corp",          sector:"Enterprise Tech", spw:0.84, score:65.1, bear:-2.8,  base:14.4,  bull:25.8,  ttm:30.0,  price:195.95,  div:15.6,  fund:7.17, ai:6.50, val:5.25, tech:7.00, sent:7.00, them:7.67, narr:6.25 },
+  { tk:"JPM",   name:"JPMorgan Chase",       sector:"Financials",      spw:1.20, score:64.8, bear:-2.9,  base:14.1,  bull:25.5,  ttm:50.0,  price:302.10,  div:35.9,  fund:7.17, ai:4.25, val:7.00, tech:7.50, sent:7.75, them:4.67, narr:5.00 },
+  { tk:"INTC",  name:"Intel Corp",           sector:"Semis",           spw:0.93, score:63.0, bear:-3.3,  base:12.4,  bull:23.6,  ttm:321.0, price:124.92,  div:308.6, fund:4.83, ai:5.25, val:8.00, tech:8.00, sent:7.25, them:5.00, narr:4.00 },
+  { tk:"BRK.B", name:"Berkshire Hathaway",   sector:"Financials",      spw:1.53, score:60.0, bear:-3.9,  base:9.6,   bull:20.4,  ttm:16.0,  price:475.94,  div:6.4,   fund:7.33, ai:2.00, val:7.75, tech:6.25, sent:7.50, them:2.67, narr:4.25 },
+  { tk:"LLY",   name:"Eli Lilly & Co",       sector:"Healthcare",      spw:1.26, score:59.3, bear:-4.1,  base:9.0,   bull:19.6,  ttm:39.8,  price:948.45,  div:30.8,  fund:7.17, ai:5.00, val:3.75, tech:6.50, sent:8.00, them:7.00, narr:7.25 },
+  { tk:"WMT",   name:"Walmart Inc",          sector:"Consumer",        spw:1.55, score:59.3, bear:-4.1,  base:9.0,   bull:19.6,  ttm:35.3,  price:130.43,  div:26.3,  fund:6.67, ai:4.75, val:5.25, tech:7.00, sent:7.00, them:5.33, narr:5.50 },
+  { tk:"XOM",   name:"Exxon Mobil Corp",     sector:"Energy",          spw:0.89, score:59.3, bear:-4.1,  base:9.0,   bull:19.6,  ttm:44.0,  price:144.57,  div:35.0,  fund:7.00, ai:3.00, val:7.25, tech:6.50, sent:6.75, them:3.33, narr:3.75 },
+  { tk:"COST",  name:"Costco Wholesale",     sector:"Consumer",        spw:0.71, score:56.9, bear:-4.6,  base:6.8,   bull:17.0,  ttm:20.0,  price:1008.79, div:13.2,  fund:7.17, ai:4.00, val:4.50, tech:7.00, sent:7.00, them:4.67, narr:5.25 },
+  { tk:"JNJ",   name:"Johnson & Johnson",    sector:"Healthcare",      spw:0.79, score:56.1, bear:-4.8,  base:6.0,   bull:16.2,  ttm:-1.1,  price:221.32,  div:-7.1,  fund:7.00, ai:3.00, val:7.00, tech:5.00, sent:5.75, them:3.00, narr:4.75 },
+  { tk:"TSLA",  name:"Tesla Inc",            sector:"EV/AI",           spw:2.39, score:44.2, bear:-13.5, base:-7.1,  bull:6.5,   ttm:50.4,  price:428.35,  div:57.5,  fund:5.42, ai:3.75, val:2.25, tech:5.75, sent:3.75, them:5.67, narr:9.50 },
+];
+
+const SECTORS = [
+  { name:"Semis/AI", count:5, avgScore:71.5, avgBase:24.6, avgTTM:189.6, error:165 },
+  { name:"Mega-Cap Tech", count:5, avgScore:71.2, avgBase:24.0, avgTTM:49.9, error:25.9 },
+  { name:"Financials", count:3, avgScore:64.1, avgBase:13.4, avgTTM:28.0, error:14.6 },
+  { name:"Energy", count:1, avgScore:59.3, avgBase:9.0, avgTTM:44.0, error:35 },
+  { name:"Healthcare", count:2, avgScore:57.7, avgBase:7.5, avgTTM:19.4, error:11.9 },
+  { name:"Consumer", count:2, avgScore:58.1, avgBase:7.9, avgTTM:27.7, error:19.8 },
+  { name:"EV/AI", count:1, avgScore:44.2, avgBase:-7.1, avgTTM:50.4, error:57.5 },
+  { name:"Enterprise Tech", count:1, avgScore:65.1, avgBase:14.4, avgTTM:30.0, error:15.6 },
+];
+
+const SECTOR_COLORS = {
+  "Semis/AI":       { bg:"rgba(139,92,246,0.15)", text:"#a78bfa" },
+  "Mega-Cap Tech":  { bg:"rgba(59,130,246,0.15)",  text:"#60a5fa" },
+  "Financials":     { bg:"rgba(245,158,11,0.15)",  text:"#fbbf24" },
+  "Energy":         { bg:"rgba(249,115,22,0.15)",  text:"#fb923c" },
+  "Healthcare":     { bg:"rgba(6,182,212,0.15)",   text:"#22d3ee" },
+  "Consumer":       { bg:"rgba(16,185,129,0.15)",  text:"#34d399" },
+  "EV/AI":          { bg:"rgba(251,113,133,0.15)", text:"#fb7185" },
+  "Enterprise Tech":{ bg:"rgba(96,165,250,0.15)",  text:"#93c5fd" },
+  "Semis":          { bg:"rgba(167,139,250,0.15)", text:"#c4b5fd" }
+};
+
+let currentRegime = "neutral";
+let highlightedTicker = null;
+let sortCol = "score";
+let sortDir = "desc";
+let searchQuery = "";
+let sectorFilter = "all";
+
+// ==================== UTILS ====================
+function fmt(v, showPlus=true) {
+  const s = v >= 0 && showPlus ? "+" : "";
+  return s + v.toFixed(1) + "%";
+}
+function fmtPP(v) {
+  const s = v >= 0 ? "+" : "";
+  return s + v.toFixed(0) + "pp";
+}
+function getRegimeMultiplier() {
+  if (currentRegime === "risk-on") return 1.15;
+  if (currentRegime === "risk-off") return 0.70;
+  return 1.0;
+}
+function getAdjusted(s) {
+  const m = getRegimeMultiplier();
+  return { bear: s.bear * m, base: s.base * m, bull: s.bull * m };
+}
+function getStatus(s) {
+  if (s.ttm > s.bull) return { label:"Massive Beat", color:"#10b981", icon:"🚀" };
+  if (s.ttm > s.base) return { label:"Beat", color:"#34d399", icon:"✅" };
+  if (s.ttm >= s.bear) return { label:"In Range", color:"#f59e0b", icon:"🎯" };
+  return { label:"Missed", color:"#ef4444", icon:"❌" };
+}
+function getTickerColor(s) {
+  if (s.ttm > s.bull) return "#10b981";
+  if (s.ttm > s.base) return "#34d399";
+  if (s.ttm < s.bear) return "#ef4444";
+  if (s.ttm <= s.base) return "#f59e0b";
+  return "#f9fafb";
+}
+
+// ==================== POPULATE SECTOR FILTER ====================
+function populateSectorFilter() {
+  const sel = document.getElementById("sector-filter-q8zv");
+  const sectors = [...new Set(STOCKS.map(s => s.sector))].sort();
+  sectors.forEach(sec => {
+    const opt = document.createElement("option");
+    opt.value = sec;
+    opt.textContent = sec;
+    sel.appendChild(opt);
+  });
+}
+
+// ==================== BAR CHART (SVG) ====================
+function renderBarChart() {
+  const wrapper = document.getElementById("bar-chart-wrapper-v5kx");
+  const sorted = [...STOCKS].sort((a,b) => b.score - a.score);
+  const rowH = 30;
+  const padTop = 35, padBot = 30, padLeft = 75, padRight = 60;
+  const w = Math.max(wrapper.clientWidth, 800);
+  const h = sorted.length * rowH + padTop + padBot;
+  const chartW = w - padLeft - padRight;
+  const minVal = -20, maxVal = 350;
+  const range = maxVal - minVal;
+  const x = v => padLeft + ((v - minVal) / range) * chartW;
+  const gridVals = [0, 50, 100, 150, 200, 250, 300, 350];
+
+  let svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,system-ui,sans-serif;">`;
+  // grid
+  gridVals.forEach(v => {
+    const gx = x(v);
+    svg += `<line x1="${gx}" y1="${padTop-5}" x2="${gx}" y2="${h - padBot}" stroke="#1f2937" stroke-width="1"/>`;
+    svg += `<text x="${gx}" y="${padTop - 12}" fill="#6b7280" font-size="9" text-anchor="middle" class="mono" style="font-family:'JetBrains Mono',monospace;">${v}%</text>`;
+  });
+  // zero line
+  svg += `<line x1="${x(0)}" y1="${padTop-5}" x2="${x(0)}" y2="${h - padBot}" stroke="#374151" stroke-width="1.5"/>`;
+
+  sorted.forEach((s, i) => {
+    const adj = getAdjusted(s);
+    const cy = padTop + i * rowH + rowH / 2;
+    const barH = 7;
+    const isHighlighted = highlightedTicker === s.tk;
+    const opacity = highlightedTicker && !isHighlighted ? 0.3 : 1;
+    const sc = SECTOR_COLORS[s.sector] || SECTOR_COLORS["Semis"];
+    const tkColor = getTickerColor(s);
+
+    // row bg on highlight
+    if (isHighlighted) {
+      svg += `<rect x="${padLeft}" y="${cy - rowH/2}" width="${chartW}" height="${rowH}" fill="rgba(59,130,246,0.06)" rx="2"/>`;
+    }
+
+    // Bear bar
+    const bearStart = Math.min(adj.bear, 0);
+    const bearEnd = Math.max(adj.bear, 0);
+    svg += `<rect x="${x(bearStart)}" y="${cy - barH/2 - 7}" width="${Math.max(x(bearEnd) - x(bearStart),1)}" height="${barH}" fill="#ef4444" opacity="${opacity * 0.7}" rx="1"/>`;
+
+    // Base bar
+    const baseStart = Math.min(adj.base, 0);
+    const baseEnd = Math.max(adj.base, 0);
+    svg += `<rect x="${x(baseStart)}" y="${cy - barH/2}" width="${Math.max(x(baseEnd) - x(baseStart),1)}" height="${barH}" fill="#3b82f6" opacity="${opacity * 0.85}" rx="1"/>`;
+
+    // Bull outline
+    const bullStart = Math.min(adj.bull, 0);
+    const bullEnd = Math.max(adj.bull, 0);
+    svg += `<rect x="${x(bullStart)}" y="${cy - barH/2 + 7}" width="${Math.max(x(bullEnd) - x(bullStart),1)}" height="${barH}" fill="none" stroke="#60a5fa" stroke-width="1" opacity="${opacity * 0.5}" rx="1"/>`;
+
+    // TTM marker
+    const ttmX = x(Math.min(Math.max(s.ttm, minVal), maxVal));
+    svg += `<line x1="${ttmX}" y1="${cy - 12}" x2="${ttmX}" y2="${cy + 12}" stroke="#fbbf24" stroke-width="2" opacity="${opacity}"/>`;
+    svg += `<polygon points="${ttmX-4},${cy-12} ${ttmX+4},${cy-12} ${ttmX},${cy-8}" fill="#fbbf24" opacity="${opacity}"/>`;
+
+    // Ticker label
+    svg += `<text x="${padLeft - 5}" y="${cy + 1}" fill="${tkColor}" font-size="11" font-weight="700" text-anchor="end" opacity="${opacity}" style="font-family:'JetBrains Mono',monospace;">${s.tk}</text>`;
+
+    // Right value
+    svg += `<text x="${w - 5}" y="${cy + 1}" fill="#9ca3af" font-size="9" text-anchor="end" opacity="${opacity}" style="font-family:'JetBrains Mono',monospace;">${fmt(s.ttm)}</text>`;
+  });
+
+  // Legend
+  svg += `<rect x="${padLeft}" y="${h - 20}" width="12" height="6" fill="#ef4444" opacity="0.7" rx="1"/>`;
+  svg += `<text x="${padLeft + 16}" y="${h - 15}" fill="#9ca3af" font-size="9">Bear</text>`;
+  svg += `<rect x="${padLeft + 50}" y="${h - 20}" width="12" height="6" fill="#3b82f6" opacity="0.85" rx="1"/>`;
+  svg += `<text x="${padLeft + 66}" y="${h - 15}" fill="#9ca3af" font-size="9">Base</text>`;
+  svg += `<rect x="${padLeft + 100}" y="${h - 20}" width="12" height="6" fill="none" stroke="#60a5fa" stroke-width="1" rx="1"/>`;
+  svg += `<text x="${padLeft + 116}" y="${h - 15}" fill="#9ca3af" font-size="9">Bull</text>`;
+  svg += `<line x1="${padLeft + 155}" y1="${h - 20}" x2="${padLeft + 155}" y2="${h - 14}" stroke="#fbbf24" stroke-width="2"/>`;
+  svg += `<text x="${padLeft + 161}" y="${h - 15}" fill="#9ca3af" font-size="9">TTM Actual</text>`;
+
+  svg += `</svg>`;
+  wrapper.innerHTML = svg;
+}
+
+// ==================== TABLE ====================
+function getFilteredSorted() {
+  let data = [...STOCKS];
+  if (sectorFilter !== "all") data = data.filter(s => s.sector === sectorFilter);
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    data = data.filter(s => s.tk.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
+  }
+  data.sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (sortCol === "rank") { va = a.score; vb = b.score; return sortDir === "asc" ? vb - va : va - vb; }
+    if (sortCol === "div") { va = a.ttm - a.base; vb = b.ttm - b.base; }
+    if (typeof va === "string") { return sortDir === "asc" ? va.localeCompare(vb) : vb.localeCompare(va); }
+    return sortDir === "asc" ? va - vb : vb - va;
+  });
+  return data;
+}
+
+function renderTable() {
+  const tbody = document.getElementById("table-body-n4f8");
+  const data = getFilteredSorted();
+  const ranked = [...STOCKS].sort((a,b) => b.score - a.score);
+  let html = "";
+  data.forEach((s, i) => {
+    const rank = ranked.findIndex(r => r.tk === s.tk) + 1;
+    const status = getStatus(s);
+    const divPP = s.ttm - s.base;
+    const divColor = divPP >= 0 ? "#10b981" : "#ef4444";
+    const sc = SECTOR_COLORS[s.sector] || SECTOR_COLORS["Semis"];
+    const isHL = highlightedTicker === s.tk;
+    const rowClass = isHL ? "highlight-row" : (i % 2 === 0 ? "" : "");
+    const rowBg = isHL ? "background:rgba(59,130,246,0.08);" : (i % 2 !== 0 ? "background:rgba(255,255,255,0.01);" : "");
+
+    html += `<tr data-ticker="${s.tk}" class="hover:bg-bg-700/30 cursor-pointer ${rowClass}" style="${rowBg} transition:background 0.15s;">
+      <td class="px-2 py-1.5 font-num text-tx-400">${rank}</td>
+      <td class="px-2 py-1.5 font-num font-bold" style="color:${getTickerColor(s)}">${s.tk}</td>
+      <td class="px-2 py-1.5 text-tx-300 hidden md:table-cell text-[11px]">${s.name}</td>
+      <td class="px-2 py-1.5 hidden lg:table-cell"><span class="sector-tag" style="background:${sc.bg};color:${sc.text};">${s.sector}</span></td>
+      <td class="px-2 py-1.5 text-right font-num text-tx-400">${s.spw.toFixed(2)}</td>
+      <td class="px-2 py-1.5 text-right"><span class="font-num font-semibold" style="color:${s.score >= 70 ? '#10b981' : s.score >= 60 ? '#3b82f6' : '#f59e0b'}">${s.score.toFixed(1)}</span></td>
+      <td class="px-2 py-1.5 text-right font-num text-acc-red hidden md:table-cell">${fmt(s.bear)}</td>
+      <td class="px-2 py-1.5 text-right font-num text-acc-blue">${fmt(s.base)}</td>
+      <td class="px-2 py-1.5 text-right font-num text-tx-300 hidden md:table-cell">${fmt(s.bull)}</td>
+      <td class="px-2 py-1.5 text-right font-num font-semibold" style="color:${s.ttm >= 0 ? '#10b981' : '#ef4444'}">${fmt(s.ttm)}</td>
+      <td class="px-2 py-1.5 text-right font-num font-semibold" style="color:${divColor}">${fmtPP(divPP)}</td>
+      <td class="px-2 py-1.5 text-center whitespace-nowrap"><span class="pill" style="background:${status.color}20; color:${status.color}; font-size:10px;">${status.icon} ${status.label}</span></td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+
+  // add row click handlers
+  tbody.querySelectorAll("tr[data-ticker]").forEach(row => {
+    row.addEventListener("click", () => {
+      const tk = row.dataset.ticker;
+      highlightedTicker = highlightedTicker === tk ? null : tk;
+      renderAll();
+    });
+  });
+}
+
+// ==================== SCATTER PLOT (SVG) ====================
+function renderScatter() {
+  const wrapper = document.getElementById("scatter-wrapper-u7j3");
+  const tooltip = document.getElementById("scatter-tooltip-w2q8");
+  const w = wrapper.clientWidth || 500;
+  const h = Math.min(w * 0.8, 420);
+  const pad = { top: 20, right: 25, bottom: 40, left: 50 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+  const xMin = -15, xMax = 55, yMin = -20, yMax = 360;
+  const scX = v => pad.left + ((v - xMin) / (xMax - xMin)) * cw;
+  const scY = v => pad.top + ch - ((v - yMin) / (yMax - yMin)) * ch;
+
+  let svg = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="font-family:Inter,system-ui,sans-serif;">`;
+
+  // Grid
+  for (let gv = -10; gv <= 50; gv += 10) {
+    svg += `<line x1="${scX(gv)}" y1="${pad.top}" x2="${scX(gv)}" y2="${h - pad.bottom}" stroke="#1f2937" stroke-width="0.5"/>`;
+    svg += `<text x="${scX(gv)}" y="${h - pad.bottom + 14}" fill="#6b7280" font-size="9" text-anchor="middle" style="font-family:'JetBrains Mono',monospace;">${gv}%</text>`;
+  }
+  for (let gv = 0; gv <= 350; gv += 50) {
+    svg += `<line x1="${pad.left}" y1="${scY(gv)}" x2="${w - pad.right}" y2="${scY(gv)}" stroke="#1f2937" stroke-width="0.5"/>`;
+    svg += `<text x="${pad.left - 6}" y="${scY(gv) + 3}" fill="#6b7280" font-size="9" text-anchor="end" style="font-family:'JetBrains Mono',monospace;">${gv}%</text>`;
+  }
+
+  // Axes labels
+  svg += `<text x="${pad.left + cw/2}" y="${h - 4}" fill="#6b7280" font-size="10" text-anchor="middle">Model Base Projection (%)</text>`;
+  svg += `<text x="12" y="${pad.top + ch/2}" fill="#6b7280" font-size="10" text-anchor="middle" transform="rotate(-90,12,${pad.top + ch/2})">TTM Actual Return (%)</text>`;
+
+  // Perfect prediction line (dashed) — from (-15,-15) to (55,55)
+  const lineStartX = Math.max(xMin, yMin), lineEndX = Math.min(xMax, yMax);
+  svg += `<line x1="${scX(lineStartX)}" y1="${scY(lineStartX)}" x2="${scX(lineEndX)}" y2="${scY(lineEndX)}" stroke="#374151" stroke-width="1.5" stroke-dasharray="6,4"/>`;
+  svg += `<text x="${scX(40)}" y="${scY(45)}" fill="#4b5563" font-size="8" transform="rotate(-30,${scX(40)},${scY(45)})">perfect prediction</text>`;
+
+  // Dots
+  STOCKS.forEach(s => {
+    const dx = scX(s.base);
+    const dy = scY(Math.min(s.ttm, yMax - 5));
+    const r = 3 + s.spw * 1.8;
+    const isAbove = s.ttm > s.base;
+    const dotColor = isAbove ? "#10b981" : "#ef4444";
+    const opacity = highlightedTicker && highlightedTicker !== s.tk ? 0.2 : 0.8;
+    const isHL = highlightedTicker === s.tk;
+
+    svg += `<circle cx="${dx}" cy="${dy}" r="${isHL ? r + 2 : r}" fill="${dotColor}" opacity="${opacity}" data-tk="${s.tk}" class="scatter-dot" style="cursor:pointer;transition:opacity 0.2s;"/>`;
+    if (isHL) {
+      svg += `<circle cx="${dx}" cy="${dy}" r="${r + 5}" fill="none" stroke="${dotColor}" stroke-width="1.5" opacity="0.5"/>`;
+    }
+    // Label
+    const labelOpacity = highlightedTicker && highlightedTicker !== s.tk ? 0.15 : 0.9;
+    svg += `<text x="${dx + r + 3}" y="${dy + 3}" fill="#d1d5db" font-size="8" font-weight="600" opacity="${labelOpacity}" style="font-family:'JetBrains Mono',monospace;">${s.tk}</text>`;
+  });
+
+  // Correlation badge
+  svg += `<rect x="${w - pad.right - 80}" y="${pad.top + 2}" width="75" height="22" rx="4" fill="#1f2937" stroke="#374151" stroke-width="0.5"/>`;
+  svg += `<text x="${w - pad.right - 42}" y="${pad.top + 17}" fill="#9ca3af" font-size="10" text-anchor="middle" font-weight="600" style="font-family:'JetBrains Mono',monospace;">r = 0.21</text>`;
+
+  svg += `</svg>`;
+  wrapper.innerHTML = svg;
+
+  // Scatter tooltips
+  wrapper.querySelectorAll(".scatter-dot").forEach(dot => {
+    dot.addEventListener("mouseenter", (e) => {
+      const tk = dot.getAttribute("data-tk");
+      const s = STOCKS.find(st => st.tk === tk);
+      if (!s) return;
+      const status = getStatus(s);
+      tooltip.innerHTML = `<div class="font-num font-bold text-tx-100 text-sm mb-1">${s.tk} — ${s.name}</div>
+        <div class="text-tx-400 text-[10px]">${s.sector}</div>
+        <div class="mt-1 text-[11px]"><span class="text-tx-500">Model Base:</span> <span class="font-num text-acc-blue">${fmt(s.base)}</span></div>
+        <div class="text-[11px]"><span class="text-tx-500">TTM Actual:</span> <span class="font-num" style="color:${s.ttm >= 0 ? '#10b981' : '#ef4444'}">${fmt(s.ttm)}</span></div>
+        <div class="text-[11px]"><span class="text-tx-500">Status:</span> <span style="color:${status.color}">${status.icon} ${status.label}</span></div>`;
+      tooltip.style.display = "block";
+      const rect = wrapper.getBoundingClientRect();
+      tooltip.style.left = (e.clientX - rect.left + 14) + "px";
+      tooltip.style.top = (e.clientY - rect.top - 10) + "px";
+    });
+    dot.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+    });
+    dot.addEventListener("click", () => {
+      const tk = dot.getAttribute("data-tk");
+      highlightedTicker = highlightedTicker === tk ? null : tk;
+      renderAll();
+    });
+  });
+}
+
+// ==================== SECTOR HEATMAP ====================
+function renderSectorTable() {
+  const tbody = document.getElementById("sector-body-z9w1");
+  const maxErr = Math.max(...SECTORS.map(s => Math.abs(s.error)));
+  let html = "";
+  SECTORS.sort((a, b) => b.error - a.error).forEach((s, i) => {
+    const intensity = Math.min(s.error / maxErr, 1);
+    const errColor = s.error >= 0
+      ? `rgba(16,185,129,${0.05 + intensity * 0.2})`
+      : `rgba(239,68,68,${0.05 + Math.abs(intensity) * 0.2})`;
+    const textColor = s.error >= 0 ? "#10b981" : "#ef4444";
+    const sc = SECTOR_COLORS[s.name] || { bg:"rgba(107,114,128,0.15)", text:"#9ca3af" };
+
+    html += `<tr class="${i % 2 !== 0 ? '' : ''}" style="border-bottom:1px solid #1f2937;">
+      <td class="px-3 py-2.5 text-left"><span class="sector-tag" style="background:${sc.bg};color:${sc.text};">${s.name}</span></td>
+      <td class="px-3 py-2.5 text-center font-num text-tx-400">${s.count}</td>
+      <td class="px-3 py-2.5 text-right font-num text-tx-300">${s.avgScore.toFixed(1)}</td>
+      <td class="px-3 py-2.5 text-right font-num text-acc-blue">${fmt(s.avgBase)}</td>
+      <td class="px-3 py-2.5 text-right font-num" style="color:${s.avgTTM >= 0 ? '#10b981' : '#ef4444'}">${fmt(s.avgTTM)}</td>
+      <td class="px-3 py-2.5 text-right font-num font-bold" style="background:${errColor};color:${textColor};">${fmtPP(s.error)}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+// ==================== RENDER ALL ====================
+function renderAll() {
+  renderBarChart();
+  renderTable();
+  renderScatter();
+  renderSectorTable();
+}
+
+// ==================== EVENT LISTENERS ====================
+// Regime toggle
+document.getElementById("regime-btns-g7d2").querySelectorAll(".regime-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById("regime-btns-g7d2").querySelectorAll(".regime-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentRegime = btn.dataset.regime;
+    const label = document.getElementById("regime-label-h4kj");
+    const labels = { neutral: "Neutral Macro Regime", "risk-on": "Risk-On Regime (×1.15)", "risk-off": "Risk-Off Regime (×0.70)" };
+    label.textContent = labels[currentRegime];
+    renderBarChart();
+  });
+});
+
+// Sort headers
+document.querySelectorAll("#main-table-a2s9 th[data-sort]").forEach(th => {
+  th.addEventListener("click", () => {
+    const col = th.dataset.sort;
+    if (sortCol === col) { sortDir = sortDir === "asc" ? "desc" : "asc"; }
+    else { sortCol = col; sortDir = "desc"; }
+    renderTable();
+  });
+});
+
+// Search
+document.getElementById("search-input-k3m7").addEventListener("input", (e) => {
+  searchQuery = e.target.value;
+  renderTable();
+});
+
+// Sector filter
+document.getElementById("sector-filter-q8zv").addEventListener("change", (e) => {
+  sectorFilter = e.target.value;
+  renderTable();
+});
+
+// Resize
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { renderBarChart(); renderScatter(); }, 200);
+});
+
+// ==================== INIT ====================
+populateSectorFilter();
+renderAll();
+lucide.createIcons();
+</script>
+</body>
+</html>

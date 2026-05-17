@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preoperative Patient Education & Readiness App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            foreground: { 100:'#fffbf8',150:'#f8f4f1',200:'#efeae7',250:'#e2ddd9',300:'#cfc9c5',350:'#b3ada8',400:'#98918b',450:'#746d68',550:'#635c57',600:'#5a544f',650:'#4c4642',700:'#3f3935',750:'#322d29',800:'#272320',850:'#1d1a17',900:'#14110e' },
+            background: { 100:'#fffbf8',150:'#f8f4f1',200:'#efeae7',250:'#e2ddd9',300:'#cfc9c5',350:'#b3ada8',400:'#98918b',450:'#746d68' },
+            accent: { 100:'#f5f8fd',150:'#eef4fe',200:'#dbeafe',250:'#c4dbfa',300:'#93b5ef',350:'#6e9be4',400:'#5489d6',450:'#3468b0',550:'#2b5899',600:'#244b83',650:'#1e3f6e',700:'#1a355e',750:'#152b4e',800:'#102140',850:'#0c1832',900:'#081025' },
+            stroke: { 100:'#fffbf8',150:'#fff3ea',200:'#f6e8dd',250:'#ebdbce',300:'#dac6b7',350:'#c1a996',400:'#a88c76',450:'#87674e',550:'#745740',600:'#6a4f39',650:'#59422f',700:'#493626' },
+            muted: { 100:'#fffbf8',150:'#fff3ea',200:'#f6e8dd',250:'#ebdbce',300:'#dac6b7',350:'#c1a996',400:'#a88c76',450:'#87674e',550:'#745740',600:'#6a4f39',650:'#59422f',700:'#493626',750:'#3a2a1e',800:'#2d2117',850:'#221811',900:'#17100a' },
+            'system-green': { 200:'#baeec0',300:'#97dfa1',350:'#6cc57b',400:'#32ad52',550:'#01712b',600:'#016826',750:'#093815' },
+            'system-red': { 200:'#ffe4e1',300:'#ffb5ae',350:'#f98981',400:'#e7615b',550:'#ac1922',600:'#9d1920',650:'#821b1e' },
+            'system-yellow': { 100:'#fffbf4',300:'#f3c357',350:'#d6a632',600:'#6c5001' },
+            'system-orange': { 100:'#fffbf8',300:'#ffba81',350:'#ed974a',400:'#d57702',550:'#8a4b01',650:'#6b3900' },
+            'system-blue': { 100:'#f5f8fd',200:'#dbeafe',300:'#adcaf6',350:'#7eaae9',400:'#5489d6',550:'#2f5ea3',600:'#274f8c',750:'#1e3a8a' },
+            'system-teal': { 100:'#effefb',200:'#ccf5ed',300:'#88e5d3',350:'#52d1b9',400:'#26b89d',550:'#138770',600:'#0f7561',750:'#094d40' },
+            'system-purple': { 100:'#f9f7fd',200:'#ece3f6',300:'#d4c0ec',350:'#b995dd',400:'#9c6ac9',550:'#6f3da0',600:'#603489',750:'#402360' },
+          },
+          borderRadius: { '3xl':'1.25rem','4xl':'1.5rem','5xl':'1.75rem','6xl':'2rem' },
+          fontFamily: { sans: ['Inter','sans-serif'] },
+        },
+      },
+    };
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',sans-serif;background:#f8f4f1;color:#272320}
+    .section-panel{display:none}
+    .section-panel.active{display:block}
+    .sidebar-link{transition:all .2s}
+    .sidebar-link:hover{background:#efeae7}
+    .sidebar-link.active-link{background:#dbeafe;color:#2b5899;font-weight:600}
+    .accordion-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+    .accordion-body.open{max-height:4000px}
+    .fade-in{animation:fadeIn .35s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .timeline-pill{position:relative;z-index:1}
+    .timeline-pill.current{box-shadow:0 0 0 4px #93b5ef}
+    .donut-ring{transition:stroke-dashoffset .8s ease}
+    input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(52,104,176,.25)}
+    .quiz-option{cursor:pointer;transition:all .2s}
+    .quiz-option:hover{background:#eef4fe;border-color:#93b5ef}
+    .quiz-option.correct{background:#baeec0 !important;border-color:#01712b !important}
+    .quiz-option.incorrect{background:#ffe4e1 !important;border-color:#ac1922 !important}
+    .quiz-option.disabled{pointer-events:none;opacity:.8}
+    .check-item input[type="checkbox"]:checked+label{text-decoration:line-through;color:#98918b}
+    .readiness-badge{position:fixed;top:12px;right:12px;z-index:100;transition:all .3s}
+    @media(max-width:767px){
+      .readiness-badge{top:auto;bottom:12px;right:12px}
+    }
+    .spec-banner{border-radius:1.25rem;padding:1.5rem;color:#fff;position:relative;overflow:hidden}
+    .spec-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.08)}
+    .recovery-phase-btn{cursor:pointer;transition:all .2s}
+    .recovery-phase-btn:hover{background:#efeae7}
+
+    /* Print Summary Modal */
+    #print-modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(17,24,39,0.8);backdrop-filter:blur(2px);overflow-y:auto;padding:24px 12px}
+    #print-modal-overlay.open{display:flex;align-items:flex-start;justify-content:center}
+    #print-modal-panel{background:#fff;border-radius:12px;max-width:800px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px rgba(0,0,0,.25);position:relative}
+    #print-modal-header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-radius:12px 12px 0 0}
+
+    /* Print Summary Report Styles (inline for print fidelity) */
+    #printSummary{font-family:system-ui,-apple-system,sans-serif;color:#1a1a1a;line-height:1.5;display:none}
+    #print-modal-overlay.open #printSummary{display:block}
+    .ps-header{text-align:center;padding:20px 0 12px;border-bottom:3px solid #2563eb}
+    .ps-header h1{font-size:18pt;font-weight:700;color:#1e3a5f;margin:6px 0 2px}
+    .ps-header p{font-size:9pt;color:#555}
+    .ps-patient-box{background:#eff6ff;border:2px solid #2563eb;border-radius:8px;padding:14px 16px;margin:14px 0;display:flex;gap:16px;flex-wrap:wrap}
+    .ps-patient-box .ps-col{flex:1;min-width:200px}
+    .ps-section{margin:14px 0 8px}
+    .ps-section-title{font-size:13pt;font-weight:700;color:#1e3a5f;border-bottom:2px solid #2563eb;padding-bottom:4px;margin-bottom:8px}
+    .ps-critical-box{background:#fff7ed;border:2px solid #dc2626;border-radius:8px;padding:12px 14px;margin:10px 0}
+    .ps-critical-box h3{color:#dc2626;font-size:11pt;font-weight:700;margin-bottom:6px}
+    .ps-critical-box ol{padding-left:18px;font-size:9.5pt}
+    .ps-critical-box ol li{margin-bottom:4px}
+    .ps-med-table{width:100%;border-collapse:collapse;font-size:9.5pt;margin:6px 0}
+    .ps-med-table th{background:#eff6ff;text-align:left;padding:6px 10px;border:1px solid #d1d5db;font-weight:600;color:#1e3a5f}
+    .ps-med-table td{padding:6px 10px;border:1px solid #d1d5db;vertical-align:top}
+    .ps-med-table tr:nth-child(even) td{background:#f9fafb}
+    .ps-callout-orange{background:#fff7ed;border:1px solid #ea580c;border-radius:6px;padding:8px 12px;font-size:9pt;color:#92400e;margin:8px 0}
+    .ps-checklist-item{font-size:9.5pt;margin:2px 0;display:flex;align-items:flex-start;gap:6px}
+    .ps-checklist-item .ps-check{font-size:11pt;line-height:1;width:16px;flex-shrink:0}
+    .ps-warn-grid{display:flex;gap:12px;flex-wrap:wrap}
+    .ps-warn-col{flex:1;min-width:220px;border-radius:8px;padding:10px 12px}
+    .ps-warn-col.orange{border:2px solid #ea580c}
+    .ps-warn-col.red{border:2px solid #dc2626}
+    .ps-warn-col h4{font-size:10pt;font-weight:700;margin-bottom:6px}
+    .ps-warn-col ul{padding-left:14px;font-size:9pt}
+    .ps-warn-col ul li{margin-bottom:3px}
+    .ps-contact-table{width:100%;border-collapse:collapse;font-size:9.5pt}
+    .ps-contact-table td{padding:6px 10px;border:1px solid #d1d5db}
+    .ps-contact-table td:first-child{font-weight:600;width:40%;background:#f9fafb}
+    .ps-recovery-item{background:#f0f9ff;border-left:3px solid #2563eb;padding:6px 10px;margin:4px 0;border-radius:0 6px 6px 0;font-size:9pt}
+    .ps-recovery-item strong{color:#1e3a5f}
+    .ps-footer{border-top:2px solid #d1d5db;padding-top:10px;margin-top:16px;font-size:8pt;color:#666;text-align:center}
+    .ps-footer .ps-right{text-align:right;margin-top:4px}
+    .ps-progress-bar-bg{background:#e5e7eb;border-radius:4px;height:12px;width:100%;overflow:hidden;margin:4px 0}
+    .ps-progress-bar-fill{background:#2563eb;height:100%;border-radius:4px;transition:width .3s}
+    .ps-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:8pt;font-weight:600;color:#fff}
+    .ps-two-col-check{display:flex;flex-wrap:wrap;gap:4px 24px}
+    .ps-two-col-check .ps-checklist-item{width:calc(50% - 12px)}
+
+    @media print{
+      body *{visibility:hidden}
+      #printSummary,#printSummary *{visibility:visible}
+      #printSummary{display:block !important;position:absolute;left:0;top:0;width:100%;margin:0;padding:0.5in 0.6in;font-size:11pt;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      @page{margin:0.75in;size:letter}
+      .no-print,#print-modal-header,#print-modal-overlay{background:transparent !important;box-shadow:none !important}
+      #print-modal-panel{box-shadow:none !important;border:none !important;max-height:none !important;overflow:visible !important}
+      .ps-patient-box,.ps-critical-box,.ps-warn-col{page-break-inside:avoid}
+      .ps-page-break{page-break-before:always}
+      .ps-badge{border:1px solid #333}
+      a{text-decoration:none;color:#000}
+      .readiness-badge,#mobile-menu,header,aside,footer,#setup-screen,.section-panel{display:none !important;visibility:hidden !important}
+    }
+  </style>
+</head>
+<body data-id="0" class="min-h-screen bg-background-150">
+  <app-icon data-id="1" hidden data-icon="heart-pulse" data-palette="Blue"></app-icon>
+  <app-disclaimer data-id="2" intent="medical"></app-disclaimer>
+
+  <!-- ======================== PRINT MODAL ======================== -->
+  <div data-id="3" id="print-modal-overlay">
+    <div data-id="4" id="print-modal-panel">
+      <div data-id="5" id="print-modal-header" class="no-print">
+        <div data-id="6" class="flex items-center gap-2">
+          <span data-id="7" class="text-lg">📄</span>
+          <span data-id="8" class="font-semibold text-foreground-800 text-sm md:text-base">Patient Summary Report</span>
+        </div>
+        <div data-id="9" class="flex items-center gap-2">
+          <button data-id="10" id="btn-print-now" class="flex items-center gap-1.5 bg-accent-450 text-white text-sm font-semibold px-4 py-2 rounded-lg cursor-pointer hover:bg-accent-550 transition">
+            <span data-id="11">🖨️</span> Print Now
+          </button>
+          <button data-id="12" id="btn-close-print-modal" class="flex items-center justify-center w-9 h-9 rounded-lg bg-background-200 text-foreground-600 hover:bg-background-250 cursor-pointer transition text-lg font-bold">✕</button>
+        </div>
+      </div>
+      <div data-id="13" id="printSummary" style="padding:24px"></div>
+    </div>
+  </div>
+
+  <!-- ======================== WELCOME / SETUP ======================== -->
+  <div data-id="14" id="setup-screen" class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div data-id="15" class="bg-background-100 rounded-3xl p-6 md:p-10 max-w-lg w-full" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+      <div data-id="16" class="text-center mb-8">
+        <span data-id="17" class="text-5xl mb-4 block">🏥</span>
+        <h1 data-id="18" class="text-2xl md:text-3xl font-bold text-foreground-900 mb-2">Pre-Op Readiness Hub</h1>
+        <p data-id="19" class="text-foreground-450 text-sm">Your personal guide to a safe and successful surgery</p>
+      </div>
+      <div data-id="20" class="space-y-5">
+        <div data-id="21">
+          <label data-id="22" class="block text-sm font-medium text-foreground-700 mb-1">Patient Name <span data-id="23" class="text-system-red-400">*</span></label>
+          <input data-id="24" id="inp-name" type="text" class="w-full bg-background-200 rounded-xl px-4 py-3 text-base text-foreground-800" placeholder="e.g. Alex" />
+        </div>
+        <div data-id="25">
+          <label data-id="26" class="block text-sm font-medium text-foreground-700 mb-1">Surgery Type <span data-id="27" class="text-system-red-400">*</span></label>
+          <select data-id="28" id="inp-surgery" class="w-full bg-background-200 rounded-xl px-4 py-3 text-base text-foreground-800 appearance-none cursor-pointer">
+            <option data-id="29" value="">Select surgery type…</option>
+            <option data-id="30" value="Spine Surgery">Spine Surgery</option>
+            <option data-id="31" value="Orthopedic Surgery">Orthopedic Surgery</option>
+            <option data-id="32" value="Neurological Surgery">Neurological Surgery</option>
+            <option data-id="33" value="Cardiac Surgery">Cardiac Surgery</option>
+            <option data-id="34" value="General Surgery">General Surgery</option>
+          </select>
+        </div>
+        <div data-id="35">
+          <label data-id="36" class="block text-sm font-medium text-foreground-700 mb-1">Surgery Date <span data-id="37" class="text-system-red-400">*</span></label>
+          <input data-id="38" id="inp-date" type="date" class="w-full bg-background-200 rounded-xl px-4 py-3 text-base text-foreground-800" />
+        </div>
+        <div data-id="39">
+          <label data-id="40" class="block text-sm font-medium text-foreground-700 mb-1">Surgeon Name</label>
+          <input data-id="41" id="inp-surgeon" type="text" class="w-full bg-background-200 rounded-xl px-4 py-3 text-base text-foreground-800" placeholder="e.g. Dr. Smith" />
+        </div>
+        <p data-id="42" id="setup-error" class="text-system-red-550 text-sm hidden">Please fill in all required fields.</p>
+        <button data-id="43" id="btn-begin" class="w-full bg-accent-450 text-background-100 font-semibold rounded-xl py-3 text-base hover:bg-accent-550 transition cursor-pointer mt-2 flex items-center justify-center gap-2">
+          Begin My Journey <i data-id="44" data-lucide="arrow-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== MAIN APP ======================== -->
+  <div data-id="45" id="main-app" class="hidden">
+    <!-- READINESS BADGE (floating) -->
+    <div data-id="46" id="readiness-badge" class="readiness-badge hidden no-print">
+      <div data-id="47" class="bg-background-100 rounded-2xl px-4 py-2 flex items-center gap-2 cursor-pointer" style="box-shadow:0 8px 24px rgba(20,17,14,.1)" id="badge-click">
+        <svg data-id="48" width="36" height="36" viewBox="0 0 36 36" class="shrink-0">
+          <circle data-id="49" cx="18" cy="18" r="15" fill="none" stroke="#efeae7" stroke-width="4"/>
+          <circle data-id="50" id="badge-ring" cx="18" cy="18" r="15" fill="none" stroke="#3468b0" stroke-width="4" stroke-dasharray="94.25" stroke-dashoffset="94.25" stroke-linecap="round" transform="rotate(-90 18 18)"/>
+        </svg>
+        <div data-id="51">
+          <p data-id="52" id="badge-pct" class="text-sm font-bold text-foreground-900 leading-tight">0%</p>
+          <p data-id="53" id="badge-label" class="text-[10px] text-foreground-450 leading-tight">Not Started</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <header data-id="54" class="bg-background-100 border-b border-stroke-200/30 px-4 md:px-6 py-3 no-print">
+      <div data-id="55" class="max-w-7xl mx-auto flex items-center justify-between">
+        <div data-id="56" class="flex items-center gap-3">
+          <span data-id="57" class="text-2xl">🏥</span>
+          <div data-id="58">
+            <h1 data-id="59" class="text-lg font-bold text-foreground-900 leading-tight">Pre-Op Readiness Hub</h1>
+            <p data-id="60" class="text-xs text-foreground-450 hidden md:block">Your personal guide to a safe and successful surgery</p>
+          </div>
+        </div>
+        <div data-id="61" class="flex items-center gap-3">
+          <button data-id="62" id="header-print-btn" class="hidden md:flex items-center gap-1.5 border-2 border-accent-450 text-accent-450 bg-white font-semibold rounded-xl px-3 py-1.5 text-sm hover:bg-accent-100 cursor-pointer transition no-print">
+            <span data-id="63">🖨️</span> Print My Summary
+          </button>
+          <span data-id="64" id="header-patient" class="text-sm font-medium text-foreground-600 hidden md:inline"></span>
+          <button data-id="65" id="btn-reset" class="text-xs text-accent-550 hover:text-accent-450 cursor-pointer flex items-center gap-1">
+            <i data-id="66" data-lucide="log-out" class="w-4 h-4"></i> <span data-id="67" class="hidden md:inline">Reset</span>
+          </button>
+          <button data-id="68" id="mobile-menu-btn" class="md:hidden p-2 cursor-pointer"><i data-id="69" data-lucide="menu" class="w-6 h-6 text-foreground-700"></i></button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MOBILE MENU OVERLAY -->
+    <nav data-id="70" id="mobile-menu" class="hidden fixed inset-0 bg-background-100 z-50 flex flex-col p-4 overflow-y-auto no-print">
+      <button data-id="71" id="mobile-menu-close" class="self-end p-2 mb-4 cursor-pointer"><i data-id="72" data-lucide="x" class="w-6 h-6 text-foreground-700"></i></button>
+      <div data-id="73" id="mobile-nav-links" class="flex flex-col gap-1"></div>
+    </nav>
+
+    <div data-id="74" class="max-w-7xl mx-auto flex flex-col md:flex-row min-h-[calc(100vh-60px)]">
+      <!-- SIDEBAR -->
+      <aside data-id="75" id="sidebar" class="hidden md:flex flex-col w-[260px] shrink-0 bg-background-200 rounded-br-3xl p-4 gap-1 overflow-y-auto no-print"></aside>
+
+      <!-- CONTENT -->
+      <main data-id="76" id="content-area" class="flex-1 p-4 md:p-8 overflow-y-auto">
+
+        <!-- S1: Overview & Timeline -->
+        <div data-id="77" id="sec-1" class="section-panel active fade-in">
+          <h2 data-id="78" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">📋 Overview & Timeline</h2>
+          <p data-id="79" class="text-foreground-450 text-sm mb-6">Your surgical journey at a glance</p>
+          <div data-id="80" class="bg-background-100 rounded-2xl p-5 md:p-6 mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <div data-id="81" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div data-id="82"><p data-id="83" class="text-xs font-medium uppercase tracking-wide text-foreground-450 mb-1">Surgery</p><p data-id="84" id="fact-surgery" class="text-sm font-semibold text-foreground-800">—</p></div>
+              <div data-id="85"><p data-id="86" class="text-xs font-medium uppercase tracking-wide text-foreground-450 mb-1">Date</p><p data-id="87" id="fact-date" class="text-sm font-semibold text-foreground-800">—</p></div>
+              <div data-id="88"><p data-id="89" class="text-xs font-medium uppercase tracking-wide text-foreground-450 mb-1">Surgeon</p><p data-id="90" id="fact-surgeon" class="text-sm font-semibold text-foreground-800">—</p></div>
+              <div data-id="91"><p data-id="92" class="text-xs font-medium uppercase tracking-wide text-foreground-450 mb-1">Days Until Surgery</p><p data-id="93" id="fact-days" class="text-3xl font-bold text-accent-450 tabular-nums">—</p></div>
+            </div>
+          </div>
+          <div data-id="94" class="bg-background-100 rounded-2xl p-5 md:p-6 mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h3 data-id="95" class="text-sm font-semibold text-foreground-800 mb-4">Your Countdown Timeline</h3>
+            <div data-id="96" class="flex flex-wrap gap-2 items-center justify-center" id="timeline-pills"></div>
+          </div>
+          <h3 data-id="97" class="text-lg font-semibold text-foreground-800 mb-3">What to Expect</h3>
+          <div data-id="98" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div data-id="99" class="bg-accent-150 rounded-2xl p-5"><p data-id="100" class="font-semibold text-accent-600 mb-2">🔵 Before Surgery</p><p data-id="101" class="text-sm text-foreground-700">You'll complete tests, follow fasting rules, adjust medications, and prepare your home for recovery. This app guides you through every step.</p></div>
+            <div data-id="102" class="bg-system-teal-100 rounded-2xl p-5"><p data-id="103" class="font-semibold text-system-teal-600 mb-2">🟢 During Surgery</p><p data-id="104" class="text-sm text-foreground-700">Your surgical team will monitor you closely. Anesthesia keeps you comfortable. The procedure follows a carefully planned protocol.</p></div>
+            <div data-id="105" class="bg-system-purple-100 rounded-2xl p-5"><p data-id="106" class="font-semibold text-system-purple-600 mb-2">🟣 After Surgery</p><p data-id="107" class="text-sm text-foreground-700">You'll wake in the recovery room, manage pain with your team, and gradually return to normal activities over days to weeks.</p></div>
+          </div>
+        </div>
+
+        <!-- S2: My Surgery Guide (NEW) -->
+        <div data-id="108" id="sec-2" class="section-panel fade-in">
+          <div data-id="109" id="surgery-guide-content"></div>
+        </div>
+
+        <!-- S3: Fasting & Diet -->
+        <div data-id="110" id="sec-3" class="section-panel fade-in">
+          <h2 data-id="111" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">🍽️ Fasting & Diet</h2>
+          <p data-id="112" class="text-foreground-450 text-sm mb-6">Critical instructions for your safety</p>
+          <div data-id="113" id="spec-fasting-note" class="mb-6 hidden"></div>
+          <div data-id="114" class="bg-system-red-200 rounded-2xl p-5 mb-6 flex gap-3 items-start">
+            <i data-id="115" data-lucide="alert-triangle" class="w-6 h-6 text-system-red-550 shrink-0 mt-0.5"></i>
+            <div data-id="116"><p data-id="117" class="font-semibold text-system-red-550 mb-1">Nothing by Mouth (NPO)</p><p data-id="118" class="text-sm text-system-red-650">Failure to follow fasting instructions may result in your surgery being cancelled or rescheduled.</p></div>
+          </div>
+          <div data-id="119" class="bg-background-100 rounded-2xl p-5 md:p-6 mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h3 data-id="120" class="text-sm font-semibold text-foreground-800 mb-4">NPO Visual Timeline</h3>
+            <div data-id="121" class="flex flex-col md:flex-row items-stretch gap-0">
+              <div data-id="122" class="flex-1 bg-system-green-200 rounded-t-xl md:rounded-l-xl md:rounded-tr-none p-4 text-center">
+                <p data-id="123" class="text-xs font-medium uppercase tracking-wide text-system-green-600 mb-1">8+ Hours Before</p>
+                <p data-id="124" class="text-2xl mb-1">🍽️</p>
+                <p data-id="125" class="text-sm font-semibold text-system-green-600">Stop Eating Solids</p>
+                <p data-id="126" class="text-xs text-system-green-550">No solid food after midnight the night before</p>
+              </div>
+              <div data-id="127" class="flex-1 bg-system-yellow-100 p-4 text-center">
+                <p data-id="128" class="text-xs font-medium uppercase tracking-wide text-system-yellow-600 mb-1">2 Hours Before</p>
+                <p data-id="129" class="text-2xl mb-1">🥤</p>
+                <p data-id="130" class="text-sm font-semibold text-system-yellow-600">Stop Clear Liquids</p>
+                <p data-id="131" class="text-xs text-foreground-550">Water, apple juice, black coffee only</p>
+              </div>
+              <div data-id="132" class="flex-1 bg-system-red-200 rounded-b-xl md:rounded-r-xl md:rounded-bl-none p-4 text-center">
+                <p data-id="133" class="text-xs font-medium uppercase tracking-wide text-system-red-600 mb-1">Surgery Time</p>
+                <p data-id="134" class="text-2xl mb-1">🏥</p>
+                <p data-id="135" class="text-sm font-semibold text-system-red-550">Nothing by Mouth</p>
+                <p data-id="136" class="text-xs text-system-red-600">Completely empty stomach required</p>
+              </div>
+            </div>
+          </div>
+          <div data-id="137" class="space-y-3 mb-6">
+            <div data-id="138" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="139" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false">
+                <span data-id="140" class="font-semibold text-foreground-800">🚫 Solid Foods</span><i data-id="141" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i>
+              </button>
+              <div data-id="142" class="accordion-body"><div data-id="143" class="px-5 pb-5 text-sm text-foreground-700 leading-relaxed">No solid food after midnight the night before surgery (or 8 hours before your scheduled surgery time). This includes all meals, snacks, candy, and chewing gum. Even a small amount of food in your stomach can be dangerous during anesthesia — it can cause aspiration, where stomach contents enter your lungs.</div></div>
+            </div>
+            <div data-id="144" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="145" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false">
+                <span data-id="146" class="font-semibold text-foreground-800">💧 Clear Liquids</span><i data-id="147" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i>
+              </button>
+              <div data-id="148" class="accordion-body"><div data-id="149" class="px-5 pb-5 text-sm text-foreground-700 leading-relaxed"><p data-id="150" class="mb-2"><strong data-id="151">Allowed up to 2 hours before surgery:</strong> Water, apple juice (no pulp), black coffee, plain tea (no milk or cream), clear broth, Jell-O (no fruit), Gatorade/Pedialyte.</p><p data-id="152"><strong data-id="153">NOT allowed:</strong> Milk, cream, orange juice, smoothies, protein shakes, soup with noodles/vegetables, alcohol.</p></div></div>
+            </div>
+            <div data-id="154" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="155" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false">
+                <span data-id="156" class="font-semibold text-foreground-800">⚠️ Special Instructions (Diabetes)</span><i data-id="157" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i>
+              </button>
+              <div data-id="158" class="accordion-body"><div data-id="159" class="px-5 pb-5 text-sm text-foreground-700 leading-relaxed">If you are diabetic, contact your care team for specific fasting and medication instructions. Blood sugar management may require adjusted insulin doses. Some oral diabetes medications must be held the day of surgery. You may still take approved medications with a small sip of water on the morning of surgery — always confirm with your surgical team.</div></div>
+            </div>
+          </div>
+          <h3 data-id="160" class="text-lg font-semibold text-foreground-800 mb-3">Common Fasting Myths</h3>
+          <div data-id="161" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div data-id="162" class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)"><p data-id="163" class="font-semibold text-foreground-800 mb-2">Can I chew gum?</p><p data-id="164" class="text-sm text-system-red-550 font-semibold">🚫 No.</p><p data-id="165" class="text-xs text-foreground-550 mt-1">Gum stimulates stomach acid production and counts as eating.</p></div>
+            <div data-id="166" class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)"><p data-id="167" class="font-semibold text-foreground-800 mb-2">Can I have a small snack?</p><p data-id="168" class="text-sm text-system-red-550 font-semibold">🚫 No.</p><p data-id="169" class="text-xs text-foreground-550 mt-1">Even a cracker or candy can delay or cancel your surgery.</p></div>
+            <div data-id="170" class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)"><p data-id="171" class="font-semibold text-foreground-800 mb-2">Can I drink coffee?</p><p data-id="172" class="text-sm text-system-green-550 font-semibold">✅ Only black coffee</p><p data-id="173" class="text-xs text-foreground-550 mt-1">Before the 2-hour cutoff. No cream, sugar, or flavored creamers.</p></div>
+          </div>
+        </div>
+
+        <!-- S4: Medications -->
+        <div data-id="174" id="sec-4" class="section-panel fade-in">
+          <h2 data-id="175" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">💊 Medications</h2>
+          <p data-id="176" class="text-foreground-450 text-sm mb-6">Know which medications to continue and which to stop</p>
+          <div data-id="177" class="bg-system-orange-100 rounded-2xl p-5 mb-6 flex gap-3 items-start">
+            <i data-id="178" data-lucide="alert-circle" class="w-6 h-6 text-system-orange-550 shrink-0 mt-0.5"></i>
+            <div data-id="179"><p data-id="180" class="font-semibold text-system-orange-550">Important</p><p data-id="181" class="text-sm text-foreground-700">ALWAYS confirm your specific medication plan with your surgeon or anesthesiologist. This is general guidance only.</p></div>
+          </div>
+          <div data-id="182" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div data-id="183" class="bg-system-green-200 rounded-2xl p-5">
+              <h3 data-id="184" class="font-semibold text-system-green-600 mb-3 flex items-center gap-2"><i data-id="185" data-lucide="check-circle" class="w-5 h-5"></i> Usually Continue</h3>
+              <ul data-id="186" class="space-y-2 text-sm text-foreground-800">
+                <li data-id="187" class="flex items-start gap-2"><span data-id="188" class="text-system-green-550 mt-0.5">✅</span> Blood pressure medications</li>
+                <li data-id="189" class="flex items-start gap-2"><span data-id="190" class="text-system-green-550 mt-0.5">✅</span> Thyroid medications</li>
+                <li data-id="191" class="flex items-start gap-2"><span data-id="192" class="text-system-green-550 mt-0.5">✅</span> Seizure medications</li>
+                <li data-id="193" class="flex items-start gap-2"><span data-id="194" class="text-system-green-550 mt-0.5">✅</span> Inhalers (asthma/COPD)</li>
+                <li data-id="195" class="flex items-start gap-2"><span data-id="196" class="text-system-green-550 mt-0.5">✅</span> Eye drops</li>
+              </ul>
+              <p data-id="197" class="text-xs text-system-green-600 mt-3 italic">Take with a small sip of water the morning of surgery.</p>
+            </div>
+            <div data-id="198" class="bg-system-red-200 rounded-2xl p-5">
+              <h3 data-id="199" class="font-semibold text-system-red-550 mb-3 flex items-center gap-2"><i data-id="200" data-lucide="x-circle" class="w-5 h-5"></i> Usually Stop</h3>
+              <ul data-id="201" class="space-y-2 text-sm text-foreground-800">
+                <li data-id="202" class="flex items-start gap-2"><span data-id="203" class="text-system-red-550 mt-0.5">🚫</span> Blood thinners (warfarin, aspirin, clopidogrel) — stop 5-7 days prior</li>
+                <li data-id="204" class="flex items-start gap-2"><span data-id="205" class="text-system-red-550 mt-0.5">🚫</span> NSAIDs (ibuprofen, naproxen) — stop 5-7 days prior</li>
+                <li data-id="206" class="flex items-start gap-2"><span data-id="207" class="text-system-red-550 mt-0.5">🚫</span> Diabetes medications — hold day of surgery</li>
+                <li data-id="208" class="flex items-start gap-2"><span data-id="209" class="text-system-red-550 mt-0.5">🚫</span> Herbal supplements — stop 2 weeks prior</li>
+              </ul>
+            </div>
+          </div>
+          <div data-id="210" id="spec-meds-box" class="hidden mb-6"></div>
+          <div data-id="211" class="bg-background-100 rounded-2xl overflow-hidden mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <button data-id="212" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false">
+              <span data-id="213" class="font-semibold text-foreground-800">🌿 Herbal Supplements to Stop (Details)</span><i data-id="214" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i>
+            </button>
+            <div data-id="215" class="accordion-body"><div data-id="216" class="px-5 pb-5 text-sm text-foreground-700 leading-relaxed">
+              <p data-id="217" class="mb-2">Stop ALL herbal supplements at least <strong data-id="218">2 weeks before</strong> surgery. These can cause excessive bleeding, interact with anesthesia, or affect heart rate:</p>
+              <div data-id="219" class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+                <span data-id="220" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Garlic</span>
+                <span data-id="221" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Ginger</span>
+                <span data-id="222" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Ginkgo Biloba</span>
+                <span data-id="223" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">St. John's Wort</span>
+                <span data-id="224" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Valerian</span>
+                <span data-id="225" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Echinacea</span>
+                <span data-id="226" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Fish Oil / Omega-3</span>
+                <span data-id="227" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Vitamin E (high dose)</span>
+                <span data-id="228" class="bg-background-200 rounded-xl px-3 py-2 text-xs font-medium text-center">Kava</span>
+              </div>
+            </div></div>
+          </div>
+          <div data-id="229" class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h3 data-id="230" class="font-semibold text-foreground-800 mb-4 flex items-center gap-2"><i data-id="231" data-lucide="list-plus" class="w-5 h-5 text-accent-450"></i> My Medication Tracker</h3>
+            <div data-id="232" class="flex flex-col md:flex-row gap-3 mb-4">
+              <input data-id="233" id="med-name" type="text" class="flex-1 bg-background-200 rounded-xl px-4 py-2 text-sm" placeholder="Medication name" />
+              <input data-id="234" id="med-dose" type="text" class="w-full md:w-32 bg-background-200 rounded-xl px-4 py-2 text-sm" placeholder="Dosage" />
+              <select data-id="235" id="med-status" class="w-full md:w-48 bg-background-200 rounded-xl px-4 py-2 text-sm appearance-none cursor-pointer">
+                <option data-id="236" value="continue">✅ Continue</option><option data-id="237" value="stop">🚫 Stop</option><option data-id="238" value="confirm">❓ Confirm w/ Doctor</option>
+              </select>
+              <button data-id="239" id="btn-add-med" class="bg-accent-450 text-background-100 rounded-xl px-4 py-2 text-sm font-medium hover:bg-accent-550 cursor-pointer whitespace-nowrap flex items-center gap-1"><i data-id="240" data-lucide="plus" class="w-4 h-4"></i> Add</button>
+            </div>
+            <div data-id="241" id="med-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- S5: Hygiene & Prep -->
+        <div data-id="242" id="sec-5" class="section-panel fade-in">
+          <h2 data-id="243" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">🛁 Hygiene & Prep</h2>
+          <p data-id="244" class="text-foreground-450 text-sm mb-6">Cleanliness reduces infection risk</p>
+          <div data-id="245" class="space-y-4">
+            <div data-id="246" class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <h3 data-id="247" class="font-semibold text-foreground-800 mb-3">🧴 Chlorhexidine (CHG) Bathing</h3>
+              <div data-id="248" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div data-id="249" class="bg-accent-150 rounded-xl p-4">
+                  <p data-id="250" class="text-sm font-semibold text-accent-600 mb-2">Night Before Surgery</p>
+                  <ul data-id="251" class="text-sm text-foreground-700 space-y-1 list-disc list-inside">
+                    <li data-id="252">Shower with CHG soap (if provided) or regular soap</li>
+                    <li data-id="253">Scrub entire body for at least 3 minutes</li>
+                    <li data-id="254">Do NOT apply lotion, deodorant, perfume, or makeup after shower</li>
+                    <li data-id="255">Sleep on clean sheets with clean pajamas</li>
+                  </ul>
+                </div>
+                <div data-id="256" class="bg-system-teal-100 rounded-xl p-4">
+                  <p data-id="257" class="text-sm font-semibold text-system-teal-600 mb-2">Morning of Surgery</p>
+                  <ul data-id="258" class="text-sm text-foreground-700 space-y-1 list-disc list-inside">
+                    <li data-id="259">Another CHG shower if instructed</li>
+                    <li data-id="260">Wear clean, loose, comfortable clothes</li>
+                    <li data-id="261">Do NOT apply any products to your skin</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div data-id="262" id="spec-prep-box" class="hidden"></div>
+            <div data-id="263" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div data-id="264" class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+                <h3 data-id="265" class="font-semibold text-foreground-800 mb-3">💅 Nail Care</h3>
+                <ul data-id="266" class="text-sm text-foreground-700 space-y-2">
+                  <li data-id="267" class="flex items-start gap-2"><i data-id="268" data-lucide="check" class="w-4 h-4 text-system-green-550 shrink-0 mt-0.5"></i> Remove ALL nail polish (especially index fingers for pulse oximeter)</li>
+                  <li data-id="269" class="flex items-start gap-2"><i data-id="270" data-lucide="check" class="w-4 h-4 text-system-green-550 shrink-0 mt-0.5"></i> Keep nails short and clean</li>
+                  <li data-id="271" class="flex items-start gap-2"><i data-id="272" data-lucide="check" class="w-4 h-4 text-system-green-550 shrink-0 mt-0.5"></i> No acrylic or gel nails</li>
+                </ul>
+              </div>
+              <div data-id="273" class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+                <h3 data-id="274" class="font-semibold text-foreground-800 mb-3">💍 Jewelry & Piercings</h3>
+                <ul data-id="275" class="text-sm text-foreground-700 space-y-2">
+                  <li data-id="276" class="flex items-start gap-2"><i data-id="277" data-lucide="x" class="w-4 h-4 text-system-red-550 shrink-0 mt-0.5"></i> Remove ALL rings, necklaces, bracelets, watches</li>
+                  <li data-id="278" class="flex items-start gap-2"><i data-id="279" data-lucide="x" class="w-4 h-4 text-system-red-550 shrink-0 mt-0.5"></i> Remove ALL piercings and body jewelry</li>
+                  <li data-id="280" class="flex items-start gap-2"><i data-id="281" data-lucide="x" class="w-4 h-4 text-system-red-550 shrink-0 mt-0.5"></i> Remove hearing aids (unless directed otherwise)</li>
+                </ul>
+              </div>
+            </div>
+            <div data-id="282" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div data-id="283" class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+                <h3 data-id="284" class="font-semibold text-foreground-800 mb-3">💇 Hair</h3>
+                <ul data-id="285" class="text-sm text-foreground-700 space-y-2">
+                  <li data-id="286" class="flex items-start gap-2"><i data-id="287" data-lucide="check" class="w-4 h-4 text-system-green-550 shrink-0 mt-0.5"></i> No hair products (gel, spray, mousse)</li>
+                  <li data-id="288" class="flex items-start gap-2"><i data-id="289" data-lucide="check" class="w-4 h-4 text-system-green-550 shrink-0 mt-0.5"></i> If having head/neck surgery, wash hair thoroughly</li>
+                </ul>
+              </div>
+              <div data-id="290" class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+                <h3 data-id="291" class="font-semibold text-foreground-800 mb-3">🦷 Dental</h3>
+                <ul data-id="292" class="text-sm text-foreground-700 space-y-2">
+                  <li data-id="293" class="flex items-start gap-2"><i data-id="294" data-lucide="check" class="w-4 h-4 text-system-green-550 shrink-0 mt-0.5"></i> Remove dentures, bridges, partial plates on day of surgery</li>
+                  <li data-id="295" class="flex items-start gap-2"><i data-id="296" data-lucide="check" class="w-4 h-4 text-system-green-550 shrink-0 mt-0.5"></i> Inform anesthesia team of loose or capped teeth</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- S6: Day of Surgery -->
+        <div data-id="297" id="sec-6" class="section-panel fade-in">
+          <h2 data-id="298" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">🧳 Day of Surgery</h2>
+          <p data-id="299" class="text-foreground-450 text-sm mb-6">Be prepared and arrive with confidence</p>
+          <div data-id="300" class="bg-system-orange-100 rounded-2xl p-5 mb-6 flex gap-3 items-start">
+            <i data-id="301" data-lucide="car" class="w-6 h-6 text-system-orange-550 shrink-0 mt-0.5"></i>
+            <div data-id="302"><p data-id="303" class="font-semibold text-system-orange-550">Transportation Reminder</p><p data-id="304" class="text-sm text-foreground-700">You CANNOT drive yourself home. Arrange for a responsible adult to drive you and stay with you for 24 hours after surgery.</p></div>
+          </div>
+          <div data-id="305" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div data-id="306" class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <h3 data-id="307" class="font-semibold text-system-green-600 mb-3 flex items-center gap-2"><i data-id="308" data-lucide="briefcase" class="w-5 h-5"></i> What to BRING</h3>
+              <div data-id="309" class="space-y-2" id="bring-checklist">
+                <label data-id="310" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="311" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-id" /><span data-id="312">Photo ID (driver's license or passport)</span></label>
+                <label data-id="313" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="314" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-ins" /><span data-id="315">Insurance card</span></label>
+                <label data-id="316" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="317" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-meds" /><span data-id="318">List of current medications</span></label>
+                <label data-id="319" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="320" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-adv" /><span data-id="321">Advance directive / living will</span></label>
+                <label data-id="322" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="323" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-cloth" /><span data-id="324">Comfortable loose-fitting clothes</span></label>
+                <label data-id="325" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="326" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-shoes" /><span data-id="327">Slip-on shoes</span></label>
+                <label data-id="328" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="329" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-charger" /><span data-id="330">Phone charger</span></label>
+                <label data-id="331" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="332" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-cash" /><span data-id="333">Small amount of cash</span></label>
+                <label data-id="334" class="flex items-center gap-3 text-sm text-foreground-700 cursor-pointer"><input data-id="335" type="checkbox" class="day-check w-4 h-4 accent-[#3468b0] cursor-pointer" data-key="bring-cpap" /><span data-id="336">CPAP machine (if applicable)</span></label>
+              </div>
+              <div data-id="337" id="spec-dayof-box" class="mt-4 hidden"></div>
+            </div>
+            <div data-id="338" class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <h3 data-id="339" class="font-semibold text-system-red-550 mb-3 flex items-center gap-2"><i data-id="340" data-lucide="home" class="w-5 h-5"></i> Leave at HOME</h3>
+              <ul data-id="341" class="space-y-2 text-sm text-foreground-700">
+                <li data-id="342" class="flex items-start gap-2"><i data-id="343" data-lucide="x" class="w-4 h-4 text-system-red-550 shrink-0 mt-0.5"></i> Jewelry and valuables</li>
+                <li data-id="344" class="flex items-start gap-2"><i data-id="345" data-lucide="x" class="w-4 h-4 text-system-red-550 shrink-0 mt-0.5"></i> Contact lenses (wear glasses instead)</li>
+                <li data-id="346" class="flex items-start gap-2"><i data-id="347" data-lucide="x" class="w-4 h-4 text-system-red-550 shrink-0 mt-0.5"></i> Large amounts of cash</li>
+                <li data-id="348" class="flex items-start gap-2"><i data-id="349" data-lucide="x" class="w-4 h-4 text-system-red-550 shrink-0 mt-0.5"></i> Unnecessary electronics</li>
+              </ul>
+              <div data-id="350" class="mt-6">
+                <h3 data-id="351" class="font-semibold text-foreground-800 mb-3 flex items-center gap-2"><i data-id="352" data-lucide="clock" class="w-5 h-5 text-accent-450"></i> Arrival</h3>
+                <p data-id="353" class="text-sm text-foreground-700 mb-3">Arrive <strong data-id="354">1-2 hours</strong> before your scheduled surgery time. Check in at the admissions / surgical reception desk.</p>
+                <h3 data-id="355" class="font-semibold text-foreground-800 mb-2 flex items-center gap-2"><i data-id="356" data-lucide="phone" class="w-5 h-5 text-accent-450"></i> Contact Numbers</h3>
+                <div data-id="357" class="space-y-2">
+                  <input data-id="358" id="contact-hosp" type="text" class="w-full bg-background-200 rounded-xl px-3 py-2 text-sm" placeholder="Hospital phone number" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- S7: Anesthesia Explained -->
+        <div data-id="359" id="sec-7" class="section-panel fade-in">
+          <h2 data-id="360" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">😴 Anesthesia Explained</h2>
+          <p data-id="361" class="text-foreground-450 text-sm mb-6">Understanding anesthesia helps ease anxiety</p>
+          <div data-id="362" id="spec-anesthesia-note" class="hidden mb-6"></div>
+          <div data-id="363" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div data-id="364" class="bg-accent-150 rounded-2xl p-5 text-center">
+              <p data-id="365" class="text-3xl mb-2">😴</p>
+              <h3 data-id="366" class="font-semibold text-accent-600 mb-2">General Anesthesia</h3>
+              <p data-id="367" class="text-sm text-foreground-700">You will be completely asleep. A breathing tube may be used. This is most common for major surgeries. You won't feel, see, or remember anything.</p>
+            </div>
+            <div data-id="368" class="bg-system-teal-100 rounded-2xl p-5 text-center">
+              <p data-id="369" class="text-3xl mb-2">💉</p>
+              <h3 data-id="370" class="font-semibold text-system-teal-600 mb-2">Regional Anesthesia</h3>
+              <p data-id="371" class="text-sm text-foreground-700">Numbs a large area of your body (spinal, epidural, nerve block). You may be awake or lightly sedated. Common for orthopedic and lower body surgeries.</p>
+            </div>
+            <div data-id="372" class="bg-system-purple-100 rounded-2xl p-5 text-center">
+              <p data-id="373" class="text-3xl mb-2">🌙</p>
+              <h3 data-id="374" class="font-semibold text-system-purple-600 mb-2">Local + Sedation (MAC)</h3>
+              <p data-id="375" class="text-sm text-foreground-700">Light sleep and relaxation. The surgical area is numbed locally. You breathe on your own. Used for minor procedures and biopsies.</p>
+            </div>
+          </div>
+          <div data-id="376" class="bg-background-100 rounded-2xl p-5 md:p-6 mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h3 data-id="377" class="font-semibold text-foreground-800 mb-3">What Happens in the OR</h3>
+            <div data-id="378" class="flex flex-col md:flex-row gap-3">
+              <div data-id="379" class="flex-1 bg-background-200 rounded-xl p-3 text-center"><p data-id="380" class="text-lg mb-1">1️⃣</p><p data-id="381" class="text-xs font-medium text-foreground-700">Arrive & check in at pre-op area</p></div>
+              <div data-id="382" class="flex-1 bg-background-200 rounded-xl p-3 text-center"><p data-id="383" class="text-lg mb-1">2️⃣</p><p data-id="384" class="text-xs font-medium text-foreground-700">IV line is placed</p></div>
+              <div data-id="385" class="flex-1 bg-background-200 rounded-xl p-3 text-center"><p data-id="386" class="text-lg mb-1">3️⃣</p><p data-id="387" class="text-xs font-medium text-foreground-700">Monitors attached (heart, oxygen, BP)</p></div>
+              <div data-id="388" class="flex-1 bg-background-200 rounded-xl p-3 text-center"><p data-id="389" class="text-lg mb-1">4️⃣</p><p data-id="390" class="text-xs font-medium text-foreground-700">Anesthesia administered</p></div>
+              <div data-id="391" class="flex-1 bg-background-200 rounded-xl p-3 text-center"><p data-id="392" class="text-lg mb-1">5️⃣</p><p data-id="393" class="text-xs font-medium text-foreground-700">Wake up in recovery (PACU)</p></div>
+            </div>
+          </div>
+          <h3 data-id="394" class="text-lg font-semibold text-foreground-800 mb-3">Common Concerns</h3>
+          <div data-id="395" class="space-y-3 mb-6">
+            <div data-id="396" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="397" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false"><span data-id="398" class="font-semibold text-foreground-800">"Will I feel pain during surgery?"</span><i data-id="399" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i></button>
+              <div data-id="400" class="accordion-body"><div data-id="401" class="px-5 pb-5 text-sm text-foreground-700">No — anesthesia prevents pain during surgery. Your anesthesiologist continuously monitors you and adjusts medication throughout the procedure to ensure you remain comfortable.</div></div>
+            </div>
+            <div data-id="402" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="403" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false"><span data-id="404" class="font-semibold text-foreground-800">"Will I wake up during surgery?"</span><i data-id="405" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i></button>
+              <div data-id="406" class="accordion-body"><div data-id="407" class="px-5 pb-5 text-sm text-foreground-700">This is extremely rare — occurring in less than 1 in 1,000 cases. Modern monitoring equipment and techniques make awareness during surgery highly unlikely.</div></div>
+            </div>
+            <div data-id="408" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="409" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false"><span data-id="410" class="font-semibold text-foreground-800">"What are the risks?"</span><i data-id="411" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i></button>
+              <div data-id="412" class="accordion-body"><div data-id="413" class="px-5 pb-5 text-sm text-foreground-700"><strong data-id="414">Common (temporary):</strong> Nausea/vomiting, sore throat, grogginess, shivering, mild confusion. <strong data-id="415">Rare:</strong> Allergic reaction, breathing difficulty, dental damage. Your anesthesiologist will review your medical history to minimize risks.</div></div>
+            </div>
+          </div>
+          <div data-id="416" class="bg-system-blue-100 rounded-2xl p-5">
+            <h3 data-id="417" class="font-semibold text-system-blue-600 mb-2">Post-Anesthesia Effects (Normal)</h3>
+            <div data-id="418" class="flex flex-wrap gap-2">
+              <span data-id="419" class="bg-system-blue-200 text-system-blue-600 px-3 py-1 rounded-full text-xs font-medium">Grogginess</span>
+              <span data-id="420" class="bg-system-blue-200 text-system-blue-600 px-3 py-1 rounded-full text-xs font-medium">Nausea</span>
+              <span data-id="421" class="bg-system-blue-200 text-system-blue-600 px-3 py-1 rounded-full text-xs font-medium">Shivering</span>
+              <span data-id="422" class="bg-system-blue-200 text-system-blue-600 px-3 py-1 rounded-full text-xs font-medium">Mild Confusion</span>
+              <span data-id="423" class="bg-system-blue-200 text-system-blue-600 px-3 py-1 rounded-full text-xs font-medium">Sore Throat</span>
+              <span data-id="424" class="bg-system-blue-200 text-system-blue-600 px-3 py-1 rounded-full text-xs font-medium">Dry Mouth</span>
+            </div>
+            <p data-id="425" class="text-xs text-system-blue-550 mt-2 italic">All are temporary and usually resolve within hours.</p>
+          </div>
+        </div>
+
+        <!-- S8: Post-Op Recovery -->
+        <div data-id="426" id="sec-8" class="section-panel fade-in">
+          <h2 data-id="427" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">🩺 Post-Op Recovery</h2>
+          <p data-id="428" class="text-foreground-450 text-sm mb-6">What to expect as you heal</p>
+          <div data-id="429" class="bg-background-100 rounded-2xl p-5 md:p-6 mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h3 data-id="430" class="font-semibold text-foreground-800 mb-3">🏥 Hospital Recovery Room (PACU)</h3>
+            <p data-id="431" class="text-sm text-foreground-700 mb-3">After surgery, you'll be taken to the Post-Anesthesia Care Unit where nurses will closely monitor your vitals. Pain is managed with IV medications.</p>
+            <p data-id="432" class="text-sm text-foreground-700 font-medium">You must meet these criteria to go home (or to a hospital room):</p>
+            <div data-id="433" class="flex flex-wrap gap-2 mt-2">
+              <span data-id="434" class="bg-system-green-200 text-system-green-600 px-3 py-1 rounded-full text-xs font-medium">Alert & Awake</span>
+              <span data-id="435" class="bg-system-green-200 text-system-green-600 px-3 py-1 rounded-full text-xs font-medium">Stable Vitals</span>
+              <span data-id="436" class="bg-system-green-200 text-system-green-600 px-3 py-1 rounded-full text-xs font-medium">Pain Controlled</span>
+              <span data-id="437" class="bg-system-green-200 text-system-green-600 px-3 py-1 rounded-full text-xs font-medium">Able to Take Fluids</span>
+            </div>
+          </div>
+          <h3 data-id="438" class="text-lg font-semibold text-foreground-800 mb-3">🏠 Home Recovery</h3>
+          <div data-id="439" class="space-y-3 mb-6">
+            <div data-id="440" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="441" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false"><span data-id="442" class="font-semibold text-foreground-800">💊 Pain Management</span><i data-id="443" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i></button>
+              <div data-id="444" class="accordion-body"><div data-id="445" class="px-5 pb-5 text-sm text-foreground-700 space-y-2"><p data-id="446">Take prescribed pain medications as directed — don't wait until pain becomes severe. Stay ahead of the pain.</p><p data-id="447">Use ice packs (20 minutes on, 20 minutes off) for swelling. Elevate the surgical area if applicable.</p></div></div>
+            </div>
+            <div data-id="448" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="449" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false"><span data-id="450" class="font-semibold text-foreground-800">🚶 Activity</span><i data-id="451" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i></button>
+              <div data-id="452" class="accordion-body"><div data-id="453" class="px-5 pb-5 text-sm text-foreground-700 space-y-2"><p data-id="454">Start walking as early as possible — even short walks help prevent blood clots and speed recovery. No driving for at least 24 hours. No heavy lifting or strenuous exercise until cleared by your surgeon.</p></div></div>
+            </div>
+            <div data-id="455" class="bg-background-100 rounded-2xl overflow-hidden" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+              <button data-id="456" class="accordion-btn w-full flex items-center justify-between px-5 py-4 cursor-pointer text-left" aria-expanded="false"><span data-id="457" class="font-semibold text-foreground-800">🩹 Wound Care</span><i data-id="458" data-lucide="chevron-down" class="w-5 h-5 text-foreground-400 transition-transform"></i></button>
+              <div data-id="459" class="accordion-body"><div data-id="460" class="px-5 pb-5 text-sm text-foreground-700 space-y-2"><p data-id="461">Keep incision clean and dry for at least 48 hours. Do not submerge in pools, hot tubs, or baths until fully healed. Watch for signs of infection.</p></div></div>
+            </div>
+          </div>
+          <div data-id="462" id="spec-recovery-box" class="hidden mb-6"></div>
+          <div data-id="463" class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h3 data-id="464" class="font-semibold text-foreground-800 mb-4">General Recovery Timeline</h3>
+            <div data-id="465" class="flex flex-col md:flex-row gap-0">
+              <div data-id="466" class="flex-1 bg-system-red-200 rounded-t-xl md:rounded-l-xl md:rounded-tr-none p-4 text-center"><p data-id="467" class="text-xs font-medium uppercase tracking-wide text-system-red-600">Days 1-2</p><p data-id="468" class="text-sm text-foreground-700 mt-1">Rest, manage pain, begin walking</p></div>
+              <div data-id="469" class="flex-1 bg-system-orange-100 p-4 text-center"><p data-id="470" class="text-xs font-medium uppercase tracking-wide text-system-orange-550">Week 1</p><p data-id="471" class="text-sm text-foreground-700 mt-1">Gradual increase in activity, wound checks</p></div>
+              <div data-id="472" class="flex-1 bg-system-yellow-100 p-4 text-center"><p data-id="473" class="text-xs font-medium uppercase tracking-wide text-system-yellow-600">Weeks 2-4</p><p data-id="474" class="text-sm text-foreground-700 mt-1">Return to light duties, follow-up visit</p></div>
+              <div data-id="475" class="flex-1 bg-system-green-200 rounded-b-xl md:rounded-r-xl md:rounded-bl-none p-4 text-center"><p data-id="476" class="text-xs font-medium uppercase tracking-wide text-system-green-600">Full Recovery</p><p data-id="477" class="text-sm text-foreground-700 mt-1">Varies by surgery (weeks to months)</p></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- S9: Warning Signs -->
+        <div data-id="478" id="sec-9" class="section-panel fade-in">
+          <h2 data-id="479" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">⚠️ Warning Signs</h2>
+          <p data-id="480" class="text-foreground-450 text-sm mb-6">Know when to seek immediate medical attention</p>
+          <div data-id="481" id="spec-warnings-box" class="hidden mb-6"></div>
+          <div data-id="482" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div data-id="483" class="bg-system-orange-100 rounded-2xl p-5 md:p-6 border-l-4 border-system-orange-400">
+              <h3 data-id="484" class="font-semibold text-system-orange-550 mb-3 flex items-center gap-2"><i data-id="485" data-lucide="phone" class="w-5 h-5"></i> Call Your Surgeon's Office</h3>
+              <ul data-id="486" class="space-y-3 text-sm text-foreground-800">
+                <li data-id="487" class="flex items-start gap-2"><span data-id="488" class="text-system-orange-400 mt-0.5">🔶</span> Fever over 101°F (38.3°C)</li>
+                <li data-id="489" class="flex items-start gap-2"><span data-id="490" class="text-system-orange-400 mt-0.5">🔶</span> Increasing redness, warmth, or swelling at incision</li>
+                <li data-id="491" class="flex items-start gap-2"><span data-id="492" class="text-system-orange-400 mt-0.5">🔶</span> Pus or unusual drainage from wound</li>
+                <li data-id="493" class="flex items-start gap-2"><span data-id="494" class="text-system-orange-400 mt-0.5">🔶</span> Uncontrolled pain not relieved by medications</li>
+                <li data-id="495" class="flex items-start gap-2"><span data-id="496" class="text-system-orange-400 mt-0.5">🔶</span> Nausea/vomiting preventing fluid intake</li>
+                <li data-id="497" class="flex items-start gap-2"><span data-id="498" class="text-system-orange-400 mt-0.5">🔶</span> Difficulty urinating for more than 8 hours</li>
+              </ul>
+            </div>
+            <div data-id="499" class="bg-system-red-200 rounded-2xl p-5 md:p-6 border-l-4 border-system-red-400">
+              <h3 data-id="500" class="font-semibold text-system-red-550 mb-3 flex items-center gap-2"><i data-id="501" data-lucide="siren" class="w-5 h-5"></i> CALL 911 / Emergency Room</h3>
+              <ul data-id="502" class="space-y-3 text-sm text-foreground-800">
+                <li data-id="503" class="flex items-start gap-2"><span data-id="504" class="text-system-red-550 mt-0.5">🔴</span> Chest pain or pressure</li>
+                <li data-id="505" class="flex items-start gap-2"><span data-id="506" class="text-system-red-550 mt-0.5">🔴</span> Difficulty breathing or shortness of breath</li>
+                <li data-id="507" class="flex items-start gap-2"><span data-id="508" class="text-system-red-550 mt-0.5">🔴</span> Calf pain with leg swelling (DVT/PE signs)</li>
+                <li data-id="509" class="flex items-start gap-2"><span data-id="510" class="text-system-red-550 mt-0.5">🔴</span> Confusion or altered mental status</li>
+                <li data-id="511" class="flex items-start gap-2"><span data-id="512" class="text-system-red-550 mt-0.5">🔴</span> Uncontrolled bleeding</li>
+              </ul>
+            </div>
+          </div>
+          <div data-id="513" class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h3 data-id="514" class="font-semibold text-foreground-800 mb-4 flex items-center gap-2"><i data-id="515" data-lucide="contact" class="w-5 h-5 text-accent-450"></i> My Emergency Contacts</h3>
+            <div data-id="516" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div data-id="517"><label data-id="518" class="block text-xs font-medium text-foreground-450 mb-1">Surgeon's Office</label><input data-id="519" id="ec-surgeon" type="text" class="w-full bg-background-200 rounded-xl px-3 py-2 text-sm" placeholder="(555) 123-4567" /></div>
+              <div data-id="520"><label data-id="521" class="block text-xs font-medium text-foreground-450 mb-1">Hospital</label><input data-id="522" id="ec-hospital" type="text" class="w-full bg-background-200 rounded-xl px-3 py-2 text-sm" placeholder="(555) 987-6543" /></div>
+              <div data-id="523"><label data-id="524" class="block text-xs font-medium text-foreground-450 mb-1">After-Hours Number</label><input data-id="525" id="ec-after" type="text" class="w-full bg-background-200 rounded-xl px-3 py-2 text-sm" placeholder="(555) 000-0000" /></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- S10: Pre-Op Checklist -->
+        <div data-id="526" id="sec-10" class="section-panel fade-in">
+          <h2 data-id="527" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">✅ Pre-Op Checklist</h2>
+          <p data-id="528" class="text-foreground-450 text-sm mb-4">Track every step of your preparation</p>
+          <div data-id="529" class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-6">
+            <div data-id="530" class="flex-1 w-full">
+              <div data-id="531" class="flex items-center justify-between mb-1"><span data-id="532" class="text-xs font-medium text-foreground-450">Checklist Progress</span><span data-id="533" id="checklist-pct" class="text-xs font-bold text-accent-450 tabular-nums">0%</span></div>
+              <div data-id="534" class="w-full bg-background-200 rounded-full h-3"><div data-id="535" id="checklist-bar" class="bg-accent-450 h-3 rounded-full transition-all duration-500" style="width:0%"></div></div>
+            </div>
+            <button data-id="536" id="btn-print-checklist" class="bg-background-200 text-foreground-700 rounded-xl px-4 py-2 text-sm font-medium hover:bg-background-250 cursor-pointer flex items-center gap-2 no-print whitespace-nowrap"><i data-id="537" data-lucide="printer" class="w-4 h-4"></i> Print</button>
+          </div>
+          <div data-id="538" id="checklist-container" class="space-y-6 print-area"></div>
+          <!-- Print Full Summary Button at bottom of checklist -->
+          <button data-id="539" id="btn-checklist-print-summary" class="w-full bg-accent-450 text-white font-semibold rounded-xl py-3.5 text-base hover:bg-accent-550 transition cursor-pointer mt-8 flex items-center justify-center gap-2 no-print">
+            <span data-id="540">🖨️</span> Print Pre-Op Summary Report
+          </button>
+        </div>
+
+        <!-- S11: Readiness Assessment -->
+        <div data-id="541" id="sec-11" class="section-panel fade-in">
+          <h2 data-id="542" class="text-xl md:text-2xl font-bold text-foreground-900 mb-1">🎯 Readiness Assessment</h2>
+          <p data-id="543" class="text-foreground-450 text-sm mb-6">Test your knowledge and check your readiness</p>
+          <div data-id="544" id="quiz-area"></div>
+          <div data-id="545" id="quiz-results" class="hidden"></div>
+        </div>
+
+      </main>
+    </div>
+
+    <footer data-id="546" class="py-8 mt-auto text-center no-print">
+      <p data-id="547" class="text-xs text-foreground-450 mb-1">This app provides general educational information only. Always follow the specific instructions given by your surgical team.</p>
+      <p data-id="548" class="text-xs text-foreground-450">Made by Copilot</p>
+    </footer>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // ============================== SPECIALTY DATA ==============================
+    const SPECIALTY_DATA = {
+      'Spine Surgery': {
+        icon:'🦴', color:'bg-blue-600', textColor:'text-blue-600', bgLight:'bg-blue-50', borderColor:'border-blue-500', tagline:'Protecting your spine — every step of the way',
+        tabLabel:'🦴 Spine Guide',
+        about:'Spine surgery includes procedures such as discectomy, laminectomy, spinal fusion, and vertebroplasty. Your preparation and post-operative discipline are critical to a successful outcome and long-term spinal health.',
+        keyFacts:[
+          {icon:'🚬',label:'Smoking',value:'Must stop ≥4 weeks before — nicotine severely impairs spinal fusion'},
+          {icon:'🏋️',label:'Lifting Limit',value:'Nothing over 5–10 lbs post-op'},
+          {icon:'🔄',label:'BLT Restriction',value:'No Bending, Lifting, or Twisting'},
+          {icon:'🛌',label:'Log Roll',value:'Learn log-roll technique for bed transfers'},
+          {icon:'🏃',label:'Walking',value:'Walking starts day 1 — essential for recovery'},
+          {icon:'⏱️',label:'Full Recovery',value:'6 weeks – 12 months depending on procedure'}
+        ],
+        stopMeds:['Blood thinners (warfarin, aspirin, Plavix — stop 7–10 days)','NSAIDs (ibuprofen, naproxen — stop 7 days)','Muscle relaxants (discuss with surgeon)','Herbal supplements (stop 2 weeks — especially garlic, ginseng, ginkgo)'],
+        continueMeds:['Blood pressure medications','Seizure medications','Thyroid medications','Gabapentin/Lyrica (if already prescribed for nerve pain — confirm with team)'],
+        specialMedNote:'⚠️ Nicotine in ANY form (cigarettes, patches, gum, vaping) must be stopped at least 4 weeks before spinal fusion surgery. Nicotine constricts blood vessels and prevents bone fusion, leading to failed surgery. Cotinine testing may be performed.',
+        prepSteps:['Learn the LOG ROLL technique: bend knees, roll body as one unit to get out of bed — practice before surgery','Arrange your home: place frequently used items at waist height to avoid bending','Prepare a firm mattress or bed board — avoid soft mattresses during recovery','If a back brace is prescribed, practice putting it on and taking it off','Set up a downstairs sleeping area if possible to avoid stairs early post-op','Purchase a long-handled grabber/reacher tool, shower bench, and raised toilet seat'],
+        dayOfItems:['CPAP (if applicable)','Back brace (if prescribed)','Slip-on shoes (no bending to tie laces)','Loose elastic-waist pants','Button-front shirt (easier to put on)'],
+        specialWarnings:['New or worsening numbness/tingling in arms or legs','Sudden weakness in legs','Loss of bladder or bowel control (EMERGENCY — go to ER immediately)','Fever over 101°F','Increasing back/neck pain not controlled by medications','Redness or drainage at incision site'],
+        emergencyWarnings:['Loss of bladder or bowel control (cauda equina syndrome — 911 immediately)','Sudden onset severe headache','Complete leg weakness/paralysis','Difficulty breathing (if cervical spine surgery)'],
+        recoveryPhases:[
+          {label:'Days 1–3',duration:'Hospital Stay',details:'Pain managed with IV/oral meds. Physical therapist teaches log roll, walking with assistance. First steps taken with walker or cane.'},
+          {label:'Week 1–2',duration:'Early Home Recovery',details:'Rest with short walks every 1–2 hours. No BLT (bending, lifting, twisting). Ice packs 20 min on/off. No driving.'},
+          {label:'Weeks 3–6',duration:'Building Strength',details:'Walking distance increases. Outpatient physical therapy begins. May return to light desk work. Continue BLT restrictions.'},
+          {label:'Weeks 6–12',duration:'Progressive Recovery',details:'Follow-up X-rays to assess fusion. Activity restrictions gradually lifted based on imaging. Return to driving if cleared.'},
+          {label:'3–12 Months',duration:'Full Recovery',details:'Bone fusion continues. Physical therapy and core strengthening. Return to full activity as cleared by surgeon.'}
+        ],
+        extraChecklist:[
+          {label:'4+ Weeks Before',items:['Stop smoking/nicotine completely','Arrange downstairs sleeping area if possible','Purchase adaptive equipment (grabber, shower bench, raised toilet seat, long shoehorn)']},
+          {label:'1–2 Weeks Before',items:['Practice log roll technique daily','Organize home — place essentials at waist height','Confirm brace fitting appointment if applicable']},
+          {label:'Day Before / Day Of',items:['Wear loose elastic-waist pants and slip-on shoes','Bring your back brace to the hospital','Have a responsible adult arranged for 24-48 hrs post-discharge']}
+        ],
+        fastingNote:'Standard NPO guidelines apply. If you are on a steroid taper pre-operatively, take with a small sip of water as directed.',
+        anesthesiaNote:'Spine surgery most commonly uses General Anesthesia. Some minimally invasive or lumbar procedures may use spinal/regional anesthesia. Neuromonitoring (SSEP/MEP) is used during surgery to monitor spinal cord function — this is normal and not a cause for alarm.',
+        specialtyQuestions:[
+          {type:'knowledge',q:'Which activity restriction is critical after spine surgery?',options:['No bending, lifting, or twisting','No walking for 2 weeks','No eating for 3 days','No speaking'],correct:0},
+          {type:'knowledge',q:'Why must you stop smoking before spinal fusion?',options:['It causes anesthesia problems','Nicotine prevents bone fusion','It raises blood pressure','It causes wound infections only'],correct:1},
+          {type:'logistics',q:'Have you arranged adaptive equipment at home (grabber, shower bench, raised toilet seat)?'},
+          {type:'logistics',q:'Have you practiced or learned the log-roll technique for getting out of bed?'},
+          {type:'confidence',q:'Do you understand your BLT restrictions (no bending, lifting, or twisting)?'}
+        ]
+      },
+      'Orthopedic Surgery': {
+        icon:'🦵', color:'bg-emerald-600', textColor:'text-emerald-600', bgLight:'bg-emerald-50', borderColor:'border-emerald-500', tagline:'Moving toward a stronger, pain-free life',
+        tabLabel:'🦵 Ortho Guide',
+        about:'Orthopedic surgery includes joint replacements (hip, knee, shoulder), fracture repair, ligament reconstruction (ACL), and arthroscopic procedures. DVT prevention and early mobilization are the cornerstones of orthopedic recovery.',
+        keyFacts:[
+          {icon:'🩸',label:'DVT Risk',value:'High — blood clot prevention is mandatory post-op'},
+          {icon:'🧊',label:'Ice & Elevation',value:'Ice 20 min on/off, elevate above heart level'},
+          {icon:'🚶',label:'Early Walking',value:'Walk same day or day 1 — critical for recovery'},
+          {icon:'🦯',label:'Assistive Device',value:'Walker, cane, or crutches arranged before surgery'},
+          {icon:'💊',label:'Blood Thinner',value:'Prescribed post-op anticoagulant — do NOT skip'},
+          {icon:'⏱️',label:'Full Recovery',value:'6 weeks – 12 months depending on joint'}
+        ],
+        stopMeds:['Blood thinners (aspirin, warfarin, Plavix — stop 7 days; confirm with surgeon)','NSAIDs (ibuprofen, naproxen — stop 5–7 days)','Herbal supplements (stop 2 weeks)'],
+        continueMeds:['Blood pressure medications','Thyroid medications','Seizure medications','Osteoporosis medications (discuss timing with surgeon)'],
+        specialMedNote:'⚠️ You will be prescribed a blood thinner AFTER surgery (aspirin, enoxaparin, rivaroxaban, or warfarin) to prevent DVT (blood clots). Take this exactly as directed. Do not skip doses. Report any unusual bleeding to your surgeon.',
+        prepSteps:['Arrange and practice with your assistive device (walker, crutches, cane) before surgery','Set up your recovery area: bedside commode or raised toilet seat, shower chair, grab bars','Remove trip hazards from your home — rugs, loose cords, clutter on floors','Prepare ice packs or a cooling device (Game Ready, Polar Care) for home use','Arrange a main-floor recovery area to minimize stair climbing','For hip replacement: install toilet riser and grab bars. Do NOT cross legs or bend hip past 90°'],
+        dayOfItems:['Assistive device (walker/crutches) if you own it','Comfortable loose shorts or pants','Slip-on shoes (no bending)','Insurance card and ID','List of medications'],
+        specialWarnings:['New calf pain, swelling, or redness (DVT warning)','Incision opening or significant drainage','Fever over 101°F','Joint that feels "out of place" or gives way','Severe pain not controlled with medications','Numbness or tingling in operated limb'],
+        emergencyWarnings:['Sudden calf pain WITH shortness of breath or chest pain (pulmonary embolism — 911 immediately)','Complete loss of feeling or movement in limb','Signs of joint dislocation (hip: leg rotates outward and shortens)'],
+        recoveryPhases:[
+          {label:'Day of Surgery',duration:'Hospital',details:'Physical therapist will have you walking within hours. Ice and elevation started immediately. Pain managed with multimodal analgesia.'},
+          {label:'Days 1–3',duration:'Hospital/Discharge',details:'Continue walking with assistive device. Blood thinner started. Occupational therapist teaches joint precautions. Discharge when walking, pain controlled, DVT prevention started.'},
+          {label:'Weeks 1–3',duration:'Early Home Recovery',details:'Walk every 1–2 hours. Ice and elevate 3–4x/day. Take blood thinner as prescribed. Outpatient or home PT begins. No driving until cleared.'},
+          {label:'Weeks 4–8',duration:'Progressive Recovery',details:'Increase activity tolerance. PT focuses on strength and range of motion. May return to driving. Follow joint precautions strictly.'},
+          {label:'3–12 Months',duration:'Full Recovery',details:'Return to most activities. Swimming and cycling excellent. High-impact activities require surgeon clearance. Annual joint check-ups recommended.'}
+        ],
+        extraChecklist:[
+          {label:'2+ Weeks Before',items:['Purchase or rent walker, crutches, or cane — practice using them','Install grab bars and raised toilet seat','Remove all trip hazards from home (rugs, cords)','Prepare ice packs or cold therapy device']},
+          {label:'1 Week Before',items:['Set up a single-level recovery area if possible','Fill post-op blood thinner prescription','Confirm physical therapy start date post-discharge']},
+          {label:'Day Before / Day Of',items:['Bring assistive device to hospital','Wear loose shorts or pants for easy dressing post-op','Confirm your blood thinner start instructions']}
+        ],
+        fastingNote:'Standard NPO guidelines apply. Continue prescribed osteoporosis medications as directed by your surgeon.',
+        anesthesiaNote:'Orthopedic surgery commonly uses Spinal Anesthesia (you are awake but numb from waist down) for hip and knee procedures, often combined with sedation. Nerve blocks (regional anesthesia) are frequently added to reduce post-operative pain — you may wake up with your limb feeling numb for 12–24 hours. This is normal and temporary.',
+        specialtyQuestions:[
+          {type:'knowledge',q:'What is the most serious blood clot complication after orthopedic surgery?',options:['Pneumonia','DVT leading to pulmonary embolism','Wound infection','Anemia'],correct:1},
+          {type:'knowledge',q:'After hip replacement, which movement should you AVOID?',options:['Walking with a walker','Crossing your legs past midline','Sitting in a high chair','Using a toilet riser'],correct:1},
+          {type:'logistics',q:'Have you arranged or practiced with your walker, crutches, or cane at home?'},
+          {type:'logistics',q:'Have you installed grab bars and a raised toilet seat in your home?'},
+          {type:'confidence',q:'Do you understand your post-operative blood clot prevention plan (blood thinner medication)?'}
+        ]
+      },
+      'Neurological Surgery': {
+        icon:'🧠', color:'bg-purple-600', textColor:'text-purple-600', bgLight:'bg-purple-50', borderColor:'border-purple-500', tagline:'Protecting your most vital organ — with knowledge and precision',
+        tabLabel:'🧠 Neuro Guide',
+        about:'Neurological surgery includes procedures on the brain, spinal cord, and peripheral nerves, such as tumor resection, craniotomy, aneurysm clipping, deep brain stimulation, and nerve decompression. Preparation, medication management, and close post-operative monitoring are essential.',
+        keyFacts:[
+          {icon:'💊',label:'Seizure Meds',value:'NEVER miss a dose — take day of surgery with sip of water'},
+          {icon:'🚗',label:'No Driving',value:'Minimum 6 weeks post-op (often longer) — legal requirement'},
+          {icon:'🩻',label:'Pre-Op Imaging',value:'MRI/CT imaging must be completed before surgery'},
+          {icon:'😴',label:'Steroids',value:'You may be on dexamethasone (steroid) to reduce brain swelling'},
+          {icon:'🧠',label:'Cognitive Changes',value:'Temporary confusion, fatigue, and memory lapses are normal post-op'},
+          {icon:'⏱️',label:'Recovery',value:'Varies widely — weeks to months depending on procedure'}
+        ],
+        stopMeds:['Aspirin and NSAIDs (stop 7–10 days)','Blood thinners (warfarin, Plavix, Eliquis — stop as directed; may need bridging therapy)','Herbal supplements — especially St. John\'s Wort (interacts with anesthesia)','Vitamin E supplements'],
+        continueMeds:['Anti-seizure medications (CRITICAL — never skip)','Blood pressure medications','Thyroid medications','Steroids (dexamethasone — if prescribed pre-op, must continue)','Insulin/diabetes medications (modify dose with guidance)'],
+        specialMedNote:'⚠️ Anti-seizure medications (phenytoin, levetiracetam, carbamazepine, lacosamide, etc.) must NEVER be stopped before surgery. Take them with a small sip of water the morning of surgery. Missing doses can trigger life-threatening seizures. Your neurosurgeon may also start prophylactic anti-seizure medication pre-operatively even if you have not had a seizure.',
+        prepSteps:['Ensure all pre-operative imaging (MRI, CT, angiography) is completed and results sent to your neurosurgeon','Complete any pre-operative neuropsychological testing if requested','If you wear a medical alert bracelet, ensure it lists your condition and medications','Arrange seizure precautions at home post-op: do not cook alone, do not take baths alone (showers only), no driving','Remove sharp objects or fall hazards from your recovery area','If undergoing craniotomy: your head will be partially or fully shaved. Arrange comfortable headwear (soft caps/turbans)'],
+        dayOfItems:['Photo ID and insurance card','List of all medications (especially anti-seizure meds with doses and timing)','Glasses (no contact lenses)','Comfortable button-front clothing','Medical alert information'],
+        specialWarnings:['New or worsening headache worse than your worst headache','Sudden vision changes (double vision, loss of vision)','New weakness, numbness, or difficulty speaking','Swelling or redness at incision site (especially after craniotomy)','Fever over 101°F','Clear fluid draining from nose or ears (possible CSF leak — call immediately)','Seizure activity (new or changed pattern from baseline)'],
+        emergencyWarnings:['Sudden severe headache ("thunderclap headache")','Sudden loss of speech or understanding','Sudden unilateral weakness or facial drooping (stroke signs — 911)','New seizure or prolonged seizure (911)','Loss of consciousness','Clear fluid from nose or ear (CSF leak — ER immediately)'],
+        recoveryPhases:[
+          {label:'Days 1–3',duration:'ICU/Hospital',details:'Monitored in ICU or step-down unit. Frequent neuro checks (pupil response, strength, speech). IV steroids and anti-seizure medications continued. Head of bed kept at 30° elevation.'},
+          {label:'Days 3–7',duration:'Hospital Ward',details:'Transition to oral medications. Physical and occupational therapy evaluation. Wound check. Brain imaging may be repeated. Gradual increase in activity.'},
+          {label:'Weeks 1–4',duration:'Early Home Recovery',details:'Significant fatigue is normal — rest is essential. Limit screen time. No driving. No alcohol. No strenuous activity. Daily short walks encouraged.'},
+          {label:'Weeks 4–8',duration:'Gradual Return',details:'Follow-up with neurosurgeon. Imaging reviewed. Cognitive function assessed. Return to light activity as cleared. Driving clearance requires seizure-free period.'},
+          {label:'2–6 Months',duration:'Full Recovery',details:'Cognitive rehabilitation if needed. Gradual return to work (may need accommodations). Full recovery timeline varies significantly by procedure.'}
+        ],
+        extraChecklist:[
+          {label:'2+ Weeks Before',items:['Complete all pre-operative imaging (MRI, CT, angiography)','Arrange seizure safety at home post-op (no solo bathing, no driving, no cooking alone)','Purchase soft headwear/caps if having craniotomy']},
+          {label:'1 Week Before',items:['Review and confirm anti-seizure medication plan with neurosurgeon','Fill steroid prescription (dexamethasone) if prescribed pre-operatively','Arrange someone to stay with you for minimum first 1–2 weeks post-op']},
+          {label:'Day Before / Day Of',items:['Take anti-seizure medications with small sip of water as directed','Remove nail polish and jewelry','Bring all medication bottles to the hospital for verification']}
+        ],
+        fastingNote:'Standard NPO guidelines apply. Anti-seizure medications and steroids (if prescribed) MUST be taken the morning of surgery with a small sip of water.',
+        anesthesiaNote:'Neurological surgery typically uses General Anesthesia with specialized neuromonitoring. Awake craniotomy (you are woken briefly during surgery to test speech/movement) may be used for tumors near eloquent brain areas — your team will prepare you thoroughly for this. Precise blood pressure control is maintained throughout the procedure.',
+        specialtyQuestions:[
+          {type:'knowledge',q:'Which medication must NEVER be skipped the morning of neurosurgery?',options:['Blood pressure medication','Anti-seizure medication','Vitamin supplements','Allergy medication'],correct:1},
+          {type:'knowledge',q:'After brain surgery, which symptom requires an IMMEDIATE 911 call?',options:['Mild fatigue','Headache behind the eyes','Sudden loss of speech or sudden weakness on one side','Mild nausea on day 2'],correct:2},
+          {type:'logistics',q:'Have you arranged seizure precautions at home (no solo bathing, no driving, someone with you)?'},
+          {type:'logistics',q:'Have you completed all required pre-operative imaging (MRI/CT) and confirmed results with your neurosurgeon?'},
+          {type:'confidence',q:'Do you understand that you cannot drive for a minimum of 6 weeks after your procedure?'}
+        ]
+      },
+      'Cardiac Surgery': {
+        icon:'❤️', color:'bg-red-600', textColor:'text-red-600', bgLight:'bg-red-50', borderColor:'border-red-500', tagline:'Your heart is in good hands — and so is your preparation',
+        tabLabel:'❤️ Cardiac Guide',
+        about:'Cardiac surgery includes coronary artery bypass grafting (CABG), heart valve repair or replacement, aortic aneurysm repair, and other open-heart or minimally invasive heart procedures. Meticulous preparation and post-operative cardiac rehabilitation are essential for the best outcomes.',
+        keyFacts:[
+          {icon:'🦴',label:'Sternal Precautions',value:'No pushing/pulling with arms for 6–8 weeks after open heart surgery'},
+          {icon:'💓',label:'Heart Monitoring',value:'Telemetry monitoring for 24–72 hrs post-op is standard'},
+          {icon:'🏃',label:'Cardiac Rehab',value:'Mandatory — dramatically improves long-term outcomes'},
+          {icon:'🩺',label:'Cardiology Team',value:'Cardiologist + cardiac surgeon will co-manage your care'},
+          {icon:'💧',label:'Fluid Restriction',value:'Daily fluid and sodium limits may be prescribed post-op'},
+          {icon:'⏱️',label:'Full Recovery',value:'6–12 weeks for open heart; 2–4 weeks minimally invasive'}
+        ],
+        stopMeds:['Blood thinners (warfarin, Plavix, Eliquis, Xarelto — stop as directed; may need heparin bridging)','Aspirin (unless told to continue by cardiologist)','NSAIDs (stop 7 days)','Diabetes medications (hold day of surgery)','Herbal supplements (stop 2 weeks — especially garlic, ginger, fish oil)'],
+        continueMeds:['Beta-blockers (CRITICAL — stopping abruptly causes rebound hypertension and arrhythmia)','ACE inhibitors/ARBs (confirm with cardiac surgery team)','Statins (continue — cardioprotective)','Thyroid medications','Seizure medications','Inhalers (bring and take morning of surgery)'],
+        specialMedNote:'⚠️ NEVER stop beta-blockers (metoprolol, atenolol, carvedilol) without physician guidance. Abrupt discontinuation can cause dangerous rebound hypertension and cardiac arrhythmias. Your cardiologist and cardiac surgeon will provide a detailed pre-operative medication reconciliation — follow it exactly.',
+        prepSteps:['Complete all cardiac pre-operative testing: EKG, echocardiogram, cardiac catheterization, chest X-ray, CBC, metabolic panel','Dental clearance: see your dentist BEFORE cardiac surgery to clear any dental infections — heart valves are susceptible to infection from oral bacteria','CHG (chlorhexidine) bathing: Night before AND morning of surgery','If prescribed nasal mupirocin ointment (for MRSA decolonization), apply as directed for 5 days before surgery','Stop smoking immediately — reduces pulmonary complications and promotes healing','Prepare your home for sternal precautions: raised toilet seat, armchair with handles, elevated bed'],
+        dayOfItems:['Insurance card and ID','All medication bottles','Glasses (not contacts)','CPAP/BiPAP machine (bring it — you will need it post-op)','Comfortable button-front shirt (no overhead clothing post-op)','Compression stockings if prescribed','Phone charger (longer hospital stay expected)'],
+        specialWarnings:['Fever over 101°F','Increasing sternal wound redness, warmth, drainage, or separation','New or worsening irregular heartbeat (palpitations, racing heart)','Weight gain of more than 2 lbs overnight (fluid retention — call immediately)','Increasing shortness of breath','Leg swelling','New chest pain (different from expected incision pain)'],
+        emergencyWarnings:['Crushing chest pain or pressure (911 — even after surgery)','Sudden severe shortness of breath (911)','Sternal wound opening or clicking/popping with movement (ER immediately — sternal instability)','Rapid or irregular heartbeat with dizziness or fainting (911)','Uncontrolled bleeding from any site (911)'],
+        recoveryPhases:[
+          {label:'Days 1–3',duration:'ICU',details:'Monitored in cardiac ICU. Chest tubes, pacing wires, and Foley catheter removed in sequence. Breathing tube removed when fully awake. Breathing exercises with incentive spirometer every hour.'},
+          {label:'Days 3–5',duration:'Step-Down Unit',details:'Transfer from ICU. Walking increased to hallway and back. Diuretics given to remove excess fluid. Cardiac medications stabilized. Discharge planning begins.'},
+          {label:'Weeks 1–4',duration:'Early Home Recovery',details:'Daily weight monitoring (report 2 lb overnight gain). Strict sternal precautions — no pushing/pulling. Breathing exercises continue. 10-minute walks, increasing daily.'},
+          {label:'Weeks 4–8',duration:'Cardiac Rehab',details:'Enroll in cardiac rehabilitation (3x/week monitored exercise). Driving restriction lifted at ~6 weeks if cleared. Sternal precautions may be lifted. Return to light work possible.'},
+          {label:'2–6 Months',duration:'Full Recovery',details:'Cardiac rehab continues. Return to full activity. Annual cardiology follow-up essential. Lifestyle modifications: heart-healthy diet, exercise, medication compliance.'}
+        ],
+        extraChecklist:[
+          {label:'2+ Weeks Before',items:['See your dentist for dental clearance before cardiac surgery','Complete all cardiac pre-op tests (EKG, echo, cath lab)','Stop smoking immediately','Purchase button-front shirts for post-op dressing (no overhead clothing)']},
+          {label:'1 Week Before',items:['Apply nasal mupirocin if prescribed (for 5 days pre-op)','Purchase compression stockings if prescribed','Set up cardiac-friendly recovery area (firm armchair with armrests, raised toilet seat)','Obtain a weight limit reference card for sternal precautions']},
+          {label:'Day Before / Day Of',items:['CHG shower night before AND morning of surgery','Take all prescribed medications including beta-blockers (confirm with surgeon which to take)','Bring CPAP/BiPAP machine to hospital','Bring button-front clothing only']}
+        ],
+        fastingNote:'Standard NPO guidelines apply. Beta-blockers and statins MUST be taken the morning of surgery with a small sip of water unless specifically told otherwise by your cardiac surgeon.',
+        anesthesiaNote:'Cardiac surgery uses General Anesthesia with cardiopulmonary bypass (heart-lung machine) for open procedures, which temporarily takes over heart and lung function during surgery. A breathing tube (endotracheal tube) will be placed and is typically removed within a few hours after you wake up in the ICU. Minimally invasive cardiac procedures may not require bypass.',
+        specialtyQuestions:[
+          {type:'knowledge',q:'After open heart surgery, which activity restriction protects your sternum (breastbone)?',options:['No walking for 6 weeks','No pushing or pulling with your arms for 6–8 weeks','No eating solid food for 2 weeks','No talking for 24 hours'],correct:1},
+          {type:'knowledge',q:'A weight gain of more than 2 lbs overnight after cardiac surgery means you should:',options:['Drink more water','Eat less salt and monitor','Call your surgeon immediately — possible fluid retention','Exercise more to sweat it off'],correct:2},
+          {type:'logistics',q:'Have you seen a dentist for dental clearance before your cardiac surgery?'},
+          {type:'logistics',q:'Have you purchased or obtained button-front shirts and set up a home recovery area with a firm armchair?'},
+          {type:'confidence',q:'Do you understand your sternal precautions — no pushing, pulling, or lifting with your arms for 6–8 weeks?'}
+        ]
+      },
+      'General Surgery': {
+        icon:'🏥', color:'bg-amber-600', textColor:'text-amber-600', bgLight:'bg-amber-50', borderColor:'border-amber-500', tagline:'Routine doesn\'t mean unprepared — know what to expect',
+        tabLabel:'🏥 General Guide',
+        about:'General surgery covers a broad range of abdominal and digestive procedures including appendectomy, cholecystectomy (gallbladder removal), hernia repair, bowel resection, and laparoscopic procedures. Most are performed laparoscopically with faster recovery than traditional open surgery.',
+        keyFacts:[
+          {icon:'💨',label:'Gas Pain',value:'Shoulder/chest gas pain after laparoscopy — walk to relieve it'},
+          {icon:'🧹',label:'Bowel Prep',value:'Some procedures require bowel prep the day before — confirm with team'},
+          {icon:'🍽️',label:'Diet Progression',value:'Clear liquids → soft diet → regular diet post-op'},
+          {icon:'🚶',label:'Early Walking',value:'Walk within hours of surgery to prevent DVT and aid bowel recovery'},
+          {icon:'🩹',label:'Incision Care',value:'Keep dry 48 hrs; watch for signs of infection'},
+          {icon:'⏱️',label:'Recovery',value:'1–2 weeks laparoscopic; 4–6 weeks open surgery'}
+        ],
+        stopMeds:['Blood thinners (aspirin, warfarin, Plavix — stop 5–7 days)','NSAIDs (ibuprofen, naproxen — stop 5 days)','Herbal supplements (stop 2 weeks)'],
+        continueMeds:['Blood pressure medications','Thyroid medications','Seizure medications','Inhalers','Acid reflux medications (omeprazole, pantoprazole — continue; may be especially important post-op)'],
+        specialMedNote:'⚠️ If you take acid reducers (PPIs or H2 blockers like omeprazole, famotidine), continue taking them — these are often important after abdominal surgery. If you are on diabetes medication, your team will provide specific instructions as eating patterns will change post-operatively.',
+        prepSteps:['If bowel prep is required (some colon/bowel surgeries): purchase the prescribed prep solution in advance and follow the timing instructions exactly','Clear your schedule for 1–2 weeks post-op (laparoscopic) or 4–6 weeks (open surgery)','Prepare light, easily digestible foods at home: broths, yogurt, applesauce, crackers, bananas','Purchase stool softeners (Colace) and mild laxatives — constipation is common with opioid pain medications','Set up a comfortable recovery chair that allows you to get up without straining your abdomen','For hernia repair: purchase a supportive abdominal binder if prescribed'],
+        dayOfItems:['Photo ID and insurance card','List of medications','Comfortable loose-fitting clothing with elastic waistband','Slip-on shoes','Phone charger'],
+        specialWarnings:['Fever over 101°F','Increasing redness, swelling, or drainage at incision','Abdominal pain that is worsening (not improving) after 48–72 hours','Inability to pass gas or have a bowel movement by day 3–4 (possible ileus)','Persistent nausea/vomiting preventing fluid intake','Jaundice (yellowing of skin/eyes) — especially after gallbladder surgery','Difficulty urinating'],
+        emergencyWarnings:['Severe, sudden abdominal pain (911 — possible surgical complication)','Rigid, board-like abdomen (911 — peritonitis)','Inability to keep any fluids down for 24 hours (ER)','Signs of intestinal obstruction: severe bloating, no gas/stool and vomiting (ER)','Uncontrolled bleeding from incision or rectum (911)'],
+        recoveryPhases:[
+          {label:'Day of Surgery',duration:'Recovery Room (PACU)',details:'Awakened in recovery room. IV pain medications given. Sips of water started if nausea is controlled. Walking with assistance within 1–4 hours of laparoscopic surgery.'},
+          {label:'Days 1–3',duration:'Home Recovery (Laparoscopic)',details:'Clear liquids progressing to soft diet. Walk every 1–2 hours to relieve gas pain. Expect shoulder/upper chest pain from CO2 gas — this resolves within 48 hrs.'},
+          {label:'Week 1–2',duration:'Activity Increase',details:'Progress diet as tolerated. No lifting over 10 lbs. Incision care: keep dry and clean. Take stool softeners. Return to light activities.'},
+          {label:'Weeks 2–4',duration:'Return to Normal',details:'Return to work (desk job) in 1–2 weeks laparoscopic; 3–6 weeks open. Lifting restrictions gradually lifted. Follow-up appointment in 1–2 weeks.'},
+          {label:'1–3 Months',duration:'Full Recovery',details:'Full activity resumed. No dietary restrictions (gallbladder patients may avoid fatty foods for several weeks). Return to exercise as cleared.'}
+        ],
+        extraChecklist:[
+          {label:'2+ Weeks Before',items:['Confirm whether bowel prep is required and purchase prep solution if so','Purchase stool softeners (Colace) for post-op constipation prevention','Prepare easy-to-digest foods for first week home']},
+          {label:'1 Week Before',items:['Complete bowel prep if prescribed (follow exact timing)','Set up a comfortable recovery area with easy-rise chair','Purchase abdominal binder if prescribed for hernia repair']},
+          {label:'Day Before / Day Of',items:['Wear loose elastic-waist clothing — nothing tight across abdomen','Complete bowel prep if required night before','Arrange a driver and caregiver for first 24 hours']}
+        ],
+        fastingNote:'Standard NPO guidelines apply. If bowel prep is required, follow the specific prep solution timing exactly as instructed — this is in addition to the standard NPO midnight rule.',
+        anesthesiaNote:'General Surgery most commonly uses General Anesthesia. Laparoscopic procedures are shorter and recovery from anesthesia is faster. Carbon dioxide (CO2) gas is used to inflate the abdomen during laparoscopy — this can cause referred shoulder and chest pain post-operatively that resolves within 24–48 hours as the gas is absorbed. This is normal and not a cardiac symptom.',
+        specialtyQuestions:[
+          {type:'knowledge',q:'After laparoscopic surgery, shoulder and chest pain is most commonly caused by:',options:['Heart problems from anesthesia','CO2 gas used during laparoscopy moving to the diaphragm','Infection spreading','A pulled muscle from the incision'],correct:1},
+          {type:'knowledge',q:'If you cannot pass gas or have a bowel movement by post-op day 3–4, you should:',options:['Wait another week — this is normal','Continue eating normally','Contact your surgeon — this may indicate a bowel ileus','Only drink clear liquids permanently'],correct:2},
+          {type:'logistics',q:'Have you purchased stool softeners and prepared easy-to-digest foods for your home recovery?'},
+          {type:'logistics',q:'If bowel prep is required for your procedure, have you purchased the prep solution and confirmed the timing?'},
+          {type:'confidence',q:'Do you understand the dietary progression after surgery (clear liquids → soft diet → regular diet)?'}
+        ]
+      }
+    };
+
+    function getSpecData() {
+      if (!patient) return null;
+      return SPECIALTY_DATA[patient.surgery] || null;
+    }
+
+    // ============================== STATE ==============================
+    const LS = key => 'preop_' + key;
+    function save(key, val) { try { localStorage.setItem(LS(key), JSON.stringify(val)); } catch(e){} }
+    function load(key, def) { try { const v = localStorage.getItem(LS(key)); return v ? JSON.parse(v) : def; } catch(e){ return def; } }
+
+    let patient = load('patient', null);
+    let visitedTabs = load('visited', []);
+    let checklistState = load('checklist', {});
+    let medications = load('meds', []);
+    let assessmentAnswers = load('assessment', null);
+    let emergencyContacts = load('ec', {});
+    let currentSection = 1;
+
+    // ============================== NAV DATA ==============================
+    function getSections() {
+      const spec = getSpecData();
+      const guideLabel = spec ? spec.tabLabel : '🔬 Surgery Guide';
+      return [
+        { id:1, icon:'📋', label:'Overview & Timeline' },
+        { id:2, icon:'🔬', label: guideLabel, isGuide: true },
+        { id:3, icon:'🍽️', label:'Fasting & Diet' },
+        { id:4, icon:'💊', label:'Medications' },
+        { id:5, icon:'🛁', label:'Hygiene & Prep' },
+        { id:6, icon:'🧳', label:'Day of Surgery' },
+        { id:7, icon:'😴', label:'Anesthesia Explained' },
+        { id:8, icon:'🩺', label:'Post-Op Recovery' },
+        { id:9, icon:'⚠️', label:'Warning Signs' },
+        { id:10, icon:'✅', label:'Pre-Op Checklist' },
+        { id:11, icon:'🎯', label:'Readiness Assessment' },
+      ];
+    }
+
+    // ============================== SETUP ==============================
+    const setupScreen = document.getElementById('setup-screen');
+    const mainApp = document.getElementById('main-app');
+
+    if (patient) {
+      showMainApp();
+    }
+
+    document.getElementById('btn-begin').addEventListener('click', () => {
+      const name = document.getElementById('inp-name').value.trim();
+      const surgery = document.getElementById('inp-surgery').value;
+      const date = document.getElementById('inp-date').value;
+      const surgeon = document.getElementById('inp-surgeon').value.trim();
+      if (!name || !surgery || !date) {
+        document.getElementById('setup-error').classList.remove('hidden');
+        return;
+      }
+      patient = { name, surgery, date, surgeon: surgeon || 'Not specified' };
+      save('patient', patient);
+      showMainApp();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      if (confirm('Reset all data? This cannot be undone.')) {
+        ['patient','visited','checklist','meds','assessment','ec'].forEach(k => localStorage.removeItem(LS(k)));
+        location.reload();
+      }
+    });
+
+    function showMainApp() {
+      setupScreen.classList.add('hidden');
+      mainApp.classList.remove('hidden');
+      document.getElementById('header-patient').textContent = patient.name;
+      buildSidebar();
+      buildTimeline();
+      buildFacts();
+      buildSurgeryGuide();
+      buildSpecialtyContent();
+      buildChecklist();
+      buildQuiz();
+      loadMedications();
+      loadEmergencyContacts();
+      loadDayChecks();
+      switchSection(currentSection);
+      updateReadinessBadge();
+      lucide.createIcons();
+    }
+
+    // ============================== SIDEBAR ==============================
+    function buildSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const mobileNav = document.getElementById('mobile-nav-links');
+      sidebar.innerHTML = '';
+      mobileNav.innerHTML = '';
+      const sections = getSections();
+      sections.forEach(s => {
+        const visited = visitedTabs.includes(s.id);
+        const html = `<button class="sidebar-link flex items-center gap-3 w-full px-4 py-3 rounded-xl text-left cursor-pointer text-sm ${currentSection === s.id ? 'active-link' : 'text-foreground-600'}" data-section="${s.id}">
+          ${!s.isGuide ? `<span class="text-base">${s.icon}</span>` : ''}
+          <span class="flex-1 font-medium">${s.isGuide ? s.label : s.label}</span>
+          ${visited ? '<span class="text-system-green-400 text-sm">✓</span>' : ''}
+        </button>`;
+        sidebar.insertAdjacentHTML('beforeend', html);
+        mobileNav.insertAdjacentHTML('beforeend', html);
+      });
+      sidebar.querySelectorAll('.sidebar-link').forEach(btn => {
+        btn.addEventListener('click', () => switchSection(parseInt(btn.dataset.section)));
+      });
+      mobileNav.querySelectorAll('.sidebar-link').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('mobile-menu').classList.add('hidden');
+          switchSection(parseInt(btn.dataset.section));
+        });
+      });
+    }
+
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+      document.getElementById('mobile-menu').classList.remove('hidden');
+    });
+    document.getElementById('mobile-menu-close').addEventListener('click', () => {
+      document.getElementById('mobile-menu').classList.add('hidden');
+    });
+
+    function switchSection(id) {
+      currentSection = id;
+      document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+      const panel = document.getElementById('sec-' + id);
+      if (panel) panel.classList.add('active');
+      if (!visitedTabs.includes(id)) {
+        visitedTabs.push(id);
+        save('visited', visitedTabs);
+      }
+      buildSidebar();
+      updateReadinessBadge();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      lucide.createIcons();
+    }
+
+    // ============================== SURGERY GUIDE ==============================
+    function buildSurgeryGuide() {
+      const container = document.getElementById('surgery-guide-content');
+      const spec = getSpecData();
+      if (!spec) {
+        container.innerHTML = '<div class="bg-background-100 rounded-2xl p-8 text-center" style="box-shadow:0 8px 24px rgba(20,17,14,.06)"><p class="text-foreground-450">No specialty guide available for your surgery type.</p></div>';
+        return;
+      }
+
+      const phaseColors = ['bg-system-red-200 text-system-red-600','bg-system-orange-100 text-system-orange-550','bg-system-yellow-100 text-system-yellow-600','bg-system-teal-200 text-system-teal-600','bg-system-green-200 text-system-green-600'];
+
+      let html = `
+        <div class="spec-banner ${spec.color} mb-6">
+          <div class="relative z-10">
+            <p class="text-4xl mb-2">${spec.icon}</p>
+            <h2 class="text-xl md:text-2xl font-bold text-white mb-1">${patient.surgery}</h2>
+            <p class="text-white/80 text-sm">${spec.tagline}</p>
+          </div>
+        </div>
+        <div class="bg-background-100 rounded-2xl p-5 md:p-6 mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <h3 class="font-semibold text-foreground-800 mb-3 flex items-center gap-2">
+            <i data-lucide="info" class="w-5 h-5 ${spec.textColor}"></i> About Your Surgery
+          </h3>
+          <p class="text-sm text-foreground-700 leading-relaxed">${spec.about}</p>
+        </div>
+        <h3 class="text-lg font-semibold text-foreground-800 mb-3">Key Facts for ${patient.surgery}</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          ${spec.keyFacts.map(f => `
+            <div class="${spec.bgLight} rounded-2xl p-4 border border-${spec.borderColor.replace('border-','')}/20">
+              <div class="flex items-start gap-3">
+                <span class="text-2xl shrink-0">${f.icon}</span>
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide ${spec.textColor} mb-1">${f.label}</p>
+                  <p class="text-sm text-foreground-700">${f.value}</p>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        <h3 class="text-lg font-semibold text-foreground-800 mb-3">What Makes This Surgery Unique</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h4 class="font-semibold text-foreground-800 mb-2 flex items-center gap-2"><i data-lucide="syringe" class="w-4 h-4 ${spec.textColor}"></i> Anesthesia for Your Procedure</h4>
+            <p class="text-sm text-foreground-700 leading-relaxed">${spec.anesthesiaNote}</p>
+          </div>
+          <div class="bg-background-100 rounded-2xl p-5" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+            <h4 class="font-semibold text-foreground-800 mb-2 flex items-center gap-2"><i data-lucide="utensils" class="w-4 h-4 ${spec.textColor}"></i> Fasting Notes</h4>
+            <p class="text-sm text-foreground-700 leading-relaxed">${spec.fastingNote}</p>
+          </div>
+        </div>
+        <h3 class="text-lg font-semibold text-foreground-800 mb-3">Your Recovery Roadmap</h3>
+        <div class="bg-background-100 rounded-2xl p-5 md:p-6 mb-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <div class="space-y-3">
+            ${spec.recoveryPhases.map((p, i) => `
+              <div class="bg-background-200 rounded-xl overflow-hidden">
+                <button class="accordion-btn w-full flex items-center justify-between px-4 py-3 cursor-pointer text-left" aria-expanded="false">
+                  <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg ${phaseColors[i] || phaseColors[4]} text-xs font-bold shrink-0">${i+1}</span>
+                    <div>
+                      <p class="text-sm font-semibold text-foreground-800">${p.label}</p>
+                      <p class="text-xs text-foreground-450">${p.duration}</p>
+                    </div>
+                  </div>
+                  <i data-lucide="chevron-down" class="w-4 h-4 text-foreground-400 transition-transform shrink-0"></i>
+                </button>
+                <div class="accordion-body"><div class="px-4 pb-4 text-sm text-foreground-700">${p.details}</div></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      container.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    // ============================== SPECIALTY CONTENT INJECTION ==============================
+    function buildSpecialtyContent() {
+      const spec = getSpecData();
+      if (!spec) {
+        document.getElementById('spec-fasting-note').classList.add('hidden');
+        document.getElementById('spec-meds-box').classList.add('hidden');
+        document.getElementById('spec-prep-box').classList.add('hidden');
+        document.getElementById('spec-dayof-box').classList.add('hidden');
+        document.getElementById('spec-warnings-box').classList.add('hidden');
+        document.getElementById('spec-anesthesia-note').classList.add('hidden');
+        document.getElementById('spec-recovery-box').classList.add('hidden');
+        return;
+      }
+
+      const fastingEl = document.getElementById('spec-fasting-note');
+      fastingEl.classList.remove('hidden');
+      fastingEl.innerHTML = `<div class="${spec.bgLight} rounded-2xl p-5 flex gap-3 items-start border-l-4 ${spec.borderColor}">
+        <span class="text-xl shrink-0">${spec.icon}</span>
+        <div><p class="font-semibold ${spec.textColor} mb-1">For ${patient.surgery}</p><p class="text-sm text-foreground-700">${spec.fastingNote}</p></div>
+      </div>`;
+
+      const anesthEl = document.getElementById('spec-anesthesia-note');
+      anesthEl.classList.remove('hidden');
+      anesthEl.innerHTML = `<div class="${spec.bgLight} rounded-2xl p-5 flex gap-3 items-start border-l-4 ${spec.borderColor}">
+        <span class="text-xl shrink-0">${spec.icon}</span>
+        <div><p class="font-semibold ${spec.textColor} mb-1">Anesthesia for ${patient.surgery}</p><p class="text-sm text-foreground-700">${spec.anesthesiaNote}</p></div>
+      </div>`;
+
+      const medsBox = document.getElementById('spec-meds-box');
+      medsBox.classList.remove('hidden');
+      medsBox.innerHTML = `
+        <div class="${spec.bgLight} rounded-2xl p-5 md:p-6 border-l-4 ${spec.borderColor}">
+          <h3 class="font-semibold ${spec.textColor} mb-4 flex items-center gap-2">${spec.icon} For ${patient.surgery}</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-system-green-600 mb-2">Continue</p>
+              <ul class="space-y-1 text-sm text-foreground-700">${spec.continueMeds.map(m => `<li class="flex items-start gap-2"><span class="text-system-green-550 mt-0.5">✅</span> ${m}</li>`).join('')}</ul>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-system-red-550 mb-2">Stop</p>
+              <ul class="space-y-1 text-sm text-foreground-700">${spec.stopMeds.map(m => `<li class="flex items-start gap-2"><span class="text-system-red-550 mt-0.5">🚫</span> ${m}</li>`).join('')}</ul>
+            </div>
+          </div>
+          <div class="bg-system-orange-100 rounded-xl p-4 flex gap-3 items-start">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-system-orange-550 shrink-0 mt-0.5"></i>
+            <p class="text-sm text-foreground-700">${spec.specialMedNote}</p>
+          </div>
+        </div>`;
+
+      const prepBox = document.getElementById('spec-prep-box');
+      prepBox.classList.remove('hidden');
+      prepBox.innerHTML = `
+        <div class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <h3 class="font-semibold ${spec.textColor} mb-4 flex items-center gap-2">${spec.icon} Specialty Prep Steps</h3>
+          <div class="space-y-3">
+            ${spec.prepSteps.map((s, i) => `<div class="flex items-start gap-3"><span class="inline-flex items-center justify-center w-6 h-6 rounded-full ${spec.bgLight} ${spec.textColor} text-xs font-bold shrink-0 mt-0.5">${i+1}</span><p class="text-sm text-foreground-700">${s}</p></div>`).join('')}
+          </div>
+        </div>`;
+
+      const dayofBox = document.getElementById('spec-dayof-box');
+      dayofBox.classList.remove('hidden');
+      dayofBox.innerHTML = `
+        <div class="${spec.bgLight} rounded-xl p-4 border-l-4 ${spec.borderColor}">
+          <p class="text-xs font-semibold uppercase tracking-wide ${spec.textColor} mb-2">${spec.icon} Also Bring for ${patient.surgery}</p>
+          <ul class="space-y-1 text-sm text-foreground-700">${spec.dayOfItems.map(i => `<li class="flex items-start gap-2"><i data-lucide="plus-circle" class="w-4 h-4 ${spec.textColor} shrink-0 mt-0.5"></i>${i}</li>`).join('')}</ul>
+        </div>`;
+
+      const warnBox = document.getElementById('spec-warnings-box');
+      warnBox.classList.remove('hidden');
+      warnBox.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="${spec.bgLight} rounded-2xl p-5 md:p-6 border-l-4 ${spec.borderColor}">
+            <h3 class="font-semibold ${spec.textColor} mb-3 flex items-center gap-2"><i data-lucide="phone" class="w-5 h-5"></i> ${patient.surgery} — Call Your Surgeon</h3>
+            <ul class="space-y-2 text-sm text-foreground-800">${spec.specialWarnings.map(w => `<li class="flex items-start gap-2"><span class="${spec.textColor} mt-0.5">🔶</span> ${w}</li>`).join('')}</ul>
+          </div>
+          <div class="bg-system-red-200 rounded-2xl p-5 md:p-6 border-l-4 border-system-red-400">
+            <h3 class="font-semibold text-system-red-550 mb-3 flex items-center gap-2"><i data-lucide="siren" class="w-5 h-5"></i> ${patient.surgery} — CALL 911</h3>
+            <ul class="space-y-2 text-sm text-foreground-800">${spec.emergencyWarnings.map(w => `<li class="flex items-start gap-2"><span class="text-system-red-550 mt-0.5">🔴</span> ${w}</li>`).join('')}</ul>
+          </div>
+        </div>`;
+
+      const recovBox = document.getElementById('spec-recovery-box');
+      recovBox.classList.remove('hidden');
+      const phColors = ['bg-system-red-200','bg-system-orange-100','bg-system-yellow-100','bg-system-teal-200','bg-system-green-200'];
+      const phTextColors = ['text-system-red-600','text-system-orange-550','text-system-yellow-600','text-system-teal-600','text-system-green-600'];
+      recovBox.innerHTML = `
+        <div class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <h3 class="font-semibold ${spec.textColor} mb-4 flex items-center gap-2">${spec.icon} ${patient.surgery} Recovery Timeline</h3>
+          <div class="space-y-3">
+            ${spec.recoveryPhases.map((p, i) => `
+              <div class="${phColors[i] || phColors[4]} rounded-xl p-4">
+                <p class="text-xs font-medium uppercase tracking-wide ${phTextColors[i] || phTextColors[4]} mb-1">${p.label} — ${p.duration}</p>
+                <p class="text-sm text-foreground-700">${p.details}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+
+      lucide.createIcons();
+    }
+
+    // ============================== TIMELINE ==============================
+    function buildTimeline() {
+      const container = document.getElementById('timeline-pills');
+      if (!patient) return;
+      const surgeryDate = new Date(patient.date + 'T00:00:00');
+      const today = new Date(); today.setHours(0,0,0,0);
+      const diff = Math.ceil((surgeryDate - today) / (1000*60*60*24));
+      const milestones = [
+        { label: 'Today', daysOut: diff },
+        { label: '2 Weeks Before', daysOut: 14 },
+        { label: '1 Week Before', daysOut: 7 },
+        { label: '3 Days Before', daysOut: 3 },
+        { label: 'Night Before', daysOut: 1 },
+        { label: 'Day of Surgery', daysOut: 0 },
+        { label: 'Recovery', daysOut: -1 },
+      ];
+      let currentIdx = 0;
+      if (diff <= 0) currentIdx = diff < 0 ? 6 : 5;
+      else if (diff <= 1) currentIdx = 4;
+      else if (diff <= 3) currentIdx = 3;
+      else if (diff <= 7) currentIdx = 2;
+      else if (diff <= 14) currentIdx = 1;
+      else currentIdx = 0;
+
+      const colors = ['bg-accent-200 text-accent-600','bg-system-blue-200 text-system-blue-600','bg-system-teal-200 text-system-teal-600','bg-system-purple-200 text-system-purple-600','bg-system-orange-100 text-system-orange-550','bg-system-green-200 text-system-green-600','bg-system-yellow-100 text-system-yellow-600'];
+      container.innerHTML = milestones.map((m, i) => {
+        const isCurrent = i === currentIdx;
+        return `<div class="timeline-pill ${colors[i]} ${isCurrent ? 'current ring-2 ring-accent-450' : ''} px-3 py-2 rounded-xl text-xs font-medium text-center min-w-[100px]">
+          <p class="font-semibold">${m.label}</p>
+          ${i > 0 && i < 6 ? `<p class="text-[10px] opacity-70">${m.daysOut} day${m.daysOut !== 1 ? 's' : ''} out</p>` : ''}
+          ${isCurrent ? '<p class="text-[10px] font-bold mt-0.5">← YOU ARE HERE</p>' : ''}
+        </div>${i < milestones.length - 1 ? '<span class="text-foreground-300 hidden md:inline">→</span>' : ''}`;
+      }).join('');
+    }
+
+    function buildFacts() {
+      if (!patient) return;
+      document.getElementById('fact-surgery').textContent = patient.surgery;
+      const sd = new Date(patient.date + 'T00:00:00');
+      document.getElementById('fact-date').textContent = sd.toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+      document.getElementById('fact-surgeon').textContent = patient.surgeon;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const diff = Math.ceil((sd - today) / (1000*60*60*24));
+      document.getElementById('fact-days').textContent = diff >= 0 ? diff : 'Past';
+    }
+
+    // ============================== ACCORDIONS ==============================
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.accordion-btn');
+      if (!btn) return;
+      const body = btn.nextElementSibling;
+      if (!body || !body.classList.contains('accordion-body')) return;
+      const isOpen = body.classList.contains('open');
+      body.classList.toggle('open', !isOpen);
+      const chevron = btn.querySelector('[data-lucide]');
+      if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+      btn.setAttribute('aria-expanded', !isOpen);
+    });
+
+    // ============================== MEDICATIONS ==============================
+    function loadMedications() {
+      renderMedList();
+    }
+    document.getElementById('btn-add-med').addEventListener('click', () => {
+      const name = document.getElementById('med-name').value.trim();
+      const dose = document.getElementById('med-dose').value.trim();
+      const status = document.getElementById('med-status').value;
+      if (!name) return;
+      medications.push({ id: Date.now(), name, dose, status });
+      save('meds', medications);
+      document.getElementById('med-name').value = '';
+      document.getElementById('med-dose').value = '';
+      renderMedList();
+    });
+
+    function renderMedList() {
+      const container = document.getElementById('med-list');
+      if (medications.length === 0) {
+        container.innerHTML = '<p class="text-sm text-foreground-400 italic">No medications added yet. Use the form above to track your medications.</p>';
+        return;
+      }
+      const statusMap = { continue: { label:'Continue', cls:'bg-system-green-200 text-system-green-600' }, stop: { label:'Stop', cls:'bg-system-red-200 text-system-red-550' }, confirm: { label:'Confirm w/ Doctor', cls:'bg-system-yellow-100 text-system-yellow-600' } };
+      container.innerHTML = medications.map(m => {
+        const s = statusMap[m.status];
+        return `<div class="flex items-center justify-between bg-background-200 rounded-xl px-4 py-3">
+          <div><p class="text-sm font-medium text-foreground-800">${m.name}</p>${m.dose ? `<p class="text-xs text-foreground-450">${m.dose}</p>` : ''}</div>
+          <div class="flex items-center gap-2">
+            <span class="${s.cls} px-2 py-1 rounded-lg text-xs font-medium">${s.label}</span>
+            <button class="med-del text-foreground-400 hover:text-system-red-550 cursor-pointer p-1" data-mid="${m.id}" aria-label="Delete medication"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          </div>
+        </div>`;
+      }).join('');
+      container.querySelectorAll('.med-del').forEach(btn => {
+        btn.addEventListener('click', () => {
+          medications = medications.filter(m => m.id !== parseInt(btn.dataset.mid));
+          save('meds', medications);
+          renderMedList();
+          lucide.createIcons();
+        });
+      });
+      lucide.createIcons();
+    }
+
+    // ============================== EMERGENCY CONTACTS ==============================
+    function loadEmergencyContacts() {
+      ['ec-surgeon','ec-hospital','ec-after'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && emergencyContacts[id]) el.value = emergencyContacts[id];
+        if (el) el.addEventListener('input', () => {
+          emergencyContacts[id] = el.value;
+          save('ec', emergencyContacts);
+        });
+      });
+      const ch = document.getElementById('contact-hosp');
+      if (ch && emergencyContacts['contact-hosp']) ch.value = emergencyContacts['contact-hosp'];
+      if (ch) ch.addEventListener('input', () => { emergencyContacts['contact-hosp'] = ch.value; save('ec', emergencyContacts); });
+    }
+
+    // ============================== DAY-OF CHECKS ==============================
+    function loadDayChecks() {
+      document.querySelectorAll('.day-check').forEach(cb => {
+        cb.checked = !!checklistState['day_' + cb.dataset.key];
+        cb.addEventListener('change', () => {
+          checklistState['day_' + cb.dataset.key] = cb.checked;
+          save('checklist', checklistState);
+        });
+      });
+    }
+
+    // ============================== CHECKLIST ==============================
+    const checklistData = {
+      '2+ Weeks Before': [
+        'Stop blood thinners (if instructed by surgeon)',
+        'Arrange childcare / pet care for surgery day and recovery',
+        'Fill post-operative prescriptions',
+        'Prepare home for recovery (grab bars, supplies, easy meals)',
+        'Stop smoking (ideally — improves healing outcomes)',
+        'Notify work / school about upcoming surgery',
+      ],
+      '1 Week Before': [
+        'Confirm surgery date and arrival time with hospital',
+        'Stop NSAIDs and herbal supplements',
+        'Purchase CHG soap if instructed',
+        'Prepare recovery area at home (pillows, ice packs, water, phone charger)',
+      ],
+      'Night Before': [
+        'Nothing to eat after midnight (NPO)',
+        'CHG shower as instructed',
+        'Lay out day-of-surgery clothes',
+        'Charge phone',
+        'Set alarm for morning',
+      ],
+      'Morning Of': [
+        'CHG shower (if instructed)',
+        'Take approved medications with small sip of water',
+        'Leave all jewelry at home',
+        'Arrive on time (1-2 hours before scheduled surgery)',
+      ],
+    };
+
+    function buildChecklist() {
+      const container = document.getElementById('checklist-container');
+      const timeIcons = { '2+ Weeks Before': '📆', '1 Week Before': '📅', 'Night Before': '🌙', 'Morning Of': '☀️' };
+      container.innerHTML = '';
+
+      Object.entries(checklistData).forEach(([period, items]) => {
+        let html = `<div class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <h3 class="font-semibold text-foreground-800 mb-3">${timeIcons[period] || ''} ${period}</h3>
+          <div class="space-y-2">`;
+        items.forEach((item, idx) => {
+          const key = period.replace(/\s+/g,'_') + '_' + idx;
+          const checked = checklistState[key] ? 'checked' : '';
+          html += `<div class="check-item flex items-start gap-3">
+            <input type="checkbox" class="cl-check w-5 h-5 mt-0.5 accent-[#3468b0] cursor-pointer shrink-0" data-key="${key}" ${checked} />
+            <label class="text-sm text-foreground-700 cursor-pointer">${item}</label>
+          </div>`;
+        });
+        html += '</div></div>';
+        container.insertAdjacentHTML('beforeend', html);
+      });
+
+      const spec = getSpecData();
+      if (spec && spec.extraChecklist && spec.extraChecklist.length > 0) {
+        let specHtml = `<div class="${spec.bgLight} rounded-2xl p-5 md:p-6 border-l-4 ${spec.borderColor}">
+          <h3 class="font-semibold ${spec.textColor} mb-4 flex items-center gap-2">${spec.icon} ${patient.surgery} Specific Checklist</h3>
+          <div class="space-y-4">`;
+        spec.extraChecklist.forEach(group => {
+          specHtml += `<div><p class="text-xs font-semibold uppercase tracking-wide ${spec.textColor} mb-2">${group.label}</p><div class="space-y-2">`;
+          group.items.forEach((item, idx) => {
+            const key = 'spec_' + group.label.replace(/\s+/g,'_') + '_' + idx;
+            const checked = checklistState[key] ? 'checked' : '';
+            specHtml += `<div class="check-item flex items-start gap-3">
+              <input type="checkbox" class="cl-check w-5 h-5 mt-0.5 accent-[#3468b0] cursor-pointer shrink-0" data-key="${key}" ${checked} />
+              <label class="text-sm text-foreground-700 cursor-pointer">${item}</label>
+            </div>`;
+          });
+          specHtml += '</div></div>';
+        });
+        specHtml += '</div></div>';
+        container.insertAdjacentHTML('beforeend', specHtml);
+      }
+
+      container.querySelectorAll('.cl-check').forEach(cb => {
+        cb.addEventListener('change', () => {
+          checklistState[cb.dataset.key] = cb.checked;
+          save('checklist', checklistState);
+          updateChecklistProgress();
+          updateReadinessBadge();
+        });
+        const label = cb.parentElement.querySelector('label');
+        if (label) label.addEventListener('click', () => { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); });
+      });
+      updateChecklistProgress();
+    }
+
+    function updateChecklistProgress() {
+      const total = document.querySelectorAll('.cl-check').length;
+      const done = document.querySelectorAll('.cl-check:checked').length;
+      const pct = total ? Math.round(done / total * 100) : 0;
+      document.getElementById('checklist-pct').textContent = pct + '%';
+      document.getElementById('checklist-bar').style.width = pct + '%';
+    }
+
+    document.getElementById('btn-print-checklist').addEventListener('click', () => window.print());
+
+    // ============================== QUIZ ==============================
+    function getQuizQuestions() {
+      const spec = getSpecData();
+      const baseQuestions = [
+        { type:'mc', category:'knowledge', q:'How many hours before surgery should you stop eating solid food?', options:['2 hours','4 hours','8 hours','12 hours'], correct:2 },
+        { type:'mc', category:'knowledge', q:'Which medication should you STOP before surgery?', options:['Blood pressure medication','Thyroid medication','Ibuprofen (NSAIDs)','Seizure medication'], correct:2 },
+        { type:'mc', category:'knowledge', q:'Clear liquids can be taken up to how long before surgery?', options:['Right up until surgery','4 hours before','2 hours before','6 hours before'], correct:2 },
+        { type:'mc', category:'knowledge', q:'After surgery, which sign means you should call your doctor immediately?', options:['Mild fatigue','Fever over 101°F','Slight bruising','Mild nausea on day 1'], correct:1 },
+        { type:'mc', category:'knowledge', q:'Who should drive you home after surgery with general anesthesia?', options:['Taxi/rideshare alone','A responsible adult driver','Public transportation','You can drive yourself'], correct:1 },
+        { type:'yn', category:'logistics', q:'Have you arranged a responsible adult to drive you home?' },
+        { type:'yn', category:'logistics', q:'Have you confirmed your surgery date and arrival time with the hospital?' },
+        { type:'yn', category:'logistics', q:'Have you filled or arranged all your post-op prescriptions?' },
+        { type:'yn', category:'logistics', q:'Have you prepared a recovery area at home (comfortable space, supplies)?' },
+        { type:'yn', category:'logistics', q:'Have you stopped or adjusted medications as instructed by your doctor?' },
+      ];
+
+      if (spec && spec.specialtyQuestions) {
+        const specQ = spec.specialtyQuestions.map(sq => {
+          if (sq.options) {
+            return { type:'mc', category: sq.type, q: sq.q, options: sq.options, correct: sq.correct };
+          } else {
+            return { type:'yn', category: sq.type, q: sq.q };
+          }
+        });
+        return [...baseQuestions, ...specQ];
+      }
+
+      return [...baseQuestions,
+        { type:'yn', category:'support', q:'Do you feel you understand what to expect on the day of surgery?' },
+        { type:'yn2', category:'support', q:'Do you have someone who can stay with you for the first 24 hours after surgery?' },
+        { type:'yn', category:'support', q:'Do you know the warning signs that require immediate medical attention?' },
+        { type:'yn2b', category:'support', q:'Have you written down questions to ask your surgeon before surgery?' },
+        { type:'yn', category:'support', q:'Do you feel emotionally ready for your upcoming surgery?' },
+      ];
+    }
+
+    function buildQuiz() {
+      const area = document.getElementById('quiz-area');
+      const results = document.getElementById('quiz-results');
+      if (assessmentAnswers) {
+        area.classList.add('hidden');
+        results.classList.remove('hidden');
+        showResults();
+        return;
+      }
+      area.classList.remove('hidden');
+      results.classList.add('hidden');
+      renderQuizQuestion(0, {});
+    }
+
+    function renderQuizQuestion(idx, answers) {
+      const area = document.getElementById('quiz-area');
+      const questions = getQuizQuestions();
+      if (idx >= questions.length) {
+        assessmentAnswers = answers;
+        save('assessment', assessmentAnswers);
+        area.classList.add('hidden');
+        document.getElementById('quiz-results').classList.remove('hidden');
+        showResults();
+        updateReadinessBadge();
+        return;
+      }
+      const q = questions[idx];
+      const pct = Math.round((idx / questions.length) * 100);
+      const catLabels = { knowledge:'Knowledge', logistics:'Logistics', support:'Confidence & Support', confidence:'Confidence & Support' };
+      let html = `<div class="fade-in">
+        <div class="flex items-center justify-between mb-2"><span class="text-xs font-medium text-foreground-450">Question ${idx+1} of ${questions.length}</span><span class="text-xs font-medium px-2 py-1 rounded-lg bg-accent-200 text-accent-600">${catLabels[q.category] || q.category}</span></div>
+        <div class="w-full bg-background-200 rounded-full h-2 mb-6"><div class="bg-accent-450 h-2 rounded-full transition-all duration-300" style="width:${pct}%"></div></div>
+        <div class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <h3 class="text-base md:text-lg font-semibold text-foreground-800 mb-4">${q.q}</h3>`;
+
+      if (q.type === 'mc') {
+        q.options.forEach((opt, oi) => {
+          html += `<button class="quiz-opt-btn w-full text-left border border-stroke-300/30 rounded-xl px-4 py-3 mb-2 text-sm text-foreground-700 hover:bg-accent-150 hover:border-accent-300 cursor-pointer transition" data-oi="${oi}">${opt}</button>`;
+        });
+      } else if (q.type === 'yn') {
+        ['Yes','Partially','No'].forEach(opt => {
+          html += `<button class="quiz-yn-btn w-full text-left border border-stroke-300/30 rounded-xl px-4 py-3 mb-2 text-sm text-foreground-700 hover:bg-accent-150 hover:border-accent-300 cursor-pointer transition" data-val="${opt}">${opt}</button>`;
+        });
+      } else if (q.type === 'yn2') {
+        ['Yes','No'].forEach(opt => {
+          html += `<button class="quiz-yn2-btn w-full text-left border border-stroke-300/30 rounded-xl px-4 py-3 mb-2 text-sm text-foreground-700 hover:bg-accent-150 hover:border-accent-300 cursor-pointer transition" data-val="${opt}">${opt}</button>`;
+        });
+      } else if (q.type === 'yn2b') {
+        ['Yes','No'].forEach(opt => {
+          html += `<button class="quiz-yn2b-btn w-full text-left border border-stroke-300/30 rounded-xl px-4 py-3 mb-2 text-sm text-foreground-700 hover:bg-accent-150 hover:border-accent-300 cursor-pointer transition" data-val="${opt}">${opt}</button>`;
+        });
+      }
+
+      html += '</div></div>';
+      area.innerHTML = html;
+
+      area.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const oi = parseInt(btn.dataset.oi);
+          const isCorrect = oi === q.correct;
+          answers[idx] = { type:'mc', selected: oi, correct: q.correct, score: isCorrect ? 10 : 0, category: q.category };
+          area.querySelectorAll('.quiz-opt-btn').forEach(b => {
+            b.classList.add('disabled','pointer-events-none','opacity-70');
+            const boi = parseInt(b.dataset.oi);
+            if (boi === q.correct) b.classList.add('correct','!bg-system-green-200','!border-system-green-400','!opacity-100');
+            else if (boi === oi && !isCorrect) b.classList.add('incorrect','!bg-system-red-200','!border-system-red-400','!opacity-100');
+          });
+          setTimeout(() => renderQuizQuestion(idx+1, answers), 900);
+        });
+      });
+
+      area.querySelectorAll('.quiz-yn-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.dataset.val;
+          const scoreMap = { Yes:10, Partially:5, No:0 };
+          answers[idx] = { type:'yn', val, score: scoreMap[val], category: q.category };
+          btn.classList.add('!bg-accent-200','!border-accent-450');
+          area.querySelectorAll('.quiz-yn-btn').forEach(b => b.classList.add('pointer-events-none'));
+          setTimeout(() => renderQuizQuestion(idx+1, answers), 500);
+        });
+      });
+
+      area.querySelectorAll('.quiz-yn2-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.dataset.val;
+          answers[idx] = { type:'yn2', val, score: val==='Yes' ? 10 : 0, category: q.category };
+          btn.classList.add('!bg-accent-200','!border-accent-450');
+          area.querySelectorAll('.quiz-yn2-btn').forEach(b => b.classList.add('pointer-events-none'));
+          setTimeout(() => renderQuizQuestion(idx+1, answers), 500);
+        });
+      });
+
+      area.querySelectorAll('.quiz-yn2b-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.dataset.val;
+          answers[idx] = { type:'yn2b', val, score: val==='Yes' ? 10 : 5, category: q.category };
+          btn.classList.add('!bg-accent-200','!border-accent-450');
+          area.querySelectorAll('.quiz-yn2b-btn').forEach(b => b.classList.add('pointer-events-none'));
+          setTimeout(() => renderQuizQuestion(idx+1, answers), 500);
+        });
+      });
+    }
+
+    function showResults() {
+      const results = document.getElementById('quiz-results');
+      if (!assessmentAnswers) return;
+      const questions = getQuizQuestions();
+      const maxTotal = questions.length * 10;
+      let knowledge = 0, logistics = 0, support = 0, total = 0;
+      let knowledgeCount = 0, logisticsCount = 0, supportCount = 0;
+      Object.values(assessmentAnswers).forEach(a => {
+        total += a.score;
+        if (a.category === 'knowledge') { knowledge += a.score; knowledgeCount++; }
+        else if (a.category === 'logistics') { logistics += a.score; logisticsCount++; }
+        else { support += a.score; supportCount++; }
+      });
+      const pct = Math.round(total / maxTotal * 100);
+      let color, label;
+      if (pct >= 90) { color = '#01712b'; label = 'Surgical Ready! ✅'; }
+      else if (pct >= 75) { color = '#d6a632'; label = 'Almost Ready'; }
+      else if (pct >= 51) { color = '#d57702'; label = 'Needs Attention'; }
+      else { color = '#ac1922'; label = 'Not Ready'; }
+
+      const circumference = 2 * Math.PI * 60;
+      const offset = circumference - (pct / 100) * circumference;
+
+      const knowledgeMax = knowledgeCount * 10 || 1, logisticsMax = logisticsCount * 10 || 1, supportMax = supportCount * 10 || 1;
+      const kPct = Math.round(knowledge/knowledgeMax*100), lPct = Math.round(logistics/logisticsMax*100), sPct = supportCount > 0 ? Math.round(support/supportMax*100) : 0;
+
+      let recs = [];
+      const ans = assessmentAnswers;
+      if (ans[0] && ans[0].score === 0) recs.push('📖 Review the fasting guidelines — solid food must stop 8 hours before surgery.');
+      if (ans[1] && ans[1].score === 0) recs.push('💊 Review which medications to stop — NSAIDs like ibuprofen must be stopped 5-7 days before.');
+      if (ans[2] && ans[2].score === 0) recs.push('💧 Clear liquids can be taken up to 2 hours before surgery — review the fasting section.');
+      if (ans[3] && ans[3].score === 0) recs.push('⚠️ Review warning signs — fever over 101°F requires calling your doctor.');
+      if (ans[4] && ans[4].score === 0) recs.push('🚗 You need a responsible adult driver — not a taxi alone or yourself.');
+      if (ans[5] && ans[5].score < 10) recs.push('🚗 Arrange a responsible adult driver before your surgery date.');
+      if (ans[6] && ans[6].score < 10) recs.push('📞 Confirm your surgery date and arrival time with the hospital.');
+      if (ans[7] && ans[7].score < 10) recs.push('💊 Fill or arrange all your post-op prescriptions ahead of time.');
+      if (ans[8] && ans[8].score < 10) recs.push('🏠 Prepare a comfortable recovery area at home with necessary supplies.');
+      if (ans[9] && ans[9].score < 10) recs.push('💊 Confirm medication changes with your doctor.');
+      for (let i = 10; i < questions.length; i++) {
+        if (ans[i] && ans[i].score < 10) {
+          recs.push(`📋 Review: "${questions[i].q}" — see your Surgery Guide section for details.`);
+        }
+      }
+
+      const showSupport = supportCount > 0;
+
+      results.innerHTML = `<div class="fade-in space-y-6">
+        <div class="bg-background-100 rounded-2xl p-6 md:p-8 text-center" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <svg width="160" height="160" viewBox="0 0 160 160" class="mx-auto mb-4">
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#efeae7" stroke-width="12"/>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="${color}" stroke-width="12" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" transform="rotate(-90 80 80)" class="donut-ring"/>
+            <text x="80" y="72" text-anchor="middle" class="text-3xl font-bold" fill="${color}" style="font-family:Inter,sans-serif;font-size:32px;font-weight:700">${pct}%</text>
+            <text x="80" y="95" text-anchor="middle" fill="#746d68" style="font-family:Inter,sans-serif;font-size:12px">${total}/${maxTotal} pts</text>
+          </svg>
+          <p class="text-xl font-bold" style="color:${color}">${label}</p>
+          ${pct >= 90 ? '<p class="text-sm text-foreground-600 mt-2">🎉 Excellent! You are well-prepared for your surgery. Keep up the great work!</p>' : ''}
+        </div>
+
+        <div class="bg-background-100 rounded-2xl p-5 md:p-6" style="box-shadow:0 8px 24px rgba(20,17,14,.06)">
+          <h3 class="font-semibold text-foreground-800 mb-4">Score Breakdown</h3>
+          <div class="space-y-4">
+            <div><div class="flex justify-between text-sm mb-1"><span class="text-foreground-600">📖 Knowledge</span><span class="font-semibold text-foreground-800">${knowledge}/${knowledgeMax} (${kPct}%)</span></div><div class="w-full bg-background-200 rounded-full h-3"><div class="bg-accent-450 h-3 rounded-full transition-all" style="width:${kPct}%"></div></div></div>
+            <div><div class="flex justify-between text-sm mb-1"><span class="text-foreground-600">📋 Logistics</span><span class="font-semibold text-foreground-800">${logistics}/${logisticsMax} (${lPct}%)</span></div><div class="w-full bg-background-200 rounded-full h-3"><div class="bg-system-teal-400 h-3 rounded-full transition-all" style="width:${lPct}%"></div></div></div>
+            ${showSupport ? `<div><div class="flex justify-between text-sm mb-1"><span class="text-foreground-600">💛 Support & Confidence</span><span class="font-semibold text-foreground-800">${support}/${supportMax} (${sPct}%)</span></div><div class="w-full bg-background-200 rounded-full h-3"><div class="bg-system-purple-400 h-3 rounded-full transition-all" style="width:${sPct}%"></div></div></div>` : ''}
+          </div>
+        </div>
+
+        ${recs.length > 0 ? `<div class="bg-system-orange-100 rounded-2xl p-5 md:p-6">
+          <h3 class="font-semibold text-system-orange-550 mb-3 flex items-center gap-2"><i data-lucide="lightbulb" class="w-5 h-5"></i> Personalized Recommendations</h3>
+          <ul class="space-y-2">${recs.map(r => `<li class="text-sm text-foreground-700 flex items-start gap-2"><span>${r}</span></li>`).join('')}</ul>
+        </div>` : ''}
+
+        <button id="btn-retake" class="bg-accent-450 text-background-100 font-semibold rounded-xl px-6 py-3 hover:bg-accent-550 cursor-pointer flex items-center gap-2 mx-auto"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> Retake Assessment</button>
+      </div>`;
+
+      const retakeBtn = document.getElementById('btn-retake');
+      if (retakeBtn) {
+        retakeBtn.addEventListener('click', () => {
+          assessmentAnswers = null;
+          save('assessment', null);
+          document.getElementById('quiz-results').classList.add('hidden');
+          document.getElementById('quiz-area').classList.remove('hidden');
+          buildQuiz();
+          updateReadinessBadge();
+        });
+      }
+      lucide.createIcons();
+    }
+
+    // ============================== READINESS BADGE ==============================
+    function updateReadinessBadge() {
+      const badge = document.getElementById('readiness-badge');
+      const totalCl = document.querySelectorAll('.cl-check').length;
+      const doneCl = document.querySelectorAll('.cl-check:checked').length;
+      const clPct = totalCl ? doneCl / totalCl * 100 : 0;
+
+      let aPct = 0;
+      if (assessmentAnswers) {
+        let total = 0;
+        Object.values(assessmentAnswers).forEach(a => total += a.score);
+        const questions = getQuizQuestions();
+        const maxTotal = questions.length * 10;
+        aPct = total / maxTotal * 100;
+      }
+
+      const hasAssessment = !!assessmentAnswers;
+      let composite;
+      if (hasAssessment) {
+        composite = Math.round(aPct * 0.6 + clPct * 0.4);
+      } else {
+        composite = Math.round(clPct * 0.4);
+      }
+
+      let color, labelText;
+      if (composite >= 90) { color = '#01712b'; labelText = 'Ready!'; }
+      else if (composite >= 75) { color = '#d6a632'; labelText = 'Almost Ready'; }
+      else if (composite >= 51) { color = '#d57702'; labelText = 'Needs Work'; }
+      else if (composite > 0) { color = '#ac1922'; labelText = 'Not Ready'; }
+      else { color = '#98918b'; labelText = 'Not Started'; }
+
+      if (composite > 0 || hasAssessment) {
+        badge.classList.remove('hidden');
+        const circumference = 2 * Math.PI * 15;
+        const off = circumference - (composite / 100) * circumference;
+        document.getElementById('badge-ring').setAttribute('stroke', color);
+        document.getElementById('badge-ring').setAttribute('stroke-dashoffset', off);
+        document.getElementById('badge-pct').textContent = composite + '%';
+        document.getElementById('badge-pct').style.color = color;
+        document.getElementById('badge-label').textContent = labelText;
+      }
+    }
+
+    document.getElementById('badge-click').addEventListener('click', () => switchSection(11));
+
+    // ============================== PRINT SUMMARY REPORT ==============================
+    function getReadinessScore() {
+      if (!assessmentAnswers) return null;
+      const questions = getQuizQuestions();
+      const maxTotal = questions.length * 10;
+      let total = 0;
+      Object.values(assessmentAnswers).forEach(a => total += a.score);
+      return Math.round(total / maxTotal * 100);
+    }
+
+    function getDaysUntil() {
+      if (!patient) return '—';
+      const sd = new Date(patient.date + 'T00:00:00');
+      const today = new Date(); today.setHours(0,0,0,0);
+      const diff = Math.ceil((sd - today) / (1000*60*60*24));
+      return diff >= 0 ? diff : 'Past';
+    }
+
+    function formatPrintDate() {
+      return new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    }
+
+    function formatSurgeryDate() {
+      if (!patient) return '—';
+      const sd = new Date(patient.date + 'T00:00:00');
+      return sd.toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+    }
+
+    function getChecklistSnapshot() {
+      const allChecks = document.querySelectorAll('.cl-check');
+      const total = allChecks.length;
+      const done = document.querySelectorAll('.cl-check:checked').length;
+      return { total, done, pct: total ? Math.round(done / total * 100) : 0 };
+    }
+
+    function getAllChecklistItems() {
+      const spec = getSpecData();
+      const groups = [];
+      // Generic
+      Object.entries(checklistData).forEach(([period, items]) => {
+        const groupItems = items.map((item, idx) => {
+          const key = period.replace(/\s+/g,'_') + '_' + idx;
+          return { text: item, checked: !!checklistState[key] };
+        });
+        groups.push({ label: period, items: groupItems });
+      });
+      // Specialty
+      if (spec && spec.extraChecklist) {
+        spec.extraChecklist.forEach(group => {
+          const groupItems = group.items.map((item, idx) => {
+            const key = 'spec_' + group.label.replace(/\s+/g,'_') + '_' + idx;
+            return { text: item, checked: !!checklistState[key] };
+          });
+          groups.push({ label: spec.icon + ' ' + group.label, items: groupItems, isSpec: true });
+        });
+      }
+      return groups;
+    }
+
+    function openPrintPreview() {
+      if (!patient) return;
+      const spec = getSpecData();
+      const daysUntil = getDaysUntil();
+      const readiness = getReadinessScore();
+      const clSnapshot = getChecklistSnapshot();
+      const clGroups = getAllChecklistItems();
+      const printDate = formatPrintDate();
+      const surgDate = formatSurgeryDate();
+
+      // Specialty med note — first sentence only
+      let specMedShort = '';
+      if (spec && spec.specialMedNote) {
+        const stripped = spec.specialMedNote.replace(/^⚠️\s*/, '');
+        const firstSentence = stripped.split(/\.\s/)[0] + '.';
+        specMedShort = firstSentence;
+      }
+
+      // Build continue/stop meds
+      const contMeds = spec ? spec.continueMeds.slice(0,5) : ['Blood pressure medications','Thyroid medications','Seizure medications','Inhalers','Eye drops'];
+      const stopMeds = spec ? spec.stopMeds.slice(0,5) : ['Blood thinners — stop 5-7 days','NSAIDs (ibuprofen) — stop 5-7 days','Diabetes medications — hold day of','Herbal supplements — stop 2 weeks'];
+
+      // Prep steps
+      const prepSteps = spec ? spec.prepSteps.slice(0,5) : ['Arrange home for recovery','Fill post-op prescriptions','Stop blood thinners if instructed','Purchase CHG soap','Prepare recovery area'];
+
+      // Day of items
+      const dayItems = spec ? spec.dayOfItems : ['Photo ID','Insurance card','Medication list','Comfortable clothes','Slip-on shoes'];
+
+      // Warning signs
+      const warnSurgeon = spec ? spec.specialWarnings.slice(0,5) : ['Fever over 101°F','Increasing redness at incision','Pus or unusual drainage','Uncontrolled pain','Nausea preventing fluid intake'];
+      const warnER = spec ? spec.emergencyWarnings.slice(0,4) : ['Chest pain or pressure','Difficulty breathing','Calf pain with leg swelling','Uncontrolled bleeding'];
+
+      // Recovery phases
+      const recovPhases = spec ? spec.recoveryPhases : [
+        {label:'Days 1-2',duration:'Rest',details:'Rest, manage pain, begin walking'},
+        {label:'Week 1',duration:'Early Recovery',details:'Gradual increase in activity, wound checks'},
+        {label:'Weeks 2-4',duration:'Progressive',details:'Return to light duties, follow-up visit'},
+        {label:'Full Recovery',duration:'Variable',details:'Varies by surgery type'}
+      ];
+
+      // Readiness badge
+      let readinessHTML = '';
+      if (readiness !== null) {
+        let rColor = '#2563eb', rLabel = 'In Progress';
+        if (readiness >= 90) { rColor = '#16a34a'; rLabel = 'Ready'; }
+        else if (readiness >= 75) { rColor = '#ca8a04'; rLabel = 'Almost Ready'; }
+        else if (readiness >= 51) { rColor = '#d97706'; rLabel = 'Needs Attention'; }
+        else { rColor = '#dc2626'; rLabel = 'Not Ready'; }
+        readinessHTML = `<span class="ps-badge" style="background:${rColor}">${readiness}% — ${rLabel}</span>`;
+      } else {
+        readinessHTML = `<span style="font-size:9pt;color:#888">Not yet taken</span>`;
+      }
+
+      // Specialty color for badge
+      const specBadgeBg = spec ? { '🦴':'#2563eb','🦵':'#059669','🧠':'#9333ea','❤️':'#dc2626','🏥':'#d97706' }[spec.icon] || '#2563eb' : '#2563eb';
+
+      // EC values
+      const ecSurgeon = emergencyContacts['ec-surgeon'] || '';
+      const ecHospital = emergencyContacts['ec-hospital'] || '';
+      const ecAfter = emergencyContacts['ec-after'] || '';
+
+      const html = `
+        <!-- HEADER BLOCK -->
+        <div class="ps-header">
+          <div style="font-size:36pt">🏥</div>
+          <h1>PRE-OPERATIVE PATIENT SUMMARY</h1>
+          <p style="font-size:10pt;color:#444;margin-bottom:2px">Pre-Op Readiness Hub — Patient Education Report</p>
+          <p style="font-size:8.5pt;color:#888">Generated: ${printDate}</p>
+        </div>
+
+        <!-- PATIENT INFORMATION -->
+        <div class="ps-patient-box">
+          <div class="ps-col">
+            <p style="font-size:14pt;font-weight:700;color:#1e3a5f;margin-bottom:4px">${patient.name}</p>
+            <p style="font-size:10pt;margin-bottom:2px">
+              <span class="ps-badge" style="background:${specBadgeBg}">${spec ? spec.icon : '🏥'} ${patient.surgery}</span>
+            </p>
+          </div>
+          <div class="ps-col" style="text-align:right">
+            <p style="font-size:9.5pt;margin-bottom:2px"><strong>Surgery Date:</strong> ${surgDate}</p>
+            <p style="font-size:9.5pt;margin-bottom:2px"><strong>Surgeon:</strong> ${patient.surgeon}</p>
+            <p style="font-size:9.5pt;margin-bottom:2px"><strong>Days Until Surgery:</strong> <span style="font-weight:700;color:#2563eb">${daysUntil}</span></p>
+            <p style="font-size:9.5pt"><strong>Readiness Score:</strong> ${readinessHTML}</p>
+          </div>
+        </div>
+
+        <!-- SECTION 1: CRITICAL REMINDERS -->
+        <div class="ps-section">
+          <div class="ps-section-title">⚠️ Critical Reminders</div>
+          <div class="ps-critical-box">
+            <h3>CRITICAL INSTRUCTIONS — READ CAREFULLY</h3>
+            <ol>
+              <li><strong>NPO (Fasting):</strong> Stop solid food 8 hours before surgery. Clear liquids (water, apple juice, black coffee) allowed until 2 hours before surgery. Nothing by mouth after that.</li>
+              <li><strong>Medications:</strong> ${specMedShort || 'ALWAYS confirm your specific medication plan with your surgeon or anesthesiologist before surgery.'}</li>
+              <li><strong>CHG Shower:</strong> Shower with CHG soap the night before AND morning of surgery. Do not apply lotion, deodorant, or perfume afterward.</li>
+              <li><strong>Transportation:</strong> Arrange a responsible adult driver — you CANNOT drive yourself home after surgery.</li>
+              <li><strong>Arrival:</strong> Arrive 1–2 hours before your scheduled surgery time. Bring your photo ID, insurance card, and medication list.</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- SECTION 2: MEDICATION INSTRUCTIONS -->
+        <div class="ps-section">
+          <div class="ps-section-title">💊 Medication Instructions</div>
+          <p style="font-size:9pt;color:#555;margin-bottom:6px">Confirm with Your Surgical Team</p>
+          <table class="ps-med-table">
+            <thead><tr><th style="width:50%">✅ CONTINUE Taking</th><th style="width:50%">🚫 STOP Before Surgery</th></tr></thead>
+            <tbody>
+              ${Array.from({length: Math.max(contMeds.length, stopMeds.length)}, (_, i) => `
+                <tr>
+                  <td>${contMeds[i] ? '✅ ' + contMeds[i] : ''}</td>
+                  <td>${stopMeds[i] ? '🚫 ' + stopMeds[i] : ''}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="ps-callout-orange">⚠️ This is general guidance only. Always follow the specific medication instructions given by your surgeon and anesthesiologist.</div>
+        </div>
+
+        <!-- SECTION 3: PREPARATION STEPS -->
+        <div class="ps-section">
+          <div class="ps-section-title">🛁 Pre-Surgery Preparation</div>
+          <div style="font-size:9.5pt">
+            ${prepSteps.map((s, i) => `<div class="ps-checklist-item"><span class="ps-check">□</span> <span><strong>${i+1}.</strong> ${s}</span></div>`).join('')}
+          </div>
+        </div>
+
+        <!-- SECTION 4: WHAT TO BRING -->
+        <div class="ps-section">
+          <div class="ps-section-title">🧳 Day of Surgery — What to Bring</div>
+          <div class="ps-two-col-check">
+            ${dayItems.map(item => `<div class="ps-checklist-item"><span class="ps-check">□</span> <span>${item}</span></div>`).join('')}
+          </div>
+          <p style="font-size:9pt;color:#dc2626;margin-top:8px;font-weight:600">❌ Leave at Home: Jewelry, valuables, contact lenses, large amounts of cash</p>
+        </div>
+
+        <!-- SECTION 5: CHECKLIST SNAPSHOT (page break) -->
+        <div class="ps-section ps-page-break">
+          <div class="ps-section-title">✅ Your Pre-Op Checklist Progress</div>
+          <p style="font-size:10pt;font-weight:600;margin-bottom:4px">${clSnapshot.done} of ${clSnapshot.total} items completed (${clSnapshot.pct}%)</p>
+          <div class="ps-progress-bar-bg"><div class="ps-progress-bar-fill" style="width:${clSnapshot.pct}%"></div></div>
+          <div style="margin-top:10px">
+            ${clGroups.map(group => `
+              <div style="margin-bottom:8px">
+                <p style="font-size:9pt;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px${group.isSpec ? ';color:'+specBadgeBg : ''}">${group.label}</p>
+                ${group.items.map(item => `<div class="ps-checklist-item"><span class="ps-check" style="color:${item.checked ? '#16a34a' : '#999'}">${item.checked ? '✓' : '□'}</span> <span style="${item.checked ? 'text-decoration:line-through;color:#999' : ''}">${item.text}</span></div>`).join('')}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- SECTION 6: WARNING SIGNS -->
+        <div class="ps-section">
+          <div class="ps-section-title">⚠️ When to Contact Your Care Team</div>
+          <div class="ps-warn-grid">
+            <div class="ps-warn-col orange">
+              <h4 style="color:#ea580c">📞 Call Your Surgeon's Office</h4>
+              <ul>${warnSurgeon.map(w => `<li>${w}</li>`).join('')}</ul>
+            </div>
+            <div class="ps-warn-col red">
+              <h4 style="color:#dc2626">🚨 Call 911 / Emergency Room</h4>
+              <ul>${warnER.map(w => `<li>${w}</li>`).join('')}</ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 7: EMERGENCY CONTACTS -->
+        <div class="ps-section">
+          <div class="ps-section-title">📞 Important Phone Numbers</div>
+          <table class="ps-contact-table">
+            <tr><td>Surgeon's Office</td><td>${ecSurgeon || '________________________________'}</td></tr>
+            <tr><td>Hospital Main Line</td><td>${ecHospital || '________________________________'}</td></tr>
+            <tr><td>After-Hours / On-Call</td><td>${ecAfter || '________________________________'}</td></tr>
+            <tr><td>Emergency</td><td style="font-weight:700;color:#dc2626">911</td></tr>
+          </table>
+        </div>
+
+        <!-- SECTION 8: RECOVERY OVERVIEW -->
+        <div class="ps-section">
+          <div class="ps-section-title">🔄 Recovery Timeline — ${patient.surgery}</div>
+          ${recovPhases.map(p => `
+            <div class="ps-recovery-item">
+              <strong>${p.label}</strong> <span style="color:#666;font-size:8.5pt">(${p.duration})</span><br/>
+              ${p.details}
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- FOOTER -->
+        <div class="ps-footer">
+          <p>This document is for educational purposes only and does not replace the medical advice of your surgical care team.</p>
+          <p>Report generated by Pre-Op Readiness Hub | ${printDate}</p>
+          <p class="ps-right" style="font-size:7.5pt;color:#999">${patient.name} • ${patient.surgery} • ${surgDate}</p>
+        </div>
+      `;
+
+      document.getElementById('printSummary').innerHTML = html;
+      document.getElementById('print-modal-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePrintModal() {
+      document.getElementById('print-modal-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function printSummary() {
+      window.print();
+    }
+
+    // Print button event listeners
+    document.getElementById('header-print-btn').addEventListener('click', openPrintPreview);
+    document.getElementById('btn-checklist-print-summary').addEventListener('click', openPrintPreview);
+    document.getElementById('btn-print-now').addEventListener('click', printSummary);
+    document.getElementById('btn-close-print-modal').addEventListener('click', closePrintModal);
+
+    // Close modal on overlay click
+    document.getElementById('print-modal-overlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('print-modal-overlay')) {
+        closePrintModal();
+      }
+    });
+
+  </script>
+</body>
+</html>

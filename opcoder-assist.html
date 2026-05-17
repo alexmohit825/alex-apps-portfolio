@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpCoder Assist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              navy: { DEFAULT: '#1B3A6B', light: '#2A4F8F', dark: '#132B52' },
+              teal: { DEFAULT: '#0E7C7B', light: '#10918F', dark: '#0A5E5D' },
+              bg: { DEFAULT: '#EEF2F7', card: '#FFFFFF', alt: '#F8FAFC', blue: '#EFF6FF' },
+              border: { DEFAULT: '#CBD5E1' },
+              txt: { DEFAULT: '#1E293B', muted: '#64748B' },
+              success: '#16A34A',
+              warning: '#D97706',
+              danger: '#DC2626',
+              purple: { DEFAULT: '#7C3AED', light: '#8B5CF6' },
+            },
+            fontFamily: {
+              sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+              mono: ['Menlo', 'Monaco', 'Consolas', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --navy: #1B3A6B;
+        --teal: #0E7C7B;
+        --bg: #EEF2F7;
+        --card: #FFFFFF;
+        --border: #CBD5E1;
+        --txt: #1E293B;
+        --muted: #64748B;
+        --success: #16A34A;
+        --warning: #D97706;
+        --danger: #DC2626;
+        --purple: #7C3AED;
+      }
+      * { box-sizing: border-box; }
+      body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--txt); margin: 0; }
+      textarea:focus { outline: none; }
+      .step-line { height: 3px; flex: 1; min-width: 20px; }
+      .toast-enter { animation: slideInRight 0.35s ease-out; }
+      .toast-exit { animation: slideOutRight 0.3s ease-in forwards; }
+      @keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+      .fade-in { animation: fadeIn 0.4s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+      .scroll-smooth { scroll-behavior: smooth; }
+    </style>
+  </head>
+  <body data-id="0" class="min-h-screen scroll-smooth">
+    <app-icon data-id="1" hidden data-icon="heart-pulse" data-palette="Blue"></app-icon>
+
+    <!-- Toast Container -->
+    <div data-id="2" id="toast-container-t1a2" class="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none" style="max-width:380px;"></div>
+
+    <!-- HEADER -->
+    <header data-id="3" id="header-h1x9" class="w-full bg-navy text-white" style="min-height:64px;">
+      <div data-id="4" class="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-6 py-3">
+        <div data-id="5" class="flex items-center gap-3">
+          <svg data-id="6" class="w-8 h-8 text-white flex-shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect data-id="7" x="2" y="2" width="28" height="28" rx="6" fill="#0E7C7B"/>
+            <rect data-id="8" x="13" y="7" width="6" height="18" rx="1.5" fill="white"/>
+            <rect data-id="9" x="7" y="13" width="18" height="6" rx="1.5" fill="white"/>
+          </svg>
+          <h1 data-id="10" class="text-lg md:text-xl font-bold tracking-tight">OpCoder Assist</h1>
+        </div>
+        <div data-id="11" class="flex items-center gap-3 md:gap-4">
+          <span data-id="12" class="hidden sm:inline text-white/70 text-xs md:text-sm">Powered by Microsoft Copilot</span>
+          <button data-id="13" id="clear-all-btn-c4x7" class="text-xs bg-white/15 hover:bg-white/25 text-white px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5">
+            <i data-id="14" data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span data-id="15" class="hidden sm:inline">Clear All</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- PROGRESS BAR -->
+    <div data-id="16" id="progress-bar-p2b8" class="w-full bg-white border-b border-border shadow-sm">
+      <div data-id="17" class="max-w-4xl mx-auto px-4 md:px-6 py-4">
+        <div data-id="18" class="flex items-center justify-center">
+          <!-- Step 1 -->
+          <div data-id="19" class="flex flex-col items-center" data-step="1">
+            <div data-id="20" id="step-circle-1" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-teal text-white transition-all">1</div>
+            <span data-id="21" class="text-xs mt-1.5 font-medium text-txt text-center hidden sm:block">Paste Op Note</span>
+          </div>
+          <div data-id="22" id="step-line-1-2" class="step-line bg-gray-200 mx-2 md:mx-4 rounded transition-all"></div>
+          <!-- Step 2 -->
+          <div data-id="23" class="flex flex-col items-center" data-step="2">
+            <div data-id="24" id="step-circle-2" class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-gray-200 text-gray-500 transition-all">2</div>
+            <span data-id="25" class="text-xs mt-1.5 font-medium text-txt/60 text-center hidden sm:block">Build Prompt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <main data-id="26" class="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8 flex flex-col gap-6 md:gap-8">
+
+      <!-- SECTION A — Paste Op Note -->
+      <section data-id="27" id="section-a-k7m3" class="bg-white rounded-xl shadow-md border-l-4 border-navy p-5 md:p-6 fade-in">
+        <div data-id="28" class="mb-4">
+          <h2 data-id="29" class="text-base md:text-lg font-bold text-navy flex items-center gap-2">
+            <i data-id="30" data-lucide="file-text" class="w-5 h-5 text-navy"></i>
+            Step 1 — Paste Operative Note
+          </h2>
+          <p data-id="31" class="text-sm text-txt-muted mt-1">Paste the complete de-identified operative report below.</p>
+        </div>
+
+        <!-- PHI Warning -->
+        <div data-id="32" id="phi-warning-w3k5" class="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+          <i data-id="33" data-lucide="alert-triangle" class="w-5 h-5 text-warning flex-shrink-0 mt-0.5"></i>
+          <p data-id="34" class="text-xs md:text-sm text-amber-800 font-medium">Remove all PHI before pasting: patient name, DOB, MRN, provider name, and dates of service.</p>
+        </div>
+
+        <!-- Op Note Textarea -->
+        <div data-id="35" class="relative">
+          <textarea data-id="36" id="op-note-ta" class="w-full min-h-[280px] resize-y font-mono text-sm border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-teal/40 focus:border-teal transition-colors placeholder:text-gray-400" placeholder="Paste the full operative report here — including Pre-op Diagnosis, Post-op Diagnosis, Procedure Performed header, full narrative body, Findings, Specimens, and Complications..."></textarea>
+          <div data-id="37" id="char-count-d2f5" class="text-right text-xs text-txt-muted mt-1.5">0 characters</div>
+          <div data-id="38" id="op-note-error-e1r3" class="text-sm text-danger font-medium mt-1 hidden">
+            <i data-id="39" data-lucide="alert-circle" class="w-4 h-4 inline mr-1"></i>Please paste an operative note first.
+          </div>
+        </div>
+
+        <!-- Build Prompt Button -->
+        <button data-id="40" id="build-prompt-btn-b5n9" class="w-full mt-4 bg-navy hover:bg-navy-light text-white font-bold py-3 px-6 rounded-lg text-base flex items-center justify-center gap-2 transition-colors min-h-[48px]">
+          <i data-id="41" data-lucide="cog" class="w-5 h-5"></i>
+          <span data-id="42" id="build-prompt-text-t3k8">Build Prompt →</span>
+        </button>
+      </section>
+
+      <!-- SECTION B — Prompt Panel (hidden initially) -->
+      <section data-id="43" id="section-b-j6p4" class="bg-white rounded-xl shadow-md border-l-4 border-teal p-5 md:p-6 hidden">
+        <div data-id="44" class="flex items-start justify-between mb-4">
+          <h2 data-id="45" class="text-base md:text-lg font-bold text-teal flex items-center gap-2">
+            <i data-id="46" data-lucide="sparkles" class="w-5 h-5 text-teal"></i>
+            Step 2 — Your Copilot Prompt is Ready
+          </h2>
+          <button data-id="47" id="close-section-b-x2v6" class="text-gray-400 hover:text-gray-600 p-1 rounded transition-colors">
+            <i data-id="48" data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Instructions Box -->
+        <div data-id="49" class="bg-bg-blue rounded-lg p-4 mb-4 border border-blue-100">
+          <p data-id="50" class="text-sm font-semibold text-navy mb-2.5">How to analyze your op note in Copilot — 3 simple steps:</p>
+          <div data-id="51" class="flex flex-col gap-2">
+            <div data-id="52" class="flex items-center gap-2.5">
+              <span data-id="53" class="flex-shrink-0 w-6 h-6 rounded-full bg-teal text-white text-xs font-bold flex items-center justify-center">1</span>
+              <span data-id="54" class="text-sm text-txt">Click <strong data-id="55">"Copy Prompt"</strong> below to copy the prompt</span>
+            </div>
+            <div data-id="56" class="flex items-center gap-2.5">
+              <span data-id="57" class="flex-shrink-0 w-6 h-6 rounded-full bg-teal text-white text-xs font-bold flex items-center justify-center">2</span>
+              <span data-id="58" class="text-sm text-txt">Click <strong data-id="59">"Open Copilot →"</strong> to open Microsoft Copilot in a new tab</span>
+            </div>
+            <div data-id="60" class="flex items-center gap-2.5">
+              <span data-id="61" class="flex-shrink-0 w-6 h-6 rounded-full bg-teal text-white text-xs font-bold flex items-center justify-center">3</span>
+              <span data-id="62" class="text-sm text-txt">Click the Copilot chat box and press <kbd data-id="63" class="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-mono border border-gray-200">Ctrl+V</kbd>, then press <kbd data-id="64" class="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-mono border border-gray-200">Enter</kbd></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prompt Textarea -->
+        <textarea data-id="65" id="prompt-ta" class="w-full h-[200px] resize-y font-mono text-xs border border-gray-200 rounded-lg p-3 bg-gray-50 text-txt/80" readonly></textarea>
+
+        <!-- Button Row -->
+        <div data-id="66" class="flex flex-col sm:flex-row gap-3 mt-4">
+          <button data-id="67" id="copy-prompt-btn-c8m2" class="flex-1 bg-teal hover:bg-teal-light text-white font-bold px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors min-h-[48px]">
+            <i data-id="68" data-lucide="clipboard-copy" class="w-5 h-5"></i>
+            <span data-id="69" id="copy-prompt-text-t5q1">Copy Prompt</span>
+          </button>
+          <a data-id="70" href="https://copilot.microsoft.com" target="_blank" rel="noopener noreferrer" id="open-copilot-link-a1z9" class="flex-1 bg-purple hover:bg-purple-light text-white font-bold px-6 py-3 rounded-lg inline-flex items-center justify-center gap-2 transition-colors min-h-[48px] no-underline text-center">
+            <i data-id="71" data-lucide="external-link" class="w-5 h-5"></i>
+            <span data-id="72">Open Copilot →</span>
+          </a>
+        </div>
+
+        <div data-id="73" id="copy-status-s4w7" class="hidden mt-2">
+          <span data-id="74" class="inline-flex items-center gap-1 text-xs font-medium text-success bg-green-50 px-2.5 py-1 rounded-full">
+            <i data-id="75" data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+            Prompt copied to clipboard
+          </span>
+        </div>
+      </section>
+    </main>
+
+    <footer data-id="76" id="footer-f1x8" class="w-full text-center py-6 text-sm text-txt-muted border-t border-gray-200 bg-white mt-4">
+      Made by Copilot
+    </footer>
+
+    <script>
+      lucide.createIcons();
+
+      // ═══════ STATE ═══════
+      let currentStep = 1;
+      let copyTimeout = null;
+
+      // ═══════ DOM REFS ═══════
+      const opNoteTa = document.getElementById('op-note-ta');
+      const promptTa = document.getElementById('prompt-ta');
+      const charCount = document.getElementById('char-count-d2f5');
+      const opNoteError = document.getElementById('op-note-error-e1r3');
+      const buildPromptBtn = document.getElementById('build-prompt-btn-b5n9');
+      const buildPromptText = document.getElementById('build-prompt-text-t3k8');
+      const sectionB = document.getElementById('section-b-j6p4');
+      const closeSectionBBtn = document.getElementById('close-section-b-x2v6');
+      const copyPromptBtn = document.getElementById('copy-prompt-btn-c8m2');
+      const copyPromptText = document.getElementById('copy-prompt-text-t5q1');
+      const copyStatus = document.getElementById('copy-status-s4w7');
+      const clearAllBtn = document.getElementById('clear-all-btn-c4x7');
+      const toastContainer = document.getElementById('toast-container-t1a2');
+
+      // ═══════ PROGRESS BAR ═══════
+      function updateProgress(step) {
+        currentStep = step;
+        for (let i = 1; i <= 2; i++) {
+          const circle = document.getElementById('step-circle-' + i);
+          const label = circle.parentElement.querySelector('span');
+          if (i < step) {
+            circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-navy text-white transition-all';
+            circle.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+            if (label) { label.className = 'text-xs mt-1.5 font-medium text-navy text-center hidden sm:block'; }
+          } else if (i === step) {
+            circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-teal text-white transition-all ring-4 ring-teal/20';
+            circle.textContent = i;
+            if (label) { label.className = 'text-xs mt-1.5 font-semibold text-teal text-center hidden sm:block'; }
+          } else {
+            circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-gray-200 text-gray-500 transition-all';
+            circle.textContent = i;
+            if (label) { label.className = 'text-xs mt-1.5 font-medium text-txt/60 text-center hidden sm:block'; }
+          }
+        }
+        // Update line
+        const line = document.getElementById('step-line-1-2');
+        if (step > 1) {
+          line.className = 'step-line bg-navy mx-2 md:mx-4 rounded transition-all';
+        } else {
+          line.className = 'step-line bg-gray-200 mx-2 md:mx-4 rounded transition-all';
+        }
+      }
+
+      // ═══════ TOAST ═══════
+      function showToast(message, type) {
+        const colors = { success: 'bg-green-600', error: 'bg-red-600', warning: 'bg-amber-600' };
+        const icons = { success: 'check-circle', error: 'alert-circle', warning: 'alert-triangle' };
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto flex items-center gap-2.5 text-white text-sm font-medium px-4 py-3 rounded-lg shadow-lg toast-enter ' + (colors[type] || colors.success);
+        toast.innerHTML = '<i data-lucide="' + (icons[type] || icons.success) + '" class="w-5 h-5 flex-shrink-0"></i><span class="flex-1">' + message + '</span><button class="toast-close-btn ml-2 hover:opacity-70"><i data-lucide="x" class="w-4 h-4"></i></button>';
+        toastContainer.appendChild(toast);
+        lucide.createIcons({ nodes: [toast] });
+        const closeBtn = toast.querySelector('.toast-close-btn');
+        closeBtn.addEventListener('click', function () { dismissToast(toast); });
+        setTimeout(function () { dismissToast(toast); }, 5000);
+      }
+      function dismissToast(toast) {
+        if (!toast.parentNode) return;
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+      }
+
+      // ═══════ CHARACTER COUNTER ═══════
+      opNoteTa.addEventListener('input', function () {
+        const len = opNoteTa.value.length;
+        charCount.textContent = len.toLocaleString() + ' characters';
+        if (len > 0) {
+          opNoteError.classList.add('hidden');
+          opNoteTa.classList.remove('border-danger');
+        }
+      });
+
+      // ═══════ BUILD PROMPT ═══════
+      function buildPrompt(opNoteText) {
+        return `IMPORTANT: This is a real clinical medical coding task for an actual surgical operative report. This is NOT software development, app development, or programming. Do not ask any clarifying questions. Proceed immediately with the medical coding analysis below.
+
+You are a nationally certified professional medical coder (CPC, CCS) with 20+ years of experience in surgical CPT coding across all specialties. You have deep expertise in AMA CPT guidelines, CMS coding policies, NCCI edits, global surgical package rules, separate procedure guidelines, modifier usage, and add-on code rules.
+
+Your task is to perform a comprehensive, multi-pass analysis of the operative report below and identify EVERY billable CPT code supported by the documentation.
+
+PASS 1 — READ THE FULL DOCUMENT FIRST
+Before identifying any codes, read the entire operative report from beginning to end. Do not stop at the "Procedure Performed" header. The header is often incomplete. The billable procedures are found throughout the body of the report.
+
+PASS 2 — IDENTIFY ALL DISTINCT BILLABLE SERVICES
+Look for and code every one of the following if documented:
+• Primary surgical procedure(s)
+• All secondary and concurrent procedures performed through separate incisions or at separate anatomical sites
+• Add-on codes (+codes) required by AMA guidelines to accompany primary codes
+• Bilateral procedures — apply Modifier 50 or separate LT/RT codes as appropriate
+• Graft harvest procedures — donor site work is separately billable
+• Wound closure: layered closure, complex repair, or flap closure if beyond simple closure
+• Drain or catheter placement if separately billable
+• Nerve monitoring, fluoroscopy, or imaging guidance if separately billable
+• Any unlisted procedure codes where no specific CPT exists
+
+PASS 3 — APPLY CODING RULES PRECISELY
+• Apply NCCI edits — identify column 1/column 2 code pairs and determine if a modifier overcomes the edit
+• Do not bundle procedures that qualify as separately billable under Modifier 59
+• Do not code procedures marked as "separate procedure" when performed as part of a larger procedure in the same anatomical area
+• Count "Times Performed" exactly — if performed at multiple distinct sites, record the count accurately
+
+PASS 4 — ASSIGN ALL MODIFIERS
+For every code determine all applicable modifiers:
+-LT / -RT: Laterality
+-50: Bilateral procedure
+-51: Multiple procedures (attach to secondary procedures, not add-on codes)
+-59: Distinct procedural service
+-22: Increased procedural complexity
+-62: Two surgeons
+-78: Return to OR for related complication
+-79: Unrelated procedure during postoperative period
+If no modifiers apply, write "None."
+
+OUTPUT FORMAT — MANDATORY
+Present ALL identified codes in a markdown table with EXACTLY these six column headers:
+
+| CPT Code | Description | Times Performed | Modifier(s) | Rationale | Confidence |
+
+Column rules:
+- CPT Code: 5-digit CPT code. Add-on codes prefixed with (+).
+- Description: Official AMA short descriptor.
+- Times Performed: Integer. How many times this code applies in this encounter. If a procedure was not actually performed, do not include it in the table at all. Only list codes for procedures that were actually carried out.
+- Modifier(s): All applicable modifiers comma-separated, or "None".
+- Rationale: Quote or closely paraphrase the specific op note language supporting this code.
+- Confidence: Only include codes you would rate as HIGH confidence — meaning the procedure is unambiguously and explicitly documented in the operative report. Do NOT include MEDIUM or LOW confidence codes in the table at all. If you are not certain a procedure was clearly performed and documented, exclude it entirely. Do not flag or list uncertain codes. Every code in the table must have Confidence = HIGH.
+
+After the table, write a section called "Additional Coding Notes" covering only:
+1. Add-on code relationships (which add-on code pairs with which primary code)
+2. NCCI bundling conflicts identified and how to resolve them
+3. Codes requiring special documentation or operative report attachment for payer review
+
+Do NOT list codes that were considered but excluded. Only show codes that are being recommended for billing.
+
+CRITICAL: Do NOT skip the body of the operative note. Do NOT omit add-on codes. Do NOT bundle separately billable procedures. Do NOT include HCPCS Level II supply or implant codes (L-codes, A-codes, C-codes, etc.). Include CPT procedure codes only. Do NOT include any CPT code with a Times Performed value of 0. Every code in the table must have been actually performed during this operative encounter with a Times Performed value of 1 or greater. Only output HIGH confidence CPT codes. Do not output MEDIUM or LOW confidence codes under any circumstances. If a code cannot be rated HIGH confidence based on clear documentation, exclude it from the table entirely.
+
+[OPERATIVE REPORT — READ THE COMPLETE DOCUMENT INCLUDING ALL SECTIONS]
+---
+` + opNoteText + '\n---\n[END OF OPERATIVE REPORT]';
+      }
+
+      buildPromptBtn.addEventListener('click', function () {
+        const opNote = opNoteTa.value.trim();
+        if (!opNote) {
+          opNoteTa.classList.add('border-danger');
+          opNoteError.classList.remove('hidden');
+          opNoteTa.focus();
+          showToast('Please paste an operative note first.', 'error');
+          return;
+        }
+        const prompt = buildPrompt(opNote);
+        promptTa.value = prompt;
+        sectionB.classList.remove('hidden');
+        sectionB.classList.add('fade-in');
+        updateProgress(2);
+        buildPromptText.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="#16A34A" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> Prompt Built — Rebuild';
+        showToast('Prompt built successfully! Copy it and open Copilot.', 'success');
+        setTimeout(function () {
+          sectionB.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          setTimeout(function () { promptTa.select(); }, 400);
+        }, 100);
+      });
+
+      // ═══════ CLOSE SECTION B ═══════
+      closeSectionBBtn.addEventListener('click', function () {
+        sectionB.classList.add('hidden');
+      });
+
+      // ═══════ COPY PROMPT ═══════
+      copyPromptBtn.addEventListener('click', function () {
+        promptTa.select();
+        document.execCommand('copy');
+        copyPromptText.innerHTML = '<svg class="w-4 h-4 inline" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> Copied!';
+        copyStatus.classList.remove('hidden');
+        showToast('Prompt copied to clipboard!', 'success');
+        if (copyTimeout) clearTimeout(copyTimeout);
+        copyTimeout = setTimeout(function () {
+          copyPromptText.textContent = 'Copy Prompt';
+          copyStatus.classList.add('hidden');
+          lucide.createIcons({ nodes: [copyPromptBtn] });
+        }, 3000);
+      });
+
+      // ═══════ CLEAR ALL ═══════
+      clearAllBtn.addEventListener('click', function () {
+        if (!window.confirm('Clear all data and start over?')) return;
+        opNoteTa.value = '';
+        promptTa.value = '';
+        charCount.textContent = '0 characters';
+        opNoteError.classList.add('hidden');
+        opNoteTa.classList.remove('border-danger');
+        sectionB.classList.add('hidden');
+        buildPromptText.innerHTML = 'Build Prompt →';
+        updateProgress(1);
+        showToast('All data cleared. Ready for a new operative note.', 'success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      // Initialize progress
+      updateProgress(1);
+    </script>
+  </body>
+</html>

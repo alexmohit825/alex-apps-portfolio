@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Spine Surgeon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      colors: {
+        navy: { 50:'#f0f2f8', 100:'#e0e4f0', 200:'#c1c9e1', 300:'#8b96bf', 400:'#5a6a9e', 500:'#3a4d7c', 600:'#2a3a5e', 700:'#1f2d4a', 800:'#1a1a2e', 900:'#12121f' },
+        clinical: { bg:'#f8f9fa', card:'#ffffff', border:'#e2e8f0' },
+        risk: { low:'#28a745', moderate:'#ffc107', high:'#fd7e14', critical:'#dc3545' },
+        info: { blue:'#3b82f6', light:'#eff6ff' }
+      }
+    }
+  }
+};
+</script>
+<style>
+:root { --navy:#1a1a2e; --card:#ffffff; --bg:#f8f9fa; --border:#e2e8f0; --low:#28a745; --mod:#ffc107; --high:#fd7e14; --crit:#dc3545; }
+* { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg); color: #1f2937; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #c1c9e1; border-radius: 3px; }
+.sidebar { width: 340px; min-width: 340px; background: var(--card); border-right: 1px solid var(--border); height: calc(100vh - 56px); overflow-y: auto; position: sticky; top: 56px; }
+.sidebar-section { border-bottom: 1px solid var(--border); padding: 16px; }
+.sidebar-section h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #5a6a9e; margin: 0 0 12px 0; }
+.sidebar label { display: block; font-size: 12px; font-weight: 500; color: #374151; margin-bottom: 4px; }
+.sidebar input[type="text"], .sidebar input[type="number"], .sidebar select { width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #f8f9fa; outline: none; margin-bottom: 8px; }
+.sidebar input:focus, .sidebar select:focus { border-color: #5a6a9e; box-shadow: 0 0 0 2px rgba(90,106,158,0.15); }
+.sidebar .chk-group { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 8px; }
+.sidebar .chk-group label { display: flex; align-items: center; gap: 4px; font-size: 12px; margin-bottom: 0; cursor: pointer; }
+.sidebar .chk-group input[type="checkbox"] { accent-color: #3a4d7c; }
+.range-wrap { display: flex; align-items: center; gap: 8px; }
+.range-wrap input[type="range"] { flex: 1; accent-color: #3a4d7c; }
+.range-val { min-width: 36px; text-align: right; font-size: 13px; font-weight: 600; color: var(--navy); }
+.tab-btn { padding: 8px 16px; font-size: 13px; font-weight: 500; border: none; background: transparent; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+.tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); font-weight: 600; }
+.tab-btn:hover:not(.active) { color: #374151; }
+.metric-card { background: var(--card); border-radius: 12px; padding: 16px 20px; border: 1px solid var(--border); }
+.metric-card .mc-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 4px; }
+.metric-card .mc-val { font-size: 24px; font-weight: 700; }
+.risk-low { color: var(--low); }
+.risk-moderate { color: var(--mod); }
+.risk-high { color: var(--high); }
+.risk-critical { color: var(--crit); }
+.risk-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.risk-badge.low { background: #d4edda; color: #155724; }
+.risk-badge.moderate { background: #fff3cd; color: #856404; }
+.risk-badge.high { background: #ffe0cc; color: #7c3a00; }
+.risk-badge.critical { background: #f8d7da; color: #721c24; }
+.card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); margin-bottom: 16px; }
+.card h4 { font-size: 14px; font-weight: 700; color: var(--navy); margin: 0 0 12px 0; display: flex; align-items: center; gap: 6px; }
+.section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #5a6a9e; margin: 20px 0 12px 0; }
+.proc-tag { display: inline-flex; align-items: center; gap: 4px; background: #e8f5e9; color: #1b5e20; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 500; margin: 2px; }
+.ind-item { display: flex; align-items: flex-start; gap: 6px; font-size: 13px; margin-bottom: 6px; }
+.ind-met { color: var(--low); }
+.ind-unmet { color: #ccc; }
+.opt-item { font-size: 13px; margin-bottom: 4px; padding-left: 16px; position: relative; }
+.opt-item::before { content: '•'; position: absolute; left: 2px; color: #5a6a9e; font-weight: 700; }
+.doc-output { background: #f1f3f5; border-radius: 10px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; max-height: 500px; overflow-y: auto; border: 1px solid var(--border); }
+.gen-btn { background: var(--navy); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.gen-btn:hover { background: #2a3a5e; }
+.copy-btn, .dl-btn { background: #e2e8f0; color: #374151; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; margin-right: 6px; }
+.copy-btn:hover, .dl-btn:hover { background: #cbd5e1; }
+.warn-box { background: #fff3cd; border-left: 3px solid var(--mod); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 12px; color: #856404; margin-bottom: 8px; }
+.info-box { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 12px; color: #1e40af; margin-bottom: 8px; }
+.success-box { background: #d4edda; border-left: 3px solid var(--low); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 12px; color: #155724; margin-bottom: 8px; }
+.error-box { background: #f8d7da; border-left: 3px solid var(--crit); padding: 10px 14px; border-radius: 0 8px 8px 0; font-size: 12px; color: #721c24; margin-bottom: 8px; }
+table.data-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.data-tbl th { background: #f1f3f5; text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #5a6a9e; border-bottom: 2px solid var(--border); }
+table.data-tbl td { padding: 8px 12px; border-bottom: 1px solid #f1f3f5; }
+table.data-tbl tr:hover td { background: #f8f9fa; }
+.expand-toggle { cursor: pointer; font-size: 13px; font-weight: 600; color: #5a6a9e; display: flex; align-items: center; gap: 4px; margin: 12px 0 6px 0; }
+.expand-content { display: none; padding: 8px 0; }
+.expand-content.open { display: block; }
+.payer-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 16px; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.dot-green { background: var(--low); }
+.dot-yellow { background: var(--mod); }
+.dot-red { background: var(--crit); }
+.dot-orange { background: var(--high); }
+@media (max-width: 1024px) {
+  .sidebar { width: 280px; min-width: 280px; }
+}
+@media (max-width: 768px) {
+  .app-layout { flex-direction: column !important; }
+  .sidebar { width: 100%; min-width: 100%; height: auto; position: relative; top: 0; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+  .main-content { width: 100% !important; }
+}
+.modifier-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+.modifier-row .mod-name { min-width: 100px; font-weight: 500; }
+.modifier-row .mod-val { font-weight: 600; }
+.doc-form label { font-size: 12px; font-weight: 500; color: #374151; display: block; margin-bottom: 3px; }
+.doc-form input, .doc-form select, .doc-form textarea { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #f8f9fa; outline: none; margin-bottom: 10px; font-family: 'Inter', sans-serif; }
+.doc-form textarea { min-height: 60px; resize: vertical; }
+.doc-form input:focus, .doc-form select:focus, .doc-form textarea:focus { border-color: #5a6a9e; }
+#mobile-sidebar-btn { display: none; }
+@media (max-width: 768px) {
+  #mobile-sidebar-btn { display: inline-flex; }
+}
+</style>
+</head>
+<body data-id="0">
+<app-icon data-id="1" hidden data-icon="activity" data-palette="Blue"></app-icon>
+<app-disclaimer data-id="2" intent="medical"></app-disclaimer>
+
+<!-- HEADER -->
+<header data-id="3" style="background:var(--navy); height:56px; display:flex; align-items:center; padding:0 20px; position:sticky; top:0; z-index:50;">
+  <div data-id="4" style="display:flex; align-items:center; gap:10px; flex:1;">
+    <span data-id="5" style="font-size:22px;">🦴</span>
+    <div data-id="6">
+      <div data-id="7" style="color:white; font-size:16px; font-weight:700; line-height:1.2;">AI Spine Surgeon</div>
+      <div data-id="8" style="color:#8b96bf; font-size:10px; font-weight:500; letter-spacing:0.04em;">Clinical Intelligence Platform for Spine Surgery</div>
+    </div>
+  </div>
+  <button data-id="9" id="mobile-sidebar-btn" style="background:none; border:none; color:white; cursor:pointer; padding:6px;">
+    <i data-id="10" data-lucide="menu" class="w-5 h-5"></i>
+  </button>
+</header>
+
+<div data-id="11" class="app-layout" style="display:flex; min-height:calc(100vh - 56px);">
+
+<!-- SIDEBAR -->
+<aside data-id="12" class="sidebar" id="sidebar-panel">
+  <!-- Patient Profile -->
+  <div data-id="13" class="sidebar-section">
+    <h3 data-id="14"><i data-id="15" data-lucide="user" class="w-3 h-3" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Patient Profile</h3>
+    <label data-id="16">Patient Name</label>
+    <input data-id="17" type="text" id="inp-name" value="Jane Doe" />
+    <label data-id="18">MRN</label>
+    <input data-id="19" type="text" id="inp-mrn" value="MRN-0001" />
+    <label data-id="20">DOB</label>
+    <input data-id="21" type="text" id="inp-dob" value="01/15/1960" />
+    <div data-id="22" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div data-id="23"><label data-id="24">Age</label><input data-id="25" type="number" id="inp-age" value="65" min="18" max="100" /></div>
+      <div data-id="26"><label data-id="27">Sex</label><select data-id="28" id="inp-sex"><option data-id="29">Female</option><option data-id="30">Male</option></select></div>
+    </div>
+    <label data-id="31">BMI <span data-id="32" class="range-val" id="bmi-val">28.5</span></label>
+    <div data-id="33" class="range-wrap"><input data-id="34" type="range" id="inp-bmi" min="15" max="55" step="0.5" value="28.5" /></div>
+    <div data-id="35" style="margin-top:8px;">
+      <label data-id="36">ASA Class</label>
+      <select data-id="37" id="inp-asa"><option data-id="38" value="1">ASA 1</option><option data-id="39" value="2" selected>ASA 2</option><option data-id="40" value="3">ASA 3</option><option data-id="41" value="4">ASA 4</option><option data-id="42" value="5">ASA 5</option></select>
+    </div>
+  </div>
+  <!-- Comorbidities -->
+  <div data-id="43" class="sidebar-section">
+    <h3 data-id="44"><i data-id="45" data-lucide="heart-pulse" class="w-3 h-3" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Comorbidities</h3>
+    <div data-id="46" class="chk-group">
+      <label data-id="47"><input data-id="48" type="checkbox" id="cmb-smoking" /> Active Smoker</label>
+      <label data-id="49"><input data-id="50" type="checkbox" id="cmb-diabetes" /> Diabetes</label>
+      <label data-id="51"><input data-id="52" type="checkbox" id="cmb-osteoporosis" /> Osteoporosis</label>
+      <label data-id="53"><input data-id="54" type="checkbox" id="cmb-prior" /> Prior Spine Surgery</label>
+      <label data-id="55"><input data-id="56" type="checkbox" id="cmb-anticoag" /> Anticoagulation</label>
+    </div>
+    <label data-id="57" style="font-size:11px;color:#6b7280;margin-top:4px;">Other Comorbidities</label>
+    <div data-id="58" class="chk-group">
+      <label data-id="59"><input data-id="60" type="checkbox" id="cmb-depression" /> Depression</label>
+      <label data-id="61"><input data-id="62" type="checkbox" id="cmb-renal" /> Renal Disease</label>
+      <label data-id="63"><input data-id="64" type="checkbox" id="cmb-ra" /> Rheumatoid Arthritis</label>
+    </div>
+  </div>
+  <!-- Spine Pathology -->
+  <div data-id="65" class="sidebar-section">
+    <h3 data-id="66"><i data-id="67" data-lucide="bone" class="w-3 h-3" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Spine Pathology</h3>
+    <label data-id="68">Diagnosis</label>
+    <select data-id="69" id="inp-dx">
+      <option data-id="70" value="cervical_spondylotic_myelopathy">Cervical Spondylotic Myelopathy (CSM)</option>
+      <option data-id="71" value="cervical_disc_herniation">Cervical Disc Herniation / Radiculopathy</option>
+      <option data-id="72" value="lumbar_stenosis">Lumbar Spinal Stenosis</option>
+      <option data-id="73" value="lumbar_disc_herniation">Lumbar Disc Herniation</option>
+      <option data-id="74" value="degenerative_spondylolisthesis">Degenerative Spondylolisthesis</option>
+      <option data-id="75" value="adult_spinal_deformity">Adult Spinal Deformity (ASD)</option>
+      <option data-id="76" value="spinal_metastatic_disease">Spinal Metastatic Disease</option>
+    </select>
+    <label data-id="77">Level(s) Involved</label>
+    <div data-id="78" class="chk-group" id="levels-group"></div>
+  </div>
+  <!-- Clinical Details -->
+  <div data-id="79" class="sidebar-section">
+    <h3 data-id="80"><i data-id="81" data-lucide="clipboard-list" class="w-3 h-3" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Clinical Details</h3>
+    <label data-id="82">Symptom Duration (months)</label>
+    <input data-id="83" type="number" id="inp-duration" value="6" min="0" max="600" />
+    <div data-id="84" class="chk-group">
+      <label data-id="85"><input data-id="86" type="checkbox" id="chk-myelopathy" /> Myelopathy Signs</label>
+      <label data-id="87"><input data-id="88" type="checkbox" id="chk-neurodef" /> Neurological Deficit</label>
+      <label data-id="89"><input data-id="90" type="checkbox" id="chk-cauda" /> Cauda Equina Syndrome</label>
+    </div>
+    <label data-id="91" style="margin-top:6px;">Conservative Treatments Tried</label>
+    <div data-id="92" class="chk-group" id="conservative-group"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div data-id="93" class="main-content" style="flex:1; overflow-y:auto; height:calc(100vh - 56px);">
+  <!-- TABS -->
+  <div data-id="94" style="background:var(--card); border-bottom:1px solid var(--border); display:flex; overflow-x:auto; padding:0 20px; position:sticky; top:0; z-index:10;">
+    <button data-id="95" class="tab-btn active" data-tab="tab-cds">Clinical Decision Support</button>
+    <button data-id="96" class="tab-btn" data-tab="tab-docs">Documentation Engine</button>
+    <button data-id="97" class="tab-btn" data-tab="tab-cpt">CPT / Billing</button>
+    <button data-id="98" class="tab-btn" data-tab="tab-payer">Payer Navigation</button>
+    <button data-id="99" class="tab-btn" data-tab="tab-arch">Platform Architecture</button>
+  </div>
+
+  <div data-id="100" style="padding:20px; max-width:1100px;">
+
+    <!-- TAB 1: CDS -->
+    <div data-id="101" id="tab-cds" class="tab-panel">
+      <div data-id="102" id="cds-content"></div>
+    </div>
+
+    <!-- TAB 2: DOCS -->
+    <div data-id="103" id="tab-docs" class="tab-panel" style="display:none;">
+      <div data-id="104" class="section-title">Documentation Engine</div>
+      <div data-id="105" class="card">
+        <h4 data-id="106"><i data-id="107" data-lucide="file-text" class="w-4 h-4"></i> Generate Clinical Document</h4>
+        <div data-id="108" class="doc-form">
+          <label data-id="109">Document Type</label>
+          <select data-id="110" id="doc-type">
+            <option data-id="111" value="opnote">Operative Note</option>
+            <option data-id="112" value="hp">H&P</option>
+            <option data-id="113" value="medn">Medical Necessity Statement</option>
+            <option data-id="114" value="appeal">Insurance Appeal Letter</option>
+          </select>
+          <div data-id="115" id="doc-extra-fields"></div>
+          <button data-id="116" class="gen-btn" id="btn-generate-doc"><i data-id="117" data-lucide="file-plus" class="w-4 h-4" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Generate Document</button>
+        </div>
+      </div>
+      <div data-id="118" id="doc-output-wrap" style="display:none;">
+        <div data-id="119" style="display:flex;gap:6px;margin-bottom:8px;">
+          <button data-id="120" class="copy-btn" id="btn-copy-doc"><i data-id="121" data-lucide="copy" class="w-3 h-3" style="display:inline;vertical-align:middle;margin-right:3px;"></i>Copy to Clipboard</button>
+          <button data-id="122" class="dl-btn" id="btn-dl-doc"><i data-id="123" data-lucide="download" class="w-3 h-3" style="display:inline;vertical-align:middle;margin-right:3px;"></i>Download .txt</button>
+        </div>
+        <div data-id="124" class="doc-output" id="doc-output"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CPT -->
+    <div data-id="125" id="tab-cpt" class="tab-panel" style="display:none;">
+      <div data-id="126" class="section-title">CPT Code Recommender</div>
+      <div data-id="127" class="card">
+        <h4 data-id="128"><i data-id="129" data-lucide="hash" class="w-4 h-4"></i> CPT Code Recommender</h4>
+        <div data-id="130" class="doc-form" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div data-id="131"><label data-id="132">Procedure</label><select data-id="133" id="cpt-proc"><option data-id="134" value="acdf">ACDF</option><option data-id="135" value="cervical_disc_replacement">Cervical Disc Replacement</option><option data-id="136" value="posterior_cervical_fusion">Posterior Cervical Fusion</option><option data-id="137" value="laminoplasty">Cervical Laminoplasty</option><option data-id="138" value="lumbar_microdiscectomy">Lumbar Microdiscectomy</option><option data-id="139" value="lumbar_laminectomy">Lumbar Laminectomy</option><option data-id="140" value="tlif">TLIF</option><option data-id="141" value="plif">PLIF</option><option data-id="142" value="xlif">XLIF/LLIF</option><option data-id="143" value="alif">ALIF</option><option data-id="144" value="pso">PSO</option><option data-id="145" value="corpectomy">Corpectomy</option></select></div>
+          <div data-id="146"><label data-id="147">Number of Levels</label><input data-id="148" type="number" id="cpt-levels" value="1" min="1" max="10" /></div>
+        </div>
+        <div data-id="149" class="chk-group" style="margin:8px 0;">
+          <label data-id="150"><input data-id="151" type="checkbox" id="cpt-instru" /> With Instrumentation</label>
+          <label data-id="152"><input data-id="153" type="checkbox" id="cpt-graft" /> With Bone Graft</label>
+          <label data-id="154"><input data-id="155" type="checkbox" id="cpt-bilat" /> Bilateral Decompression</label>
+        </div>
+        <button data-id="156" class="gen-btn" id="btn-cpt-recommend"><i data-id="157" data-lucide="search" class="w-4 h-4" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Recommend CPT Codes</button>
+        <div data-id="158" id="cpt-rec-output" style="margin-top:16px;"></div>
+      </div>
+
+      <div data-id="159" class="section-title">RVU Calculator</div>
+      <div data-id="160" class="card">
+        <h4 data-id="161"><i data-id="162" data-lucide="calculator" class="w-4 h-4"></i> RVU Calculator</h4>
+        <div data-id="163" class="doc-form">
+          <label data-id="164">CPT Codes (comma-separated)</label>
+          <input data-id="165" type="text" id="rvu-input" placeholder="e.g. 22551, 22552, 22842" />
+          <button data-id="166" class="gen-btn" id="btn-rvu-calc"><i data-id="167" data-lucide="calculator" class="w-4 h-4" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Calculate</button>
+        </div>
+        <div data-id="168" id="rvu-output" style="margin-top:16px;"></div>
+      </div>
+
+      <div data-id="169" class="section-title">Bundling Check</div>
+      <div data-id="170" class="card">
+        <h4 data-id="171"><i data-id="172" data-lucide="alert-triangle" class="w-4 h-4"></i> Bundling Check</h4>
+        <div data-id="173" class="doc-form">
+          <label data-id="174">CPT Codes (comma-separated)</label>
+          <input data-id="175" type="text" id="bundle-input" placeholder="e.g. 63047, 22633" />
+          <button data-id="176" class="gen-btn" id="btn-bundle-check"><i data-id="177" data-lucide="shield-check" class="w-4 h-4" style="display:inline;vertical-align:middle;margin-right:4px;"></i> Check Bundling</button>
+        </div>
+        <div data-id="178" id="bundle-output" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PAYER -->
+    <div data-id="179" id="tab-payer" class="tab-panel" style="display:none;">
+      <div data-id="180" class="section-title">Payer Navigation</div>
+      <div data-id="181" class="card">
+        <h4 data-id="182"><i data-id="183" data-lucide="building-2" class="w-4 h-4"></i> Payer Intelligence</h4>
+        <div data-id="184" class="doc-form" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div data-id="185"><label data-id="186">Payer</label><select data-id="187" id="payer-sel"><option data-id="188" value="medicare">Medicare (CMS)</option><option data-id="189" value="united_healthcare">UnitedHealthcare</option><option data-id="190" value="aetna">Aetna</option><option data-id="191" value="cigna">Cigna</option><option data-id="192" value="blue_cross">Blue Cross Blue Shield</option><option data-id="193" value="workers_comp">Workers' Compensation</option></select></div>
+          <div data-id="194"><label data-id="195">Procedure Category</label><select data-id="196" id="payer-cat"><option data-id="197">Cervical Fusion</option><option data-id="198">Lumbar Fusion</option><option data-id="199">Cervical Disc Replacement</option><option data-id="200">Osteotomy</option><option data-id="201">Corpectomy</option><option data-id="202">Cervical Decompression</option><option data-id="203">Lumbar Decompression</option></select></div>
+        </div>
+      </div>
+      <div data-id="204" id="payer-detail"></div>
+      <div data-id="205" class="section-title" style="margin-top:28px;">Payer Comparison Matrix</div>
+      <div data-id="206" style="overflow-x:auto;">
+        <table data-id="207" class="data-tbl" id="payer-compare-tbl"></table>
+      </div>
+    </div>
+
+    <!-- TAB 5: ARCHITECTURE -->
+    <div data-id="208" id="tab-arch" class="tab-panel" style="display:none;">
+      <div data-id="209" class="section-title">Platform Architecture</div>
+      <div data-id="210" class="card">
+        <h4 data-id="211"><i data-id="212" data-lucide="layers" class="w-4 h-4"></i> Module Overview</h4>
+        <div data-id="213" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:8px;" id="arch-modules"></div>
+      </div>
+      <div data-id="214" class="card">
+        <h4 data-id="215"><i data-id="216" data-lucide="database" class="w-4 h-4"></i> Knowledge Base Statistics</h4>
+        <div data-id="217" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;" id="arch-stats"></div>
+      </div>
+      <div data-id="218" class="card">
+        <h4 data-id="219"><i data-id="220" data-lucide="cpu" class="w-4 h-4"></i> Technology Stack</h4>
+        <div data-id="221" id="arch-tech"></div>
+      </div>
+      <div data-id="222" class="card">
+        <h4 data-id="223"><i data-id="224" data-lucide="rocket" class="w-4 h-4"></i> Roadmap</h4>
+        <div data-id="225" id="arch-roadmap"></div>
+      </div>
+    </div>
+
+  </div>
+  <footer data-id="226" style="padding:16px 20px; text-align:center;">
+    <p data-id="227" style="font-size:11px; color:#9ca3af;">Made by Copilot</p>
+  </footer>
+</div>
+</div>
+
+<script>
+// ===== DATA =====
+const PATHOLOGY_CATALOG = {
+  cervical_spondylotic_myelopathy:{name:"Cervical Spondylotic Myelopathy (CSM)",icd10:["M47.12","M47.11","G99.2"],region:"cervical",redFlags:["Progressive gait instability","Hand clumsiness","Hoffman's sign positive","Hyperreflexia/clonus","Bowel/bladder dysfunction"],symptoms:["Neck pain","Upper extremity numbness/weakness","Gait imbalance","Loss of fine motor skills","Lower extremity stiffness"],imaging:["Cord compression on MRI","T2 signal change in spinal cord","Disc-osteophyte complex","Ligamentum flavum hypertrophy","Canal diameter < 13mm"],conservative:["Cervical collar immobilization","Activity modification","Physical therapy","NSAIDs/neuropathic agents"],surgicalIndications:["Progressive myelopathy","Moderate-to-severe cord compression with clinical signs","Functional decline despite conservative care","MRI evidence of cord signal change"],preferredApproaches:["Anterior","Posterior","Combined"],evidence:"AO Spine CSM Guidelines (2017): Surgery recommended for moderate/severe CSM. ACDF for 1-2 levels; corpectomy or posterior for multi-level. Laminoplasty preserves motion."},
+  cervical_disc_herniation:{name:"Cervical Disc Herniation / Radiculopathy",icd10:["M50.12","M50.13","M50.122","M50.123"],region:"cervical",redFlags:["Myelopathy signs","Progressive motor weakness","Gait instability","Bilateral symptoms"],symptoms:["Neck pain radiating to arm","Upper extremity numbness/tingling","Weakness in specific myotome","Pain with neck extension/rotation","Positive Spurling's test"],imaging:["Disc herniation on MRI","Foraminal stenosis","Nerve root compression","Loss of disc height"],conservative:["Cervical collar","Oral steroids (Medrol dose pack)","Physical therapy","Cervical epidural steroid injection","NSAIDs"],surgicalIndications:["Progressive motor deficit","Failure of 6-12 weeks conservative care","Intractable radicular pain","Myelopathy signs"],preferredApproaches:["Anterior"],evidence:"ACDF is gold standard for 1-2 level cervical radiculopathy. Disc replacement option in select patients."},
+  lumbar_stenosis:{name:"Lumbar Spinal Stenosis",icd10:["M48.06","M48.07","M48.061","M48.062"],region:"lumbar",redFlags:["Progressive neurogenic claudication","Cauda equina syndrome","Fixed neurological deficit","Saddle anesthesia"],symptoms:["Neurogenic claudication","Low back pain","Bilateral lower extremity pain/numbness","Relief with flexion (shopping cart sign)","Difficulty standing/walking"],imaging:["Central canal stenosis < 100mm²","Ligamentum flavum hypertrophy","Facet hypertrophy","Disc bulge/protrusion","Lateral recess narrowing"],conservative:["Physical therapy (flexion-based)","Epidural steroid injections","NSAIDs","Gabapentin/pregabalin","Activity modification"],surgicalIndications:["Failure of 3-6 months conservative treatment","Progressive neurological deficit","Severe functional limitation (walking < 1 block)","Cauda equina syndrome (emergent)"],preferredApproaches:["Posterior","Minimally Invasive"],evidence:"SPORT Trial: Surgery superior to conservative care at 4 years for moderate-severe stenosis."},
+  lumbar_disc_herniation:{name:"Lumbar Disc Herniation",icd10:["M51.16","M51.17","M51.26","M51.27"],region:"lumbar",redFlags:["Cauda equina syndrome","Progressive motor deficit","Foot drop","Saddle anesthesia","Bowel/bladder dysfunction"],symptoms:["Radiculopathy (dermatomal)","Low back pain","Positive straight leg raise","Pain worse with sitting/Valsalva","Numbness/tingling in leg"],imaging:["Disc extrusion/sequestration on MRI","Nerve root compression","Loss of disc height","Annular tear (HIZ on MRI)"],conservative:["NSAIDs/oral steroids","Physical therapy","Epidural steroid injection (transforaminal)","Activity modification","Gabapentin/pregabalin"],surgicalIndications:["Cauda equina syndrome (emergent)","Progressive motor deficit","Failure of 6+ weeks conservative care","Intractable pain unresponsive to injections"],preferredApproaches:["Posterior","Minimally Invasive","Endoscopic"],evidence:"SPORT Trial: Discectomy provides faster pain relief vs conservative care."},
+  degenerative_spondylolisthesis:{name:"Degenerative Spondylolisthesis",icd10:["M43.16","M43.17"],region:"lumbar",redFlags:["Progressive slip on dynamic imaging","Neurogenic claudication with instability","Cauda equina syndrome"],symptoms:["Low back pain with extension","Neurogenic claudication","Radiculopathy","Mechanical instability symptoms"],imaging:["Anterolisthesis (Grade I-II typical)","Facet arthropathy","Disc degeneration at slip level","Dynamic instability >3mm translation","Central and foraminal stenosis"],conservative:["Physical therapy (core stabilization)","Bracing","Epidural steroid injections","NSAIDs"],surgicalIndications:["Failure of conservative care","Progressive neurological deficit","Instability on dynamic films","Grade II+ spondylolisthesis with symptoms"],preferredApproaches:["Posterior","Lateral","Combined"],evidence:"SPORT Trial: Fusion + decompression superior to decompression alone. TLIF and PLIF most common."},
+  adult_spinal_deformity:{name:"Adult Spinal Deformity (ASD)",icd10:["M41.06","M41.07","M41.27","M96.5"],region:"thoracolumbar",redFlags:["Progressive sagittal imbalance","Inability to stand erect","Severe functional decline","Neurological deficit"],symptoms:["Chronic back pain","Sagittal imbalance (leaning forward)","Fatigue with standing","Radiculopathy","Difficulty looking straight ahead"],imaging:["SVA > 50mm","PI-LL mismatch > 10°","Pelvic tilt > 25°","Thoracic kyphosis > 60°","Loss of lumbar lordosis","Coronal Cobb angle > 20°"],conservative:["Physical therapy","Bracing (limited in adults)","Pain management","Epidural steroid injections"],surgicalIndications:["SVA > 50mm with symptoms","PI-LL mismatch > 10° with disability","Progressive deformity","Failed conservative care","Neurological deficit from deformity"],preferredApproaches:["Posterior","Combined","Lateral"],evidence:"SRS-Schwab classification guides planning. Osteotomy (PSO, SPO) for rigid deformity."},
+  spinal_metastatic_disease:{name:"Spinal Metastatic Disease",icd10:["C79.49","C79.51","M49.50"],region:"all",redFlags:["Rapid neurological decline","Pathological fracture with cord compression","New bowel/bladder dysfunction","SINS >= 7"],symptoms:["Progressive back pain (worse at night)","Unintentional weight loss","Known cancer history","Weakness/myelopathy","Pain unresponsive to treatment"],imaging:["Lytic or blastic vertebral body lesion","Pathological fracture","Epidural tumor compression","Vertebral body collapse","Multiple levels involved"],conservative:["Radiation therapy","Systemic chemotherapy/immunotherapy","Bracing","Pain management/palliative care","Bisphosphonates/denosumab"],surgicalIndications:["ESCC Grade 2-3 with neurological deficit","Spinal instability (SINS >= 13)","Radioresistant tumor","Pathological fracture with cord compression","Life expectancy > 3 months"],preferredApproaches:["Posterior","Anterior","Combined"],evidence:"NOMS framework: Surgery for high-grade epidural compression + adjuvant radiation."}
+};
+
+const PROCEDURE_CATALOG = {
+  acdf:{name:"Anterior Cervical Discectomy and Fusion (ACDF)",cpt:["22551","22552"],approaches:["Anterior"],timeMin:[60,150],eblMl:[25,100],risks:["Dysphagia","Recurrent laryngeal nerve injury","Esophageal injury","Pseudarthrosis","Adjacent segment disease"],instrumentation:["Anterior plate","PEEK/titanium cage","Allograft/autograft"],region:"cervical"},
+  cervical_disc_replacement:{name:"Cervical Total Disc Replacement (CDR)",cpt:["22856","22858"],approaches:["Anterior"],timeMin:[60,120],eblMl:[25,75],risks:["Dysphagia","Heterotopic ossification","Device migration"],instrumentation:["Artificial disc prosthesis (Mobi-C, Prestige, ProDisc-C)"],region:"cervical"},
+  posterior_cervical_fusion:{name:"Posterior Cervical Fusion",cpt:["22600","22614","22842"],approaches:["Posterior"],timeMin:[120,240],eblMl:[100,500],risks:["Vertebral artery injury","C5 palsy","Wound infection","Screw malposition"],instrumentation:["Lateral mass screws","Pedicle screws","Rods","Bone graft"],region:"cervical"},
+  laminoplasty:{name:"Cervical Laminoplasty",cpt:["63050","63051"],approaches:["Posterior"],timeMin:[90,180],eblMl:[100,300],risks:["C5 palsy","Axial neck pain","Loss of lordosis"],instrumentation:["Laminoplasty plates","Suture anchors"],region:"cervical"},
+  lumbar_microdiscectomy:{name:"Lumbar Microdiscectomy",cpt:["63030","63035"],approaches:["Posterior","MIS"],timeMin:[30,90],eblMl:[25,100],risks:["Dural tear","Recurrent herniation","Nerve root injury"],instrumentation:["Tubular retractor (MIS)","Operating microscope"],region:"lumbar"},
+  lumbar_laminectomy:{name:"Lumbar Laminectomy",cpt:["63047","63048"],approaches:["Posterior"],timeMin:[60,150],eblMl:[50,300],risks:["Dural tear","Instability","Epidural hematoma","Nerve root injury"],instrumentation:["Kerrison rongeurs","Operating microscope"],region:"lumbar"},
+  tlif:{name:"Transforaminal Lumbar Interbody Fusion (TLIF)",cpt:["22633","22634"],approaches:["Posterior","MIS"],timeMin:[120,240],eblMl:[100,500],risks:["Nerve root injury","Dural tear","Cage migration","Pseudarthrosis","Hardware failure"],instrumentation:["Pedicle screws","Rods","Interbody cage","Bone graft"],region:"lumbar"},
+  plif:{name:"Posterior Lumbar Interbody Fusion (PLIF)",cpt:["22630","22632"],approaches:["Posterior"],timeMin:[120,240],eblMl:[150,600],risks:["Nerve root retraction injury","Dural tear","Cage migration","Pseudarthrosis"],instrumentation:["Pedicle screws","Rods","Bilateral interbody cages","Bone graft"],region:"lumbar"},
+  xlif:{name:"Lateral Lumbar Interbody Fusion (XLIF/LLIF)",cpt:["22633","22634"],approaches:["Lateral"],timeMin:[90,180],eblMl:[50,200],risks:["Psoas injury","Lumbar plexus injury","Cage subsidence"],instrumentation:["Lateral retractor","Interbody cage","Neuromonitoring","Supplemental pedicle screws"],region:"lumbar"},
+  alif:{name:"Anterior Lumbar Interbody Fusion (ALIF)",cpt:["22558","22585"],approaches:["Anterior"],timeMin:[90,180],eblMl:[50,500],risks:["Vascular injury","Retrograde ejaculation","Ureteral injury","Cage subsidence"],instrumentation:["Interbody cage (lordotic)","Anterior plate","Bone graft"],region:"lumbar"},
+  pso:{name:"Pedicle Subtraction Osteotomy (PSO)",cpt:["22206","22207"],approaches:["Posterior","Combined"],timeMin:[300,600],eblMl:[1000,4000],risks:["Massive hemorrhage","Rod fracture","Neurological deficit","Pseudarthrosis","PJK"],instrumentation:["Pedicle screws (long construct)","Rods","Cell saver"],region:"thoracolumbar"},
+  corpectomy:{name:"Vertebral Corpectomy",cpt:["63081","63085","63087"],approaches:["Anterior","Posterior","Combined"],timeMin:[180,420],eblMl:[500,3000],risks:["Neurological deficit","Massive hemorrhage","Hardware failure","Graft dislodgement"],instrumentation:["Expandable cage","Anterior plate or pedicle screws","Bone cement"],region:"all"}
+};
+
+const COMORBIDITY_DB = {
+  smoking:{name:"Active Smoking",modifier:1.8,risks:["Pseudarthrosis 2-4x","Wound infection","Pulmonary complications"],optimization:["Smoking cessation >= 4-6 weeks preop","Cotinine verification","Nicotine replacement therapy"]},
+  diabetes:{name:"Diabetes Mellitus",modifier:1.5,risks:["SSI 3-5x increased","Pseudarthrosis","Delayed wound healing"],optimization:["HbA1c < 8% (ideally < 7%)","Perioperative glucose monitoring","Nutrition optimization"]},
+  obesity:{name:"Obesity (BMI >= 30)",modifier:1.4,risks:["Wound complications","Increased OR time","Hardware failure","DVT/PE"],optimization:["Weight loss program","Extended DVT prophylaxis","Nutritional optimization"]},
+  osteoporosis:{name:"Osteoporosis",modifier:1.6,risks:["Screw pullout","Adjacent level fracture","Cage subsidence","PJK"],optimization:["DEXA scan preop","Endocrine consult","Teriparatide consideration","Cement-augmented screws","Vitamin D/calcium"]},
+  anticoagulation:{name:"Anticoagulation",modifier:1.5,risks:["Epidural hematoma","Excessive bleeding","Postop hematoma"],optimization:["Cardiology clearance","Bridge therapy protocol","Hold anticoagulants per guidelines","INR < 1.4"]},
+  depression:{name:"Depression/Anxiety",modifier:1.3,risks:["Worse patient-reported outcomes","Chronic opioid use","Lower satisfaction"],optimization:["PHQ-9 screening","Psychiatric optimization","Opioid risk assessment","Set realistic expectations"]},
+  renal_disease:{name:"Chronic Kidney Disease",modifier:1.6,risks:["Electrolyte imbalance","Coagulopathy","Infection","Delayed healing"],optimization:["Nephrology clearance","Dialysis scheduling","Avoid nephrotoxic agents"]},
+  rheumatoid_arthritis:{name:"Rheumatoid Arthritis",modifier:1.5,risks:["Atlantoaxial instability","Osteoporosis","Infection","Difficult intubation"],optimization:["C-spine flex-ext films","Hold DMARDs/biologics","Anesthesia consult for airway"]}
+};
+
+const CPT_DB = {
+  "22551":{desc:"Arthrodesis anterior interbody cervical (primary)",workRvu:24.51,peRvu:14.86,mpRvu:4.33,totalRvu:43.70,global:90,category:"Cervical Fusion",addOn:false},
+  "22552":{desc:"Arthrodesis anterior interbody cervical (each addl)",workRvu:5.47,peRvu:2.06,mpRvu:0.94,totalRvu:8.47,global:0,category:"Cervical Fusion",addOn:true},
+  "22554":{desc:"Arthrodesis anterior interbody cervical (no plate)",workRvu:20.99,peRvu:13.40,mpRvu:3.63,totalRvu:38.02,global:90,category:"Cervical Fusion",addOn:false},
+  "22856":{desc:"Total disc arthroplasty cervical single",workRvu:24.00,peRvu:14.50,mpRvu:4.20,totalRvu:42.70,global:90,category:"Cervical Disc Replacement",addOn:false},
+  "22858":{desc:"Total disc arthroplasty cervical second level",workRvu:6.50,peRvu:2.50,mpRvu:1.10,totalRvu:10.10,global:0,category:"Cervical Disc Replacement",addOn:true},
+  "22600":{desc:"Arthrodesis posterior cervical",workRvu:20.00,peRvu:12.50,mpRvu:3.45,totalRvu:35.95,global:90,category:"Cervical Fusion",addOn:false},
+  "63020":{desc:"Laminotomy cervical single interspace",workRvu:15.44,peRvu:10.20,mpRvu:2.75,totalRvu:28.39,global:90,category:"Cervical Decompression",addOn:false},
+  "63050":{desc:"Laminoplasty cervical first segment",workRvu:23.50,peRvu:14.00,mpRvu:4.00,totalRvu:41.50,global:90,category:"Cervical Decompression",addOn:false},
+  "63051":{desc:"Laminoplasty cervical each additional segment",workRvu:4.00,peRvu:1.50,mpRvu:0.70,totalRvu:6.20,global:0,category:"Cervical Decompression",addOn:true},
+  "63030":{desc:"Laminotomy lumbar single interspace",workRvu:13.18,peRvu:9.30,mpRvu:2.22,totalRvu:24.70,global:90,category:"Lumbar Decompression",addOn:false},
+  "63035":{desc:"Laminotomy lumbar each additional interspace",workRvu:4.26,peRvu:1.60,mpRvu:0.72,totalRvu:6.58,global:0,category:"Lumbar Decompression",addOn:true},
+  "63047":{desc:"Laminectomy lumbar single segment",workRvu:15.37,peRvu:10.50,mpRvu:2.70,totalRvu:28.57,global:90,category:"Lumbar Decompression",addOn:false},
+  "63048":{desc:"Laminectomy lumbar each additional segment",workRvu:3.63,peRvu:1.35,mpRvu:0.60,totalRvu:5.58,global:0,category:"Lumbar Decompression",addOn:true},
+  "22630":{desc:"Arthrodesis posterior interbody lumbar single (PLIF/TLIF)",workRvu:23.53,peRvu:14.50,mpRvu:4.10,totalRvu:42.13,global:90,category:"Lumbar Fusion",addOn:false},
+  "22632":{desc:"Arthrodesis posterior interbody lumbar each addl",workRvu:5.56,peRvu:2.10,mpRvu:0.96,totalRvu:8.62,global:0,category:"Lumbar Fusion",addOn:true},
+  "22633":{desc:"Arthrodesis combined posterior + interbody lumbar single",workRvu:28.44,peRvu:16.50,mpRvu:4.90,totalRvu:49.84,global:90,category:"Lumbar Fusion",addOn:false},
+  "22634":{desc:"Arthrodesis combined lumbar each additional",workRvu:7.20,peRvu:2.70,mpRvu:1.25,totalRvu:11.15,global:0,category:"Lumbar Fusion",addOn:true},
+  "22558":{desc:"Arthrodesis anterior interbody lumbar (ALIF) single",workRvu:23.50,peRvu:14.30,mpRvu:4.05,totalRvu:41.85,global:90,category:"Lumbar Fusion",addOn:false},
+  "22585":{desc:"Arthrodesis anterior interbody lumbar each addl",workRvu:5.50,peRvu:2.00,mpRvu:0.95,totalRvu:8.45,global:0,category:"Lumbar Fusion",addOn:true},
+  "22842":{desc:"Posterior segmental instrumentation 3-6 segments",workRvu:16.46,peRvu:8.00,mpRvu:2.80,totalRvu:27.26,global:0,category:"Instrumentation",addOn:true},
+  "22843":{desc:"Posterior segmental instrumentation 7-12 segments",workRvu:19.30,peRvu:9.50,mpRvu:3.30,totalRvu:32.10,global:0,category:"Instrumentation",addOn:true},
+  "22845":{desc:"Anterior instrumentation 2-3 segments",workRvu:12.50,peRvu:7.00,mpRvu:2.15,totalRvu:21.65,global:0,category:"Instrumentation",addOn:true},
+  "22206":{desc:"Osteotomy 3 columns thoracic (PSO)",workRvu:38.00,peRvu:20.00,mpRvu:6.50,totalRvu:64.50,global:90,category:"Osteotomy",addOn:false},
+  "22207":{desc:"Osteotomy 3 columns lumbar (PSO)",workRvu:40.00,peRvu:21.00,mpRvu:6.80,totalRvu:67.80,global:90,category:"Osteotomy",addOn:false},
+  "63081":{desc:"Corpectomy cervical single segment",workRvu:30.00,peRvu:17.00,mpRvu:5.20,totalRvu:52.20,global:90,category:"Corpectomy",addOn:false},
+  "63085":{desc:"Corpectomy thoracic single segment",workRvu:33.00,peRvu:18.50,mpRvu:5.70,totalRvu:57.20,global:90,category:"Corpectomy",addOn:false},
+  "63087":{desc:"Corpectomy lumbar single segment",workRvu:34.00,peRvu:19.00,mpRvu:5.85,totalRvu:58.85,global:90,category:"Corpectomy",addOn:false},
+  "20930":{desc:"Allograft morselized",workRvu:1.50,peRvu:0.80,mpRvu:0.25,totalRvu:2.55,global:0,category:"Bone Graft",addOn:true},
+  "20931":{desc:"Allograft structural",workRvu:2.50,peRvu:1.20,mpRvu:0.40,totalRvu:4.10,global:0,category:"Bone Graft",addOn:true},
+  "20936":{desc:"Autograft local (from laminectomy)",workRvu:2.60,peRvu:1.10,mpRvu:0.45,totalRvu:4.15,global:0,category:"Bone Graft",addOn:true},
+  "20937":{desc:"Autograft morselized separate incision (ICBG)",workRvu:4.50,peRvu:2.20,mpRvu:0.75,totalRvu:7.45,global:0,category:"Bone Graft",addOn:true}
+};
+
+const MODIFIERS_DB = {"22":"Increased Procedural Services","50":"Bilateral Procedure","51":"Multiple Procedures","59":"Distinct Procedural Service","62":"Two Surgeons","80":"Assistant Surgeon"};
+
+const BUNDLING_RULES = [
+  {codes:["63047","22633"],warning:"Laminectomy (63047) may bundle with combined fusion (22633). Use modifier -59 if performed at separate level."},
+  {codes:["22630","22633"],warning:"Do not bill 22630 and 22633 for the same level — 22633 includes interbody."},
+  {codes:["63030","63047"],warning:"Don't bill both laminotomy and laminectomy at the same level."}
+];
+
+const PAYER_PROFILES = {
+  medicare:{name:"Medicare (CMS)",authCategories:["Lumbar Fusion","Cervical Disc Replacement"],conservativeWeeks:12,docRequirements:["LCD/NCD compliance","Functional outcome measures (ODI, NDI, VAS)","Documented conservative care failure (min 12 weeks for fusion)","Imaging correlation","BMI documentation if > 40","Smoking status and cessation counseling"],denialReasons:["Insufficient conservative care documentation","Lack of imaging correlation","Missing functional scores","Bundling errors","Medical necessity not established"],appealTips:["Reference specific LCD/NCD criteria","Include pre/post functional scores","Document ALL conservative treatments with dates","Cite peer-reviewed literature","Request peer-to-peer with spine surgeon"],specialRules:["22853 not separately billable with 22633","Bone graft requires source documentation","Modifier -22 needs detailed operative note"]},
+  united_healthcare:{name:"UnitedHealthcare (UHC)",authCategories:["Cervical Fusion","Lumbar Fusion","Cervical Disc Replacement","Osteotomy"],conservativeWeeks:12,docRequirements:["Prior auth number on claim","Clinical policy bulletin compliance","Conservative care docs (6-12 weeks)","Peer-reviewed evidence","Functional limitation docs"],denialReasons:["Prior auth not obtained","Does not meet clinical policy","Experimental/investigational","Insufficient conservative care","Coding errors"],appealTips:["Reference UHC clinical policy bulletin","Include all conservative care dates","Peer-to-peer with UHC medical director","External review if internal exhausted"],specialRules:["CDR limited to specific FDA-approved devices","Multi-level fusion needs extra documentation","BMP may trigger additional review"]},
+  aetna:{name:"Aetna",authCategories:["Lumbar Fusion","Cervical Disc Replacement","Osteotomy"],conservativeWeeks:6,docRequirements:["Aetna CPB compliance","Min 6 weeks conservative care","Imaging within 12 months","Functional outcomes","Neurological exam documentation"],denialReasons:["Experimental/investigational label","Conservative care not exhausted","Imaging not correlated","Missing neuro exam"],appealTips:["Reference Aetna CPB number","Distinguish experimental label from FDA approval","Include systematic reviews","Request external independent review"],specialRules:["Two-level CDR may be experimental","XLIF may need additional justification"]},
+  cigna:{name:"Cigna",authCategories:["Lumbar Fusion","Cervical Fusion","Cervical Disc Replacement"],conservativeWeeks:8,docRequirements:["Cigna coverage policy compliance","Conservative care docs","Imaging correlation","Functional outcome measures"],denialReasons:["Not medically necessary per Cigna","Insufficient conservative care","Bundling/coding errors"],appealTips:["Reference Cigna coverage policy","Detailed conservative care timeline","Peer-to-peer with Cigna medical director"],specialRules:[]},
+  blue_cross:{name:"Blue Cross Blue Shield",authCategories:["Lumbar Fusion","Cervical Disc Replacement","Osteotomy","Corpectomy"],conservativeWeeks:12,docRequirements:["Medical policy compliance (varies by state)","Conservative care per policy","Imaging within 6-12 months","Neuro exam documentation","Functional limitation docs"],denialReasons:["Not meeting state plan criteria","Investigational/experimental","Insufficient documentation","Prior auth failure"],appealTips:["Reference state-specific BCBS policy","Policies vary by state — verify correct one","TEC assessments may be referenced","External review under state law"],specialRules:["Policies vary by state affiliate","Some affiliates exclude BMP"]},
+  workers_comp:{name:"Workers' Compensation",authCategories:["Lumbar Fusion","Cervical Fusion","Cervical Disc Replacement"],conservativeWeeks:12,docRequirements:["Industrial injury documentation","IME/QME report if applicable","ODG/ACOEM treatment guidelines","Utilization review authorization","Conservative care per state WC guidelines"],denialReasons:["UR denial — not meeting guidelines","Causation dispute (pre-existing vs industrial)","Apportionment issues","Second opinion required"],appealTips:["Reference ODG/ACOEM guidelines","Document industrial causation clearly","Request IME with spine specialist","Appeal through state WC board"],specialRules:["State-specific fee schedules (not Medicare)","May require IME before auth","Strict opioid guidelines"]}
+};
+
+const CF = 33.29;
+
+const CERVICAL_LEVELS = ["C2-C3","C3-C4","C4-C5","C5-C6","C6-C7","C7-T1"];
+const LUMBAR_LEVELS = ["L1-L2","L2-L3","L3-L4","L4-L5","L5-S1"];
+const THORACOLUMBAR_LEVELS = ["T10-T11","T11-T12","T12-L1","L1-L2","L2-L3","L3-L4","L4-L5","L5-S1"];
+const ALL_LEVELS = ["C3-C4","C4-C5","C5-C6","C6-C7","C7-T1","T1-T2","T2-T3","T3-T4","T4-T5","T5-T6","T6-T7","T7-T8","T8-T9","T9-T10","T10-T11","T11-T12","T12-L1","L1-L2","L2-L3","L3-L4","L4-L5","L5-S1"];
+
+const CERVICAL_CONSERVATIVE = ["Cervical collar","Oral steroids","Physical therapy","Cervical epidural injection","NSAIDs"];
+const LUMBAR_CONSERVATIVE = ["Physical therapy","Epidural steroid injections","NSAIDs","Gabapentin/pregabalin","Activity modification"];
+
+// ===== HELPERS =====
+function el(id){return document.getElementById(id);}
+function getVal(id){return el(id).value;}
+function getNum(id){return parseFloat(el(id).value)||0;}
+function getChk(id){return el(id).checked;}
+
+function getSelectedLevels(){
+  const cbs = document.querySelectorAll('#levels-group input[type=checkbox]:checked');
+  return Array.from(cbs).map(c=>c.value);
+}
+function getConservative(){
+  const cbs = document.querySelectorAll('#conservative-group input[type=checkbox]:checked');
+  return Array.from(cbs).map(c=>c.value);
+}
+function getActiveComorbidities(){
+  const cm = [];
+  if(getChk('cmb-smoking')) cm.push('smoking');
+  if(getChk('cmb-diabetes')) cm.push('diabetes');
+  if(getNum('inp-bmi')>=30) cm.push('obesity');
+  if(getChk('cmb-osteoporosis')) cm.push('osteoporosis');
+  if(getChk('cmb-anticoag')) cm.push('anticoagulation');
+  if(getChk('cmb-depression')) cm.push('depression');
+  if(getChk('cmb-renal')) cm.push('renal_disease');
+  if(getChk('cmb-ra')) cm.push('rheumatoid_arthritis');
+  return cm;
+}
+
+function getLevelsForRegion(region){
+  if(region==='cervical') return CERVICAL_LEVELS;
+  if(region==='lumbar') return LUMBAR_LEVELS;
+  if(region==='thoracolumbar') return THORACOLUMBAR_LEVELS;
+  return ALL_LEVELS;
+}
+
+function updateLevels(){
+  const dx = getVal('inp-dx');
+  const path = PATHOLOGY_CATALOG[dx];
+  const levels = getLevelsForRegion(path.region);
+  const g = el('levels-group');
+  g.innerHTML = levels.map((l,i)=>`<label><input type="checkbox" value="${l}" class="lvl-chk" ${i===3?'checked':''}/> ${l}</label>`).join('');
+  document.querySelectorAll('.lvl-chk').forEach(c=>c.addEventListener('change', updateCDS));
+}
+
+function updateConservative(){
+  const dx = getVal('inp-dx');
+  const path = PATHOLOGY_CATALOG[dx];
+  const opts = (path.region==='cervical') ? CERVICAL_CONSERVATIVE : LUMBAR_CONSERVATIVE;
+  const g = el('conservative-group');
+  g.innerHTML = opts.map((o,i)=>`<label><input type="checkbox" value="${o}" class="cons-chk" ${i<2?'checked':''}/> ${o}</label>`).join('');
+  document.querySelectorAll('.cons-chk').forEach(c=>c.addEventListener('change', updateCDS));
+}
+
+// ===== PROCEDURE RECOMMENDATION =====
+function recommendProcedures(dxKey, numLevels){
+  const procs = [];
+  switch(dxKey){
+    case 'cervical_spondylotic_myelopathy':
+      if(numLevels<=2) procs.push('acdf');
+      else procs.push('laminoplasty');
+      if(numLevels>=3) procs.push('posterior_cervical_fusion');
+      break;
+    case 'cervical_disc_herniation':
+      procs.push('acdf');
+      if(numLevels===1) procs.push('cervical_disc_replacement');
+      break;
+    case 'lumbar_stenosis':
+      procs.push('lumbar_laminectomy');
+      break;
+    case 'lumbar_disc_herniation':
+      procs.push('lumbar_microdiscectomy');
+      if(getChk('cmb-prior')) procs.push('tlif');
+      break;
+    case 'degenerative_spondylolisthesis':
+      procs.push('tlif');
+      procs.push('lumbar_laminectomy');
+      break;
+    case 'adult_spinal_deformity':
+      procs.push('tlif');
+      if(numLevels>=3) procs.push('pso');
+      procs.push('xlif');
+      break;
+    case 'spinal_metastatic_disease':
+      procs.push('corpectomy');
+      procs.push('lumbar_laminectomy');
+      break;
+  }
+  return [...new Set(procs)];
+}
+
+// ===== RISK ENGINE =====
+function calcRisk(procKeys, numLevels){
+  const baselines = {simple_decompression:0.03,single_level_fusion:0.08,multi_level_fusion:0.14,complex_reconstruction:0.25,tumor_surgery:0.20};
+  let cat = 'single_level_fusion';
+  const simples = ['lumbar_microdiscectomy','lumbar_laminectomy','laminoplasty'];
+  const singles = ['acdf','cervical_disc_replacement','tlif','plif','alif'];
+  if(procKeys.some(p=>p==='pso')) cat='complex_reconstruction';
+  else if(procKeys.some(p=>p==='corpectomy')) cat='tumor_surgery';
+  else if(numLevels>=3 && procKeys.some(p=>singles.includes(p))) cat='multi_level_fusion';
+  else if(procKeys.some(p=>singles.includes(p))) cat='single_level_fusion';
+  else if(procKeys.every(p=>simples.includes(p))) cat='simple_decompression';
+
+  const age = getNum('inp-age');
+  const asa = parseInt(getVal('inp-asa'));
+  const bmi = getNum('inp-bmi');
+  const ageMod = age<60?1.0:age<70?1.2:age<80?1.4:1.8;
+  const asaMod = ({1:0.8,2:1.0,3:1.3,4:2.0,5:3.0})[asa]||1.0;
+  const bmiMod = bmi<30?1.0:bmi<35?1.15:bmi<40?1.3:1.6;
+  const revMod = getChk('cmb-prior')?1.3:1.0;
+  let cmbMod = 1.0;
+  getActiveComorbidities().forEach(k=>{
+    if(COMORBIDITY_DB[k]) cmbMod *= COMORBIDITY_DB[k].modifier;
+  });
+  // avoid double-counting obesity
+  if(bmi>=30){
+    const idx = getActiveComorbidities().indexOf('obesity');
+    if(idx>=0) cmbMod /= COMORBIDITY_DB.obesity.modifier;
+  }
+  let composite = baselines[cat] * ageMod * asaMod * bmiMod * cmbMod * revMod;
+  composite = Math.min(composite, 0.95);
+  let tier = 'LOW', tierClass = 'low';
+  if(composite>=0.30){tier='VERY HIGH';tierClass='critical';}
+  else if(composite>=0.15){tier='HIGH';tierClass='high';}
+  else if(composite>=0.05){tier='MODERATE';tierClass='moderate';}
+  return {composite, tier, tierClass, ageMod, asaMod, bmiMod, cmbMod, revMod, cat};
+}
+
+// ===== CDS RENDER =====
+function updateCDS(){
+  const dx = getVal('inp-dx');
+  const path = PATHOLOGY_CATALOG[dx];
+  const levels = getSelectedLevels();
+  const numLevels = Math.max(levels.length, 1);
+  const procKeys = recommendProcedures(dx, numLevels);
+  const risk = calcRisk(procKeys, numLevels);
+  const urgency = (getChk('chk-cauda') || (path.redFlags && path.redFlags.some(f=>f.includes('Cauda equina')))) && getChk('chk-cauda') ? 'EMERGENT' : (getChk('chk-myelopathy')||getChk('chk-neurodef') ? 'URGENT' : 'ELECTIVE');
+
+  let html = '';
+
+  // Metric cards
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">`;
+  html += `<div class="metric-card"><div class="mc-label">Risk Tier</div><div class="mc-val"><span class="risk-badge ${risk.tierClass}">${risk.tier}</span></div></div>`;
+  html += `<div class="metric-card"><div class="mc-label">Composite Risk</div><div class="mc-val risk-${risk.tierClass}">${(risk.composite*100).toFixed(1)}%</div></div>`;
+  html += `<div class="metric-card"><div class="mc-label">Urgency</div><div class="mc-val" style="font-size:18px;color:${urgency==='EMERGENT'?'var(--crit)':urgency==='URGENT'?'var(--high)':'#5a6a9e'}">${urgency}</div></div>`;
+  html += `<div class="metric-card"><div class="mc-label">Levels</div><div class="mc-val">${numLevels}</div></div>`;
+  html += `</div>`;
+
+  // Recommended Procedures
+  html += `<div class="card"><h4><i data-lucide="stethoscope" class="w-4 h-4"></i> Recommended Procedures</h4>`;
+  html += `<div style="display:flex;flex-wrap:wrap;gap:8px;">`;
+  procKeys.forEach(pk=>{
+    const p = PROCEDURE_CATALOG[pk];
+    html += `<div style="background:#e8f5e9;border-radius:10px;padding:12px 16px;flex:1;min-width:200px;">
+      <div style="font-size:13px;font-weight:700;color:#1b5e20;">${p.name}</div>
+      <div style="font-size:11px;color:#2e7d32;margin-top:4px;">Approach: ${p.approaches.join(', ')}</div>
+      <div style="font-size:11px;color:#2e7d32;">CPT: ${p.cpt.join(', ')}</div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  // ICD-10
+  html += `<div class="card"><h4><i data-lucide="tag" class="w-4 h-4"></i> ICD-10 Codes</h4>`;
+  html += `<div style="display:flex;flex-wrap:wrap;gap:4px;">${path.icd10.map(c=>`<span class="proc-tag" style="background:#eff6ff;color:#1e40af;">${c}</span>`).join('')}</div></div>`;
+
+  // Surgical Indications
+  html += `<div class="card"><h4><i data-lucide="list-checks" class="w-4 h-4"></i> Surgical Indications Checklist</h4>`;
+  const duration = getNum('inp-duration');
+  const consTrials = getConservative();
+  path.surgicalIndications.forEach(ind=>{
+    let met = false;
+    const low = ind.toLowerCase();
+    if(low.includes('myelopathy') && getChk('chk-myelopathy')) met=true;
+    if(low.includes('neurological') && getChk('chk-neurodef')) met=true;
+    if(low.includes('cauda equina') && getChk('chk-cauda')) met=true;
+    if(low.includes('conservative') && consTrials.length>=2 && duration>=6) met=true;
+    if(low.includes('functional decline') && duration>=3) met=true;
+    if(low.includes('cord signal') || low.includes('cord compression')) met=true; // assume imaging present
+    if(low.includes('motor deficit') && getChk('chk-neurodef')) met=true;
+    if(low.includes('intractable') && duration>=6 && consTrials.length>=2) met=true;
+    if(low.includes('instability')) met=true;
+    if(low.includes('grade ii') && dx==='degenerative_spondylolisthesis') met=true;
+    if(low.includes('sva') || low.includes('pi-ll')) met=true;
+    if(low.includes('escc') || low.includes('sins')) met=true;
+    if(low.includes('radioresistant')) met=false;
+    if(low.includes('life expectancy')) met=true;
+    html += `<div class="ind-item"><span class="${met?'ind-met':'ind-unmet'}">${met?'✓':'○'}</span> <span style="color:${met?'#1b5e20':'#6b7280'}">${ind}</span></div>`;
+  });
+  html += `</div>`;
+
+  // OR Parameters
+  let totalTimeMin=[0,0], totalEbl=[0,0];
+  procKeys.forEach(pk=>{
+    const p = PROCEDURE_CATALOG[pk];
+    totalTimeMin[0]+=p.timeMin[0]; totalTimeMin[1]+=p.timeMin[1];
+    totalEbl[0]+=p.eblMl[0]; totalEbl[1]+=p.eblMl[1];
+  });
+  if(numLevels>1){totalTimeMin[0]*=Math.min(numLevels*0.6,3);totalTimeMin[1]*=Math.min(numLevels*0.6,3);totalEbl[0]*=Math.min(numLevels*0.7,3);totalEbl[1]*=Math.min(numLevels*0.7,3);}
+  const approach0 = procKeys.length?PROCEDURE_CATALOG[procKeys[0]].approaches[0]:'Posterior';
+  const positioning = approach0==='Anterior'?'Supine':approach0==='Lateral'?'Lateral Decubitus':'Prone';
+  const cellSaver = totalEbl[1]>500;
+  const icu = totalEbl[1]>1000 || parseInt(getVal('inp-asa'))>=4 || getNum('inp-age')>=80;
+
+  html += `<div class="card"><h4><i data-lucide="timer" class="w-4 h-4"></i> OR Parameters</h4>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Est. Time</div><div style="font-size:15px;font-weight:700;">${Math.round(totalTimeMin[0])}-${Math.round(totalTimeMin[1])} min</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Est. EBL</div><div style="font-size:15px;font-weight:700;">${Math.round(totalEbl[0])}-${Math.round(totalEbl[1])} mL</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Positioning</div><div style="font-size:15px;font-weight:700;">${positioning}</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Cell Saver</div><div style="font-size:15px;font-weight:700;">${cellSaver?'Yes':'Not Required'}</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">ICU</div><div style="font-size:15px;font-weight:700;color:${icu?'var(--crit)':'var(--low)'}">${icu?'Recommended':'Not Required'}</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Blood Products</div><div style="font-size:15px;font-weight:700;">${totalEbl[1]>500?'T&S + 2U pRBC':'T&S'}</div></div>`;
+  html += `</div></div>`;
+
+  // Risk Modifiers
+  html += `<div class="card"><h4><i data-lucide="shield-alert" class="w-4 h-4"></i> Risk Modifiers</h4>`;
+  const mods = [
+    {name:'Age',val:risk.ageMod,thresh:[1.0,1.2,1.4]},
+    {name:'ASA',val:risk.asaMod,thresh:[1.0,1.3,2.0]},
+    {name:'BMI',val:risk.bmiMod,thresh:[1.0,1.15,1.3]},
+    {name:'Comorbidity',val:risk.cmbMod,thresh:[1.0,1.5,2.0]},
+    {name:'Revision',val:risk.revMod,thresh:[1.0,1.3,1.3]}
+  ];
+  mods.forEach(m=>{
+    const c = m.val<=m.thresh[0]?'dot-green':m.val<=m.thresh[1]?'dot-yellow':m.val<=m.thresh[2]?'dot-orange':'dot-red';
+    html += `<div class="modifier-row"><span class="dot ${c}"></span><span class="mod-name">${m.name}</span><span class="mod-val">${m.val.toFixed(2)}×</span></div>`;
+  });
+  html += `</div>`;
+
+  // Preop Optimization
+  const activeCmb = getActiveComorbidities();
+  if(activeCmb.length>0){
+    html += `<div class="card"><h4><i data-lucide="clipboard-check" class="w-4 h-4"></i> Preoperative Optimization</h4>`;
+    activeCmb.forEach(k=>{
+      const c = COMORBIDITY_DB[k];
+      if(c){
+        html += `<div style="margin-bottom:10px;"><div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px;">${c.name}</div>`;
+        c.optimization.forEach(o=>{ html += `<div class="opt-item">${o}</div>`; });
+        html += `</div>`;
+      }
+    });
+    html += `</div>`;
+  }
+
+  // Instrumentation
+  html += `<div class="card"><h4><i data-lucide="wrench" class="w-4 h-4"></i> Instrumentation Plan</h4>`;
+  const allInstr = [];
+  procKeys.forEach(pk=>{ PROCEDURE_CATALOG[pk].instrumentation.forEach(i=>{ if(!allInstr.includes(i)) allInstr.push(i); }); });
+  html += `<div style="display:flex;flex-wrap:wrap;gap:4px;">${allInstr.map(i=>`<span class="proc-tag">${i}</span>`).join('')}</div>`;
+  if(getChk('cmb-osteoporosis')) html += `<div class="warn-box" style="margin-top:10px;">⚠ Osteoporosis: Consider cement-augmented pedicle screws, larger screws, and extended construct length.</div>`;
+  if(getChk('cmb-prior')) html += `<div class="warn-box" style="margin-top:6px;">⚠ Revision surgery: Anticipate scarring, altered anatomy, and potential hardware removal.</div>`;
+  html += `</div>`;
+
+  // Postop Plan
+  const isFusion = procKeys.some(p=>['acdf','posterior_cervical_fusion','tlif','plif','xlif','alif','pso'].includes(p));
+  const isDecomp = procKeys.some(p=>['lumbar_microdiscectomy','lumbar_laminectomy','laminoplasty'].includes(p));
+  html += `<div class="card"><h4><i data-lucide="calendar-check" class="w-4 h-4"></i> Postoperative Plan</h4>`;
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Expected LOS</div><div style="font-size:14px;font-weight:600;">${isDecomp&&!isFusion?'0-1 days (outpatient possible)':isFusion&&procKeys.includes('pso')?'5-7 days':'1-3 days'}</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">DVT Prophylaxis</div><div style="font-size:14px;font-weight:600;">SCDs + Lovenox (if no contraindication)</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Activity</div><div style="font-size:14px;font-weight:600;">${isFusion?'No BLT; assisted ambulation POD0-1':'Ambulate POD0; advance as tolerated'}</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Bracing</div><div style="font-size:14px;font-weight:600;">${path.region==='cervical'&&isFusion?'Cervical collar 6-12 weeks':isFusion?'LSO brace 6-12 weeks':'None required'}</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Follow-up</div><div style="font-size:14px;font-weight:600;">2 wks, 6 wks, 3 mo, 6 mo, 12 mo</div></div>`;
+  html += `<div style="background:#f8f9fa;border-radius:8px;padding:10px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Return to Work</div><div style="font-size:14px;font-weight:600;">${isDecomp&&!isFusion?'2-4 weeks (desk); 6-8 weeks (physical)':'6-12 weeks (desk); 3-6 months (physical)'}</div></div>`;
+  html += `</div>`;
+  html += `<div style="margin-top:10px;font-size:12px;font-weight:600;color:#5a6a9e;">Outcome Measures: ${path.region==='cervical'?'NDI, VAS-Neck, VAS-Arm, mJOA':'ODI, VAS-Back, VAS-Leg, SF-12'}</div>`;
+  html += `</div>`;
+
+  // Evidence
+  html += `<div class="expand-toggle" data-expand="ev-section"><i data-lucide="chevron-right" class="w-4 h-4"></i> Evidence Basis</div>`;
+  html += `<div class="expand-content" id="ev-section"><div class="card"><p style="font-size:13px;line-height:1.7;">${path.evidence}</p></div></div>`;
+
+  // Alternatives
+  html += `<div class="expand-toggle" data-expand="alt-section"><i data-lucide="chevron-right" class="w-4 h-4"></i> Alternative Surgical Options</div>`;
+  html += `<div class="expand-content" id="alt-section"><div class="card">`;
+  const allProcs = Object.keys(PROCEDURE_CATALOG).filter(k=>!procKeys.includes(k) && (PROCEDURE_CATALOG[k].region===path.region || PROCEDURE_CATALOG[k].region==='all'));
+  allProcs.slice(0,4).forEach(pk=>{
+    const p = PROCEDURE_CATALOG[pk];
+    html += `<div style="margin-bottom:8px;"><span style="font-size:13px;font-weight:600;">${p.name}</span> <span style="font-size:11px;color:#6b7280;">— ${p.approaches.join(', ')}</span></div>`;
+  });
+  if(allProcs.length===0) html += `<p style="font-size:13px;color:#6b7280;">No additional alternatives for this pathology/region.</p>`;
+  html += `</div></div>`;
+
+  el('cds-content').innerHTML = html;
+  lucide.createIcons();
+
+  // Expand toggles
+  document.querySelectorAll('.expand-toggle').forEach(t=>{
+    t.addEventListener('click', ()=>{
+      const target = el(t.dataset.expand);
+      target.classList.toggle('open');
+    });
+  });
+}
+
+// ===== DOC ENGINE =====
+function updateDocFields(){
+  const type = getVal('doc-type');
+  let html = '';
+  if(type==='opnote'){
+    html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div><label>Surgeon Name</label><input type="text" id="doc-surgeon" value="Dr. Smith" /></div>
+      <div><label>Assistant</label><input type="text" id="doc-asst" value="Dr. Jones" /></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <div><label>Approach</label><select id="doc-approach"><option>Anterior</option><option>Posterior</option><option>Lateral</option><option>Combined</option></select></div>
+      <div><label>EBL (mL)</label><input type="number" id="doc-ebl" value="150" /></div>
+      <div><label>Fluids (mL)</label><input type="number" id="doc-fluids" value="1500" /></div>
+    </div>
+    <div class="chk-group"><label><input type="checkbox" id="doc-neuro" checked /> Neuromonitoring</label></div>
+    <label>Drains</label><input type="text" id="doc-drains" value="1 subfascial JP drain" />
+    <label>Complications</label><input type="text" id="doc-complic" value="None" />
+    <label>Custom Operative Details</label><textarea id="doc-custom" placeholder="Additional procedure details..."></textarea>`;
+  } else if(type==='hp'){
+    html = `<label>Chief Complaint</label><input type="text" id="doc-cc" value="Neck/back pain with radiating symptoms" />
+    <label>HPI</label><textarea id="doc-hpi" placeholder="History of present illness..."></textarea>
+    <label>PMH</label><textarea id="doc-pmh" placeholder="Past medical history..."></textarea>
+    <label>PSH</label><textarea id="doc-psh" placeholder="Past surgical history..."></textarea>
+    <label>Medications</label><textarea id="doc-meds" placeholder="Current medications..."></textarea>
+    <label>Allergies</label><textarea id="doc-allergies" placeholder="Drug allergies..."></textarea>`;
+  } else if(type==='medn'){
+    html = `<label>Payer Name</label><input type="text" id="doc-payer" value="Medicare" />
+    <label>Functional Limitations</label><textarea id="doc-func" placeholder="Describe functional limitations..."></textarea>
+    <label>Neurological Findings</label><textarea id="doc-neurofindings" placeholder="Neurological exam findings..."></textarea>
+    <label>Imaging Findings</label><textarea id="doc-imaging" placeholder="MRI/CT findings..."></textarea>`;
+  } else if(type==='appeal'){
+    html = `<label>Payer Name</label><input type="text" id="doc-apayer" value="UnitedHealthcare" />
+    <label>Denial Reason</label><textarea id="doc-denial" placeholder="Reason for denial..."></textarea>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div><label>Denial Date</label><input type="text" id="doc-ddate" value="04/15/2026" /></div>
+      <div><label>Reference Number</label><input type="text" id="doc-refnum" value="REF-12345" /></div>
+    </div>
+    <label>Appeal Level</label><select id="doc-alevel"><option>First-Level</option><option>Second-Level</option><option>External Review</option></select>
+    <label>Peer-to-Peer Notes (optional)</label><textarea id="doc-p2p" placeholder="Notes from peer-to-peer review..."></textarea>`;
+  }
+  el('doc-extra-fields').innerHTML = html;
+}
+
+function generateDocument(){
+  const type = getVal('doc-type');
+  const dx = getVal('inp-dx');
+  const path = PATHOLOGY_CATALOG[dx];
+  const levels = getSelectedLevels();
+  const name = getVal('inp-name');
+  const mrn = getVal('inp-mrn');
+  const dob = getVal('inp-dob');
+  const age = getVal('inp-age');
+  const sex = getVal('inp-sex');
+  const procKeys = recommendProcedures(dx, levels.length||1);
+  let doc = '';
+
+  if(type==='opnote'){
+    const surgeon = el('doc-surgeon')?el('doc-surgeon').value:'Dr. Smith';
+    const asst = el('doc-asst')?el('doc-asst').value:'Dr. Jones';
+    const approach = el('doc-approach')?el('doc-approach').value:'Posterior';
+    const ebl = el('doc-ebl')?el('doc-ebl').value:'150';
+    const fluids = el('doc-fluids')?el('doc-fluids').value:'1500';
+    const neuro = el('doc-neuro')?el('doc-neuro').checked:true;
+    const drains = el('doc-drains')?el('doc-drains').value:'';
+    const complic = el('doc-complic')?el('doc-complic').value:'None';
+    const custom = el('doc-custom')?el('doc-custom').value:'';
+
+    doc = `═══════════════════════════════════════════════════
+                    OPERATIVE REPORT
+═══════════════════════════════════════════════════
+
+Patient: ${name}
+MRN: ${mrn}
+DOB: ${dob} | Age: ${age} | Sex: ${sex}
+Date of Surgery: ${new Date().toLocaleDateString()}
+
+Surgeon: ${surgeon}
+Assistant: ${asst}
+
+PREOPERATIVE DIAGNOSIS:
+${path.name}
+ICD-10: ${path.icd10.join(', ')}
+
+POSTOPERATIVE DIAGNOSIS:
+Same as above
+
+PROCEDURES PERFORMED:
+${procKeys.map(pk=>{const p=PROCEDURE_CATALOG[pk];return `- ${p.name} (CPT: ${p.cpt.join(', ')})`;}).join('\n')}
+
+Levels: ${levels.join(', ')||'N/A'}
+
+INDICATIONS:
+Patient is a ${age}-year-old ${sex.toLowerCase()} presenting with ${path.symptoms.slice(0,3).join(', ')}. ${path.surgicalIndications[0]}. Conservative management including ${getConservative().join(', ')||'multiple modalities'} was attempted for ${getVal('inp-duration')} months without adequate relief.
+
+FINDINGS:
+${path.imaging.slice(0,3).join('. ')}. Levels involved: ${levels.join(', ')}.
+
+PROCEDURE IN DETAIL:
+The patient was brought to the operating room, placed in the ${approach==='Anterior'?'supine':approach==='Lateral'?'lateral decubitus':'prone'} position on a Jackson table. General endotracheal anesthesia was induced. ${neuro?'Neuromonitoring (SSEP/MEP/EMG) was established with stable baselines. ':''}All pressure points were padded. A time-out was performed confirming patient identity, procedure, and site.
+
+${approach} approach was utilized. The appropriate level was confirmed with fluoroscopy. Careful dissection was performed to expose the surgical field.
+
+${procKeys.map(pk=>{
+  const p=PROCEDURE_CATALOG[pk];
+  if(pk==='acdf') return 'The anterior cervical spine was approached via a Smith-Robinson approach. The longus colli muscles were elevated. The appropriate disc space was identified with fluoroscopy. Complete discectomy was performed with removal of the posterior longitudinal ligament. The endplates were prepared. An appropriately sized PEEK interbody cage packed with allograft was placed under fluoroscopic guidance. An anterior cervical plate was applied and secured with screws.';
+  if(pk==='lumbar_microdiscectomy') return 'A midline or paramedian incision was made. The lumbodorsal fascia was incised. Using a tubular retractor system under microscopic visualization, a laminotomy was performed. The ligamentum flavum was excised. The traversing nerve root was identified and carefully retracted. The disc herniation was identified and removed with pituitary rongeurs. The canal was inspected and found to be free of residual fragments.';
+  if(pk==='lumbar_laminectomy') return 'A midline posterior approach was utilized. Subperiosteal dissection exposed the posterior elements at the involved levels. A complete laminectomy was performed at each level with Kerrison rongeurs and a high-speed burr. The ligamentum flavum was excised. Bilateral decompression of the lateral recesses and neural foramina was completed. The thecal sac and traversing nerve roots were noted to be decompressed.';
+  if(pk==='tlif') return 'A midline posterior approach was utilized. Pedicle screws were placed bilaterally at the involved levels under fluoroscopic guidance. A facetectomy was performed on one side. Discectomy was completed. The endplates were prepared. An interbody cage packed with bone graft was placed. Compression was applied across the construct. Rods were placed and final tightened.';
+  if(pk==='laminoplasty') return 'A posterior midline approach to the cervical spine was performed. The laminae were exposed at the involved levels. A high-speed burr was used to create a hinge on one side and an open door on the contralateral side. The laminae were elevated and laminoplasty plates were applied to maintain the open door position.';
+  return `Standard ${p.name} technique was performed at the involved levels.`;
+}).join('\n\n')}
+
+${custom?'\nAdditional Details:\n'+custom+'\n':''}
+IMPLANTS:
+${procKeys.map(pk=>PROCEDURE_CATALOG[pk].instrumentation.join(', ')).join('; ')}
+
+ESTIMATED BLOOD LOSS: ${ebl} mL
+IV FLUIDS: ${fluids} mL
+DRAINS: ${drains||'None'}
+COMPLICATIONS: ${complic}
+${neuro?'NEUROMONITORING: Stable SSEPs and MEPs throughout. No alerts.\n':''}
+DISPOSITION: Patient transferred to ${parseInt(ebl)>1000?'ICU':'PACU'} in stable condition.
+
+Specimens: Disc material / bone to pathology
+
+Electronically signed by ${surgeon}
+Date: ${new Date().toLocaleDateString()}`;
+
+  } else if(type==='hp'){
+    const cc = el('doc-cc')?el('doc-cc').value:'';
+    const hpi = el('doc-hpi')?el('doc-hpi').value:'';
+    const pmh = el('doc-pmh')?el('doc-pmh').value:'';
+    const psh = el('doc-psh')?el('doc-psh').value:'';
+    const meds = el('doc-meds')?el('doc-meds').value:'';
+    const allergies = el('doc-allergies')?el('doc-allergies').value:'';
+
+    doc = `═══════════════════════════════════════════════════
+               HISTORY AND PHYSICAL
+═══════════════════════════════════════════════════
+
+Patient: ${name}
+MRN: ${mrn}
+DOB: ${dob} | Age: ${age} | Sex: ${sex}
+Date: ${new Date().toLocaleDateString()}
+
+CHIEF COMPLAINT:
+${cc||path.symptoms[0]}
+
+HISTORY OF PRESENT ILLNESS:
+${hpi||`This is a ${age}-year-old ${sex.toLowerCase()} presenting with a ${getVal('inp-duration')}-month history of ${path.symptoms.slice(0,3).join(', ')}. Patient reports progressive symptoms including ${path.symptoms.slice(2,5).join(', ')}. ${getChk('chk-myelopathy')?'Myelopathy signs are present. ':''}${getChk('chk-neurodef')?'Neurological deficit is noted. ':''}Conservative treatments attempted include ${getConservative().join(', ')||'multiple modalities'} without adequate relief.`}
+
+PAST MEDICAL HISTORY:
+${pmh||getActiveComorbidities().map(k=>COMORBIDITY_DB[k]?.name||k).join(', ')||'None significant'}
+
+PAST SURGICAL HISTORY:
+${psh||(getChk('cmb-prior')?'Prior spine surgery':'None relevant')}
+
+MEDICATIONS:
+${meds||'As per medication reconciliation'}
+
+ALLERGIES:
+${allergies||'NKDA'}
+
+REVIEW OF SYSTEMS:
+Constitutional: No fever, chills, or weight loss
+Neurological: ${getChk('chk-myelopathy')?'Positive for gait instability, hand clumsiness':'Negative for myelopathy signs'}
+Musculoskeletal: Positive for ${path.symptoms[0]}
+${getChk('chk-cauda')?'GU/GI: Reports bowel/bladder changes consistent with cauda equina concerns\n':''}
+
+PHYSICAL EXAMINATION:
+General: Alert, oriented, no acute distress
+Vitals: Within normal limits
+BMI: ${getVal('inp-bmi')}
+
+Spine: Tenderness to palpation at ${levels.join(', ')||'involved levels'}
+Motor: ${getChk('chk-neurodef')?'Deficit noted in affected myotome':'5/5 bilateral upper and lower extremities'}
+Sensory: ${getChk('chk-neurodef')?'Decreased in affected dermatome':'Intact to light touch bilaterally'}
+Reflexes: ${getChk('chk-myelopathy')?'Hyperreflexic; positive Hoffman sign':'2+ symmetric'}
+Gait: ${getChk('chk-myelopathy')?'Broad-based, unsteady':'Normal'}
+Special Tests: ${path.region==='lumbar'?'Straight leg raise testing performed':'Spurling test, Lhermitte sign assessed'}
+
+IMAGING:
+MRI ${path.region==='cervical'?'cervical':'lumbosacral'} spine: ${path.imaging.slice(0,3).join('. ')}.
+
+ASSESSMENT:
+${path.name} at ${levels.join(', ')||'multiple levels'}
+ICD-10: ${path.icd10.join(', ')}
+
+PLAN:
+Surgical intervention recommended: ${procKeys.map(pk=>PROCEDURE_CATALOG[pk].name).join('; ')}.
+Risks, benefits, and alternatives discussed. Patient consents to proceed.
+
+Electronically signed
+Date: ${new Date().toLocaleDateString()}`;
+
+  } else if(type==='medn'){
+    const payer = el('doc-payer')?el('doc-payer').value:'';
+    const func = el('doc-func')?el('doc-func').value:'';
+    const neuroF = el('doc-neurofindings')?el('doc-neurofindings').value:'';
+    const imgF = el('doc-imaging')?el('doc-imaging').value:'';
+
+    doc = `═══════════════════════════════════════════════════
+          MEDICAL NECESSITY STATEMENT
+═══════════════════════════════════════════════════
+
+Date: ${new Date().toLocaleDateString()}
+To: ${payer||'Insurance Carrier'}
+Re: ${name} | MRN: ${mrn} | DOB: ${dob}
+
+1. DIAGNOSIS AND CLINICAL PRESENTATION
+The patient presents with ${path.name} (ICD-10: ${path.icd10.join(', ')}).
+Symptoms include: ${path.symptoms.join(', ')}.
+Duration: ${getVal('inp-duration')} months.
+
+2. CONSERVATIVE TREATMENT HISTORY
+The following conservative treatments have been attempted:
+${getConservative().map(c=>'- '+c).join('\n')||'- Multiple conservative modalities attempted'}
+Duration of conservative care: ${getVal('inp-duration')} months.
+Response: Inadequate — symptoms persist with functional limitation.
+
+3. CLINICAL FINDINGS
+${neuroF||`Physical examination reveals: ${getChk('chk-myelopathy')?'Myelopathy signs including hyperreflexia and gait instability. ':''}${getChk('chk-neurodef')?'Neurological deficit in affected distribution. ':''}Tenderness at ${levels.join(', ')}.`}
+
+4. IMAGING FINDINGS
+${imgF||path.imaging.join('. ')+'.'}
+
+5. FUNCTIONAL LIMITATIONS
+${func||`Patient reports significant functional limitation including difficulty with ${path.region==='cervical'?'fine motor tasks, overhead activities, and balance':'walking, standing, sitting, and activities of daily living'}. ${path.region==='lumbar'?'Walking tolerance limited to less than 1 block.':''}`}
+
+6. SURGICAL INDICATIONS
+${path.surgicalIndications.map(i=>'- '+i).join('\n')}
+
+7. PROPOSED PROCEDURE
+${procKeys.map(pk=>{const p=PROCEDURE_CATALOG[pk];return `${p.name}\nCPT: ${p.cpt.join(', ')}`;}).join('\n')}
+Levels: ${levels.join(', ')}
+
+This procedure is medically necessary based on the clinical presentation, failed conservative management, imaging correlation, and evidence-based surgical indications.
+
+Supporting Evidence:
+${path.evidence}
+
+Respectfully submitted,
+[Surgeon Name], MD
+Board Certified Spine Surgeon`;
+
+  } else if(type==='appeal'){
+    const apayer = el('doc-apayer')?el('doc-apayer').value:'';
+    const denial = el('doc-denial')?el('doc-denial').value:'';
+    const ddate = el('doc-ddate')?el('doc-ddate').value:'';
+    const refnum = el('doc-refnum')?el('doc-refnum').value:'';
+    const alevel = el('doc-alevel')?el('doc-alevel').value:'';
+    const p2p = el('doc-p2p')?el('doc-p2p').value:'';
+
+    doc = `═══════════════════════════════════════════════════
+            INSURANCE APPEAL LETTER
+═══════════════════════════════════════════════════
+
+Date: ${new Date().toLocaleDateString()}
+${alevel} Appeal
+
+To: ${apayer||'Insurance Carrier'} Medical Review
+Re: Appeal of Adverse Determination
+Patient: ${name}
+MRN: ${mrn} | DOB: ${dob}
+Denial Date: ${ddate}
+Reference Number: ${refnum}
+
+Dear Medical Director,
+
+I am writing to formally appeal the denial of authorization for ${procKeys.map(pk=>PROCEDURE_CATALOG[pk].name).join(' and ')} for the above-referenced patient.
+
+REASON FOR DENIAL (as stated):
+${denial||'Medical necessity not established'}
+
+CLINICAL REBUTTAL:
+
+1. DIAGNOSIS: ${path.name} (ICD-10: ${path.icd10.join(', ')})
+
+2. CLINICAL PRESENTATION:
+${path.symptoms.map(s=>'- '+s).join('\n')}
+${getChk('chk-myelopathy')?'- Myelopathy signs present (progressive, time-sensitive condition)\n':''}${getChk('chk-neurodef')?'- Neurological deficit documented\n':''}
+
+3. CONSERVATIVE TREATMENT EXHAUSTED:
+${getConservative().map(c=>'- '+c).join('\n')||'- Multiple conservative treatments attempted'}
+Duration: ${getVal('inp-duration')} months — exceeds minimum requirements.
+
+4. IMAGING CORRELATION:
+${path.imaging.map(i=>'- '+i).join('\n')}
+
+5. SURGICAL INDICATIONS MET:
+${path.surgicalIndications.map(i=>'- '+i).join('\n')}
+
+6. EVIDENCE-BASED SUPPORT:
+${path.evidence}
+
+7. RED FLAGS PRESENT:
+${path.redFlags.map(r=>'- '+r).join('\n')}
+
+${p2p?`\nPEER-TO-PEER REVIEW NOTES:\n${p2p}\n`:''}
+CONCLUSION:
+This procedure meets all established criteria for medical necessity. The patient has failed appropriate conservative management, has correlating imaging findings, and meets published surgical indications. Delay in treatment risks further neurological deterioration.
+
+I respectfully request reversal of this denial and expedited authorization.
+
+Sincerely,
+[Surgeon Name], MD
+Board Certified Spine Surgeon
+[Contact Information]`;
+  }
+
+  el('doc-output').textContent = doc;
+  el('doc-output-wrap').style.display = 'block';
+}
+
+// ===== CPT TAB =====
+function recommendCPT(){
+  const proc = getVal('cpt-proc');
+  const levels = parseInt(el('cpt-levels').value)||1;
+  const withInstru = el('cpt-instru').checked;
+  const withGraft = el('cpt-graft').checked;
+  const bilateral = el('cpt-bilat').checked;
+  const p = PROCEDURE_CATALOG[proc];
+  if(!p) return;
+
+  const codes = [];
+  // Primary CPT
+  const primary = p.cpt[0];
+  if(CPT_DB[primary]) codes.push({code:primary, ...CPT_DB[primary], type:'Primary'});
+  // Add-on for additional levels
+  if(levels>1 && p.cpt[1] && CPT_DB[p.cpt[1]]){
+    for(let i=1;i<levels;i++){
+      codes.push({code:p.cpt[1], ...CPT_DB[p.cpt[1]], type:'Add-on'});
+    }
+  }
+  // Instrumentation
+  if(withInstru){
+    const segs = levels;
+    if(segs<=6 && CPT_DB["22842"]) codes.push({code:"22842",...CPT_DB["22842"],type:'Add-on'});
+    else if(CPT_DB["22843"]) codes.push({code:"22843",...CPT_DB["22843"],type:'Add-on'});
+  }
+  // Bone graft
+  if(withGraft){
+    if(proc.includes('lumbar')||proc==='tlif'||proc==='plif'){
+      codes.push({code:"20936",...CPT_DB["20936"],type:'Add-on'});
+    } else {
+      codes.push({code:"20931",...CPT_DB["20931"],type:'Add-on'});
+    }
+  }
+
+  let totalRvu = 0;
+  let html = `<div style="overflow-x:auto;"><table class="data-tbl"><thead><tr><th>CPT</th><th>Description</th><th>Total RVU</th><th>Type</th></tr></thead><tbody>`;
+  codes.forEach(c=>{
+    totalRvu += c.totalRvu;
+    html += `<tr><td style="font-weight:600;">${c.code}</td><td>${c.desc}</td><td class="tabular-nums" style="text-align:right;">${c.totalRvu.toFixed(2)}</td><td><span class="proc-tag" style="background:${c.type==='Primary'?'#e8f5e9':'#eff6ff'};color:${c.type==='Primary'?'#1b5e20':'#1e40af'}">${c.type}</span></td></tr>`;
+  });
+  html += `</tbody></table></div>`;
+  html += `<div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">
+    <div class="metric-card" style="flex:1;min-width:150px;"><div class="mc-label">Total RVUs</div><div class="mc-val tabular-nums">${totalRvu.toFixed(2)}</div></div>
+    <div class="metric-card" style="flex:1;min-width:150px;"><div class="mc-label">Est. Medicare Payment</div><div class="mc-val tabular-nums" style="color:var(--low);">$${(totalRvu*CF).toFixed(2)}</div></div>
+  </div>`;
+  if(bilateral) html += `<div class="info-box" style="margin-top:10px;">ℹ Bilateral: Apply modifier -50 to decompression codes if applicable.</div>`;
+  el('cpt-rec-output').innerHTML = html;
+}
+
+function calcRVU(){
+  const raw = el('rvu-input').value;
+  const codesArr = raw.split(',').map(s=>s.trim()).filter(Boolean);
+  let html = '';
+  let totW=0,totPE=0,totMP=0,totT=0;
+  html += `<div style="overflow-x:auto;"><table class="data-tbl"><thead><tr><th>CPT</th><th>Description</th><th style="text-align:right;">Work</th><th style="text-align:right;">PE</th><th style="text-align:right;">MP</th><th style="text-align:right;">Total</th></tr></thead><tbody>`;
+  codesArr.forEach(c=>{
+    const d = CPT_DB[c];
+    if(d){
+      totW+=d.workRvu;totPE+=d.peRvu;totMP+=d.mpRvu;totT+=d.totalRvu;
+      html += `<tr><td style="font-weight:600;">${c}</td><td>${d.desc}</td><td class="tabular-nums" style="text-align:right;">${d.workRvu.toFixed(2)}</td><td class="tabular-nums" style="text-align:right;">${d.peRvu.toFixed(2)}</td><td class="tabular-nums" style="text-align:right;">${d.mpRvu.toFixed(2)}</td><td class="tabular-nums" style="text-align:right;font-weight:600;">${d.totalRvu.toFixed(2)}</td></tr>`;
+    } else {
+      html += `<tr><td style="font-weight:600;">${c}</td><td colspan="5" style="color:var(--crit);">Code not found in database</td></tr>`;
+    }
+  });
+  html += `<tr style="font-weight:700;background:#f1f3f5;"><td colspan="2">TOTALS</td><td class="tabular-nums" style="text-align:right;">${totW.toFixed(2)}</td><td class="tabular-nums" style="text-align:right;">${totPE.toFixed(2)}</td><td class="tabular-nums" style="text-align:right;">${totMP.toFixed(2)}</td><td class="tabular-nums" style="text-align:right;">${totT.toFixed(2)}</td></tr>`;
+  html += `</tbody></table></div>`;
+  html += `<div style="margin-top:12px;" class="metric-card"><div class="mc-label">Estimated Medicare Payment</div><div class="mc-val tabular-nums" style="color:var(--low);">$${(totT*CF).toFixed(2)}</div></div>`;
+  el('rvu-output').innerHTML = html;
+}
+
+function checkBundling(){
+  const raw = el('bundle-input').value;
+  const codesArr = raw.split(',').map(s=>s.trim()).filter(Boolean);
+  let html = '';
+  let found = false;
+  BUNDLING_RULES.forEach(rule=>{
+    if(rule.codes.every(c=>codesArr.includes(c))){
+      html += `<div class="error-box">⚠ ${rule.warning}</div>`;
+      found = true;
+    }
+  });
+  if(!found) html = `<div class="success-box">✓ No bundling issues detected for codes: ${codesArr.join(', ')}</div>`;
+  el('bundle-output').innerHTML = html;
+}
+
+// ===== PAYER TAB =====
+function updatePayer(){
+  const payerKey = getVal('payer-sel');
+  const cat = getVal('payer-cat');
+  const payer = PAYER_PROFILES[payerKey];
+  if(!payer) return;
+
+  const authRequired = payer.authCategories.includes(cat);
+  let html = `<div class="payer-card" style="margin-bottom:16px;">`;
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:18px;font-weight:700;color:var(--navy);">${payer.name}</div>
+    <div class="risk-badge ${authRequired?'critical':'low'}" style="font-size:12px;">${authRequired?'PRIOR AUTH REQUIRED':'PRIOR AUTH NOT REQUIRED'}</div>
+  </div>`;
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="metric-card"><div class="mc-label">Min Conservative Care</div><div class="mc-val">${payer.conservativeWeeks} weeks</div></div>
+    <div class="metric-card"><div class="mc-label">Auth Categories</div><div class="mc-val" style="font-size:16px;">${payer.authCategories.length}</div></div>
+  </div>`;
+
+  // Documentation requirements
+  html += `<div style="margin-top:16px;"><div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">Documentation Requirements</div>`;
+  payer.docRequirements.forEach(d=>{
+    html += `<div class="ind-item"><span class="ind-met">☐</span> ${d}</div>`;
+  });
+  html += `</div>`;
+
+  // Denial reasons
+  html += `<div style="margin-top:16px;"><div style="font-size:13px;font-weight:700;color:#856404;margin-bottom:8px;">Common Denial Reasons</div>`;
+  payer.denialReasons.forEach(d=>{ html += `<div class="warn-box">${d}</div>`; });
+  html += `</div>`;
+
+  // Appeal tips
+  html += `<div style="margin-top:16px;"><div style="font-size:13px;font-weight:700;color:#155724;margin-bottom:8px;">Appeal Tips</div>`;
+  payer.appealTips.forEach(t=>{ html += `<div class="success-box">${t}</div>`; });
+  html += `</div>`;
+
+  // Special rules
+  if(payer.specialRules.length){
+    html += `<div style="margin-top:16px;"><div style="font-size:13px;font-weight:700;color:#1e40af;margin-bottom:8px;">Special Rules</div>`;
+    payer.specialRules.forEach(r=>{ html += `<div class="info-box">${r}</div>`; });
+    html += `</div>`;
+  }
+  html += `</div>`;
+
+  el('payer-detail').innerHTML = html;
+
+  // Comparison table
+  let tbl = `<thead><tr><th>Payer</th><th>Conservative (wks)</th><th>Auth Categories</th><th>Doc Requirements</th></tr></thead><tbody>`;
+  Object.keys(PAYER_PROFILES).forEach(k=>{
+    const pp = PAYER_PROFILES[k];
+    const isActive = k===payerKey;
+    tbl += `<tr style="${isActive?'background:#eff6ff;':''}"><td style="font-weight:600;">${pp.name}</td><td class="tabular-nums" style="text-align:center;">${pp.conservativeWeeks}</td><td class="tabular-nums" style="text-align:center;">${pp.authCategories.length}</td><td class="tabular-nums" style="text-align:center;">${pp.docRequirements.length}</td></tr>`;
+  });
+  tbl += `</tbody>`;
+  el('payer-compare-tbl').innerHTML = tbl;
+}
+
+// ===== ARCHITECTURE TAB =====
+function renderArchitecture(){
+  const modules = [
+    {icon:'stethoscope',name:'Clinical Decision Support',desc:'Real-time surgical planning with risk stratification, procedure recommendation, and evidence-based guidance.'},
+    {icon:'file-text',name:'Documentation Engine',desc:'Automated generation of operative notes, H&P, medical necessity statements, and appeal letters.'},
+    {icon:'hash',name:'CPT / Billing Intelligence',desc:'CPT code recommendation, RVU calculation, bundling analysis, and Medicare payment estimation.'},
+    {icon:'building-2',name:'Payer Navigation',desc:'Payer-specific authorization requirements, denial prevention, and appeal strategy tools.'}
+  ];
+  el('arch-modules').innerHTML = modules.map(m=>`<div style="background:#f8f9fa;border-radius:10px;padding:16px;border:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><i data-lucide="${m.icon}" class="w-4 h-4" style="color:var(--navy);"></i><span style="font-size:13px;font-weight:700;color:var(--navy);">${m.name}</span></div>
+    <div style="font-size:12px;color:#6b7280;line-height:1.5;">${m.desc}</div>
+  </div>`).join('');
+
+  const stats = [
+    {label:'Pathologies',val:'7'},
+    {label:'Procedures',val:'12'},
+    {label:'CPT Codes',val:'31'},
+    {label:'Comorbidities',val:'8'},
+    {label:'Payer Profiles',val:'6'},
+    {label:'ICD-10 Codes',val:'25+'}
+  ];
+  el('arch-stats').innerHTML = stats.map(s=>`<div class="metric-card"><div class="mc-label">${s.label}</div><div class="mc-val">${s.val}</div></div>`).join('');
+
+  el('arch-tech').innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+    <div style="background:#f8f9fa;border-radius:8px;padding:12px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Frontend</div><div style="font-size:13px;font-weight:600;">HTML5, Tailwind CSS, Vanilla JS</div></div>
+    <div style="background:#f8f9fa;border-radius:8px;padding:12px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Data Layer</div><div style="font-size:13px;font-weight:600;">Embedded Clinical Catalogs</div></div>
+    <div style="background:#f8f9fa;border-radius:8px;padding:12px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Risk Engine</div><div style="font-size:13px;font-weight:600;">Multi-factor Composite Model</div></div>
+    <div style="background:#f8f9fa;border-radius:8px;padding:12px;"><div style="font-size:11px;color:#6b7280;font-weight:600;">Icons</div><div style="font-size:13px;font-weight:600;">Lucide Icons</div></div>
+  </div>`;
+
+  const roadmap = [
+    {phase:'Phase 1 (Current)',items:['Core clinical decision support','Documentation generation','CPT/RVU calculator','Payer navigation']},
+    {phase:'Phase 2 (Planned)',items:['ML-based outcome prediction','QCDR measure integration','EHR integration API','Multi-surgeon collaboration']},
+    {phase:'Phase 3 (Future)',items:['Natural language operative note dictation','Automated prior authorization submission','Real-time intraoperative decision support','Patient-facing outcome communication']}
+  ];
+  el('arch-roadmap').innerHTML = roadmap.map(r=>`<div style="margin-bottom:16px;">
+    <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px;">${r.phase}</div>
+    ${r.items.map(i=>`<div class="opt-item">${i}</div>`).join('')}
+  </div>`).join('');
+
+  lucide.createIcons();
+}
+
+// ===== INIT & EVENT BINDINGS =====
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');
+    btn.classList.add('active');
+    el(btn.dataset.tab).style.display='block';
+    if(btn.dataset.tab==='tab-payer') updatePayer();
+    if(btn.dataset.tab==='tab-arch') renderArchitecture();
+  });
+});
+
+// BMI slider
+el('inp-bmi').addEventListener('input', ()=>{
+  el('bmi-val').textContent = parseFloat(el('inp-bmi').value).toFixed(1);
+  updateCDS();
+});
+
+// Diagnosis change → update levels & conservative
+el('inp-dx').addEventListener('change', ()=>{
+  updateLevels();
+  updateConservative();
+  updateCDS();
+});
+
+// All sidebar inputs trigger CDS update
+['inp-age','inp-sex','inp-asa','inp-duration'].forEach(id=>{
+  el(id).addEventListener('change', updateCDS);
+  el(id).addEventListener('input', updateCDS);
+});
+['cmb-smoking','cmb-diabetes','cmb-osteoporosis','cmb-prior','cmb-anticoag','cmb-depression','cmb-renal','cmb-ra','chk-myelopathy','chk-neurodef','chk-cauda'].forEach(id=>{
+  el(id).addEventListener('change', updateCDS);
+});
+
+// Doc engine
+el('doc-type').addEventListener('change', ()=>{
+  updateDocFields();
+  el('doc-output-wrap').style.display='none';
+});
+el('btn-generate-doc').addEventListener('click', generateDocument);
+el('btn-copy-doc').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(el('doc-output').textContent).then(()=>{
+    el('btn-copy-doc').textContent = '✓ Copied!';
+    setTimeout(()=>{ el('btn-copy-doc').innerHTML = '<i data-lucide="copy" class="w-3 h-3" style="display:inline;vertical-align:middle;margin-right:3px;"></i>Copy to Clipboard'; lucide.createIcons(); }, 2000);
+  });
+});
+el('btn-dl-doc').addEventListener('click', ()=>{
+  const text = el('doc-output').textContent;
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${getVal('doc-type')}_${getVal('inp-name').replace(/\s/g,'_')}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// CPT tab
+el('btn-cpt-recommend').addEventListener('click', recommendCPT);
+el('btn-rvu-calc').addEventListener('click', calcRVU);
+el('btn-bundle-check').addEventListener('click', checkBundling);
+
+// Payer tab
+el('payer-sel').addEventListener('change', updatePayer);
+el('payer-cat').addEventListener('change', updatePayer);
+
+// Mobile sidebar toggle
+el('mobile-sidebar-btn').addEventListener('click', ()=>{
+  const sb = el('sidebar-panel');
+  sb.style.display = sb.style.display==='none'?'block':'none';
+});
+
+// Initialize
+updateLevels();
+updateConservative();
+updateDocFields();
+updateCDS();
+
+lucide.createIcons();
+</script>
+</body>
+</html>

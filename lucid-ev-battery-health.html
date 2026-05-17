@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Lucid EV Battery Health Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              bg: { DEFAULT: '#0a0e1a', card: '#111827', border: '#1f2937', hover: '#1a2235' },
+              gold: { DEFAULT: '#c9a227', light: '#e0c04a', dark: '#a8861e', dim: 'rgba(201,162,39,0.15)' },
+              blue: { DEFAULT: '#3b82f6', light: '#60a5fa', dark: '#2563eb' },
+              txt: { DEFAULT: '#f9fafb', muted: '#9ca3af', dim: '#6b7280' },
+              ok: '#10b981',
+              warn: '#f59e0b',
+              danger: '#ef4444',
+              orange: '#f97316'
+            },
+            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+          }
+        }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      body { background: #0a0e1a; color: #f9fafb; font-family: 'Inter', system-ui, sans-serif; margin: 0; }
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #111827; }
+      ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+      ::selection { background: rgba(201,162,39,0.3); }
+      .card-glow { box-shadow: 0 0 20px rgba(201,162,39,0.04), 0 1px 3px rgba(0,0,0,0.3); }
+      .card-glow:hover { box-shadow: 0 0 30px rgba(201,162,39,0.08), 0 4px 12px rgba(0,0,0,0.4); }
+      .gold-border-b { border-bottom: 1px solid rgba(201,162,39,0.3); }
+      .tab-active { border-bottom: 2px solid #c9a227; color: #c9a227; }
+      .tab-inactive { border-bottom: 2px solid transparent; color: #9ca3af; }
+      .tab-inactive:hover { color: #f9fafb; }
+      textarea:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 2px rgba(201,162,39,0.4); border-color: #c9a227; }
+      input, select, textarea { background: #0a0e1a; border: 1px solid #1f2937; color: #f9fafb; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-family: inherit; }
+      select option { background: #111827; color: #f9fafb; }
+      .code-block { background: #0d1117; border: 1px solid #1f2937; border-radius: 0.75rem; overflow: hidden; }
+      .code-block pre { margin: 0; padding: 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.6; }
+      .code-block code { font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace; }
+      .kw { color: #ff7b72; }
+      .fn { color: #d2a8ff; }
+      .str { color: #a5d6ff; }
+      .cm { color: #8b949e; }
+      .num { color: #79c0ff; }
+      .op { color: #c9d1d9; }
+      @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      .fade-in { animation: fadeInUp 0.5s ease-out both; }
+      .fade-in-d1 { animation-delay: 0.1s; }
+      .fade-in-d2 { animation-delay: 0.2s; }
+      .fade-in-d3 { animation-delay: 0.3s; }
+      .fade-in-d4 { animation-delay: 0.4s; }
+      .fade-in-d5 { animation-delay: 0.5s; }
+      .fade-in-d6 { animation-delay: 0.6s; }
+      @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      .pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
+      @keyframes gauge-fill { from { stroke-dashoffset: 251.2; } }
+      .gauge-animate { animation: gauge-fill 1.2s ease-out both; }
+      .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+      .collapsible-content.open { max-height: 2000px; }
+      .input-label { font-size: 0.75rem; font-weight: 500; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+      .step-card { background: #1a2035; border: 1px solid #1f2937; border-left: 3px solid #c9a227; border-radius: 0.75rem; padding: 1.25rem; transition: box-shadow 0.2s, border-color 0.2s; }
+      .step-card:hover { box-shadow: 0 0 24px rgba(201,162,39,0.08), 0 4px 12px rgba(0,0,0,0.3); border-left-color: #e0c04a; }
+      .step-badge { width: 2rem; height: 2rem; border-radius: 50%; background: rgba(201,162,39,0.15); border: 2px solid #c9a227; color: #c9a227; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; flex-shrink: 0; }
+      .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #1a2235; border: 1px solid #1f2937; border-radius: 0.5rem; padding: 0.4rem; cursor: pointer; transition: border-color 0.2s; min-height: 36px; min-width: 36px; display: flex; align-items: center; justify-content: center; }
+      .copy-btn:hover { border-color: #c9a227; }
+    </style>
+</head>
+<body data-id="0" class="min-h-screen flex flex-col">
+    <app-icon data-id="1" hidden data-icon="battery-charging" data-palette="Yellow"></app-icon>
+
+    <!-- Header -->
+    <header data-id="2" id="header-main-a1b2" class="gold-border-b sticky top-0 z-50 backdrop-blur-md bg-bg/90">
+      <div data-id="3" class="max-w-6xl mx-auto px-4 md:px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div data-id="4">
+          <div data-id="5" class="flex items-center gap-2">
+            <i data-id="6" data-lucide="zap" class="w-6 h-6 text-gold"></i>
+            <h1 data-id="7" class="text-xl md:text-2xl font-bold tracking-tight">Lucid Battery Health</h1>
+          </div>
+          <p data-id="8" class="text-xs text-txt-muted mt-0.5">Powered by python-lucidmotors API</p>
+        </div>
+        <div data-id="9" class="flex items-center gap-3">
+          <span data-id="10" id="saved-badge-c3d4" class="hidden text-xs bg-bg-card border border-bg-border rounded-full px-3 py-1 text-txt-muted">
+            <i data-id="11" data-lucide="clock" class="w-3 h-3 inline -mt-0.5 mr-1"></i>
+            Last analyzed: <span data-id="12" id="saved-time-e5f6"></span>
+          </span>
+          <span data-id="13" class="text-xs bg-gold-dim text-gold rounded-full px-3 py-1 font-medium">Unofficial · Air &amp; Gravity</span>
+        </div>
+      </div>
+    </header>
+
+    <main data-id="14" class="flex-1 max-w-6xl mx-auto w-full px-4 md:px-6 py-6 md:py-10">
+
+      <!-- Tab Selector -->
+      <div data-id="15" id="tab-bar-g7h8" class="flex gap-6 mb-6 border-b border-bg-border">
+        <button data-id="16" id="tab-json-i9j0" class="tab-active pb-3 px-1 text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 min-h-[44px]">
+          <i data-id="17" data-lucide="file-json" class="w-4 h-4"></i> JSON Import
+        </button>
+        <button data-id="18" id="tab-manual-k1l2" class="tab-inactive pb-3 px-1 text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 min-h-[44px]">
+          <i data-id="19" data-lucide="keyboard" class="w-4 h-4"></i> Manual Input
+        </button>
+      </div>
+
+      <!-- Tab 1: JSON Import -->
+      <section data-id="20" id="panel-json-m3n4" class="">
+
+        <!-- Step-by-step Setup Guide -->
+        <div data-id="21" class="mb-6">
+          <h2 data-id="22" class="text-lg md:text-xl font-bold text-gold mb-5 flex items-center gap-2.5">
+            <span data-id="23" class="text-xl">📡</span> How to Pull Your Data (3 Steps)
+          </h2>
+
+          <div data-id="24" class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+
+            <!-- Step 1 -->
+            <div data-id="25" class="step-card flex flex-col">
+              <div data-id="26" class="flex items-center gap-3 mb-3">
+                <div data-id="27" class="step-badge">1</div>
+                <h3 data-id="28" class="text-sm font-bold text-txt">Install python-lucidmotors</h3>
+              </div>
+              <p data-id="29" class="text-xs text-txt-muted mb-3 leading-relaxed">Requires Python 3.9+. Run this command in your terminal:</p>
+              <div data-id="30" class="code-block relative mb-2">
+                <button data-id="31" id="copy-pip-btn" class="copy-btn" title="Copy to clipboard">
+                  <i data-id="32" data-lucide="copy" class="w-3.5 h-3.5 text-txt-muted"></i>
+                </button>
+                <pre data-id="33" class="!py-2.5 !px-3"><code data-id="34" class="text-xs"><span data-id="35" class="op">pip install lucidmotors</span></code></pre>
+              </div>
+              <p data-id="36" class="text-[11px] text-txt-dim mt-auto pt-2">Don't have Python? Download it free at <span data-id="37" class="text-blue font-medium">python.org</span></p>
+            </div>
+
+            <!-- Step 2 -->
+            <div data-id="38" class="step-card flex flex-col">
+              <div data-id="39" class="flex items-center gap-3 mb-3">
+                <div data-id="40" class="step-badge">2</div>
+                <h3 data-id="41" class="text-sm font-bold text-txt">Run the fetch script</h3>
+              </div>
+              <p data-id="42" class="text-xs text-txt-muted mb-3 leading-relaxed">Save this as <code data-id="43" class="bg-bg px-1 py-0.5 rounded text-gold text-[11px]">fetch_lucid.py</code> and run it with: <code data-id="44" class="bg-bg px-1 py-0.5 rounded text-gold text-[11px]">python fetch_lucid.py</code></p>
+              <div data-id="45" class="code-block relative mb-2 flex-1">
+                <button data-id="46" id="copy-script-u1v2" class="copy-btn" title="Copy to clipboard">
+                  <i data-id="47" data-lucide="copy" class="w-3.5 h-3.5 text-txt-muted"></i>
+                </button>
+                <pre data-id="48" class="!text-[0.65rem] !leading-[1.5] max-h-[240px] overflow-y-auto"><code data-id="49"><span data-id="50" class="kw">import</span> <span data-id="51" class="op">asyncio, json, getpass</span>
+<span data-id="52" class="kw">from</span> <span data-id="53" class="op">lucidmotors</span> <span data-id="54" class="kw">import</span> <span data-id="55" class="op">LucidAPI</span>
+
+<span data-id="56" class="op">username</span> = <span data-id="57" class="fn">input</span>(<span data-id="58" class="str">"Lucid account email: "</span>)
+<span data-id="59" class="op">password</span> = <span data-id="60" class="op">getpass.</span><span data-id="61" class="fn">getpass</span>(<span data-id="62" class="str">"Password: "</span>)
+
+<span data-id="63" class="kw">async def</span> <span data-id="64" class="fn">main</span>():
+    <span data-id="65" class="kw">async with</span> <span data-id="66" class="fn">LucidAPI</span>() <span data-id="67" class="kw">as</span> <span data-id="68" class="op">lucid</span>:
+        <span data-id="69" class="kw">await</span> <span data-id="70" class="op">lucid.</span><span data-id="71" class="fn">login</span>(<span data-id="72" class="op">username, password</span>)
+        <span data-id="73" class="op">v</span> = <span data-id="74" class="op">lucid.vehicles</span>[<span data-id="75" class="num">0</span>]
+        <span data-id="76" class="op">data</span> = {
+            <span data-id="77" class="str">"vin"</span>: <span data-id="78" class="op">v.config.vin</span>,
+            <span data-id="79" class="str">"model"</span>: <span data-id="80" class="op">v.config.model</span><span data-id="81" class="op">.name</span>,
+            <span data-id="82" class="str">"variant"</span>: <span data-id="83" class="op">v.config.variant</span><span data-id="84" class="op">.name</span>,
+            <span data-id="85" class="str">"battery_state"</span>: {
+                <span data-id="86" class="str">"remaining_range"</span>: <span data-id="87" class="op">v.state.battery.remaining_range</span>,
+                <span data-id="88" class="str">"charge_percent"</span>: <span data-id="89" class="op">v.state.battery.charge_percent</span>,
+                <span data-id="90" class="str">"kwhr"</span>: <span data-id="91" class="op">v.state.battery.kwhr</span>,
+                <span data-id="92" class="str">"capacity_kwhr"</span>: <span data-id="93" class="op">v.state.battery.capacity_kwhr</span>,
+                <span data-id="94" class="str">"battery_health_level"</span>: <span data-id="95" class="op">v.state.battery.battery_health_level</span>,
+                <span data-id="96" class="str">"max_cell_temp"</span>: <span data-id="97" class="op">v.state.battery.max_cell_temp</span>,
+                <span data-id="98" class="str">"min_cell_temp"</span>: <span data-id="99" class="op">v.state.battery.min_cell_temp</span>,
+                <span data-id="100" class="str">"unavailable_range"</span>: <span data-id="101" class="op">v.state.battery.unavailable_range</span>,
+                <span data-id="102" class="str">"battery_pack_type"</span>: <span data-id="103" class="op">v.state.battery.battery_pack_type</span><span data-id="104" class="op">.name</span>,
+                <span data-id="105" class="str">"battery_cell_type"</span>: <span data-id="106" class="op">v.state.battery.battery_cell_type</span><span data-id="107" class="op">.name</span>,
+            },
+            <span data-id="108" class="str">"charging_state"</span>: {
+                <span data-id="109" class="str">"charge_rate_kwh_precise"</span>: <span data-id="110" class="op">v.state.charging.charge_rate_kwh_precise</span>,
+                <span data-id="111" class="str">"charge_limit_percent"</span>: <span data-id="112" class="op">v.state.charging.charge_limit_percent</span>,
+            },
+            <span data-id="113" class="str">"chassis_state"</span>: {
+                <span data-id="114" class="str">"odometer_km"</span>: <span data-id="115" class="op">v.state.chassis.odometer_km</span>,
+            }
+        }
+        <span data-id="116" class="fn">print</span>(<span data-id="117" class="op">json.</span><span data-id="118" class="fn">dumps</span>(<span data-id="119" class="op">data, indent=</span><span data-id="120" class="num">2</span>))
+
+<span data-id="121" class="op">asyncio.</span><span data-id="122" class="fn">run</span>(<span data-id="123" class="fn">main</span>())</code></pre>
+              </div>
+              <div data-id="124" class="flex items-start gap-2 mt-auto pt-2">
+                <i data-id="125" data-lucide="shield-check" class="w-3.5 h-3.5 text-ok flex-shrink-0 mt-0.5"></i>
+                <p data-id="126" class="text-[11px] text-txt-dim leading-relaxed">Your credentials are <span data-id="127" class="text-ok font-medium">never sent to this app</span> — the script runs entirely on your machine.</p>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div data-id="128" class="step-card flex flex-col">
+              <div data-id="129" class="flex items-center gap-3 mb-3">
+                <div data-id="130" class="step-badge">3</div>
+                <h3 data-id="131" class="text-sm font-bold text-txt">Paste the output below</h3>
+              </div>
+              <p data-id="132" class="text-xs text-txt-muted mb-3 leading-relaxed">Copy everything the script prints to your terminal (starting with <code data-id="133" class="bg-bg px-1 py-0.5 rounded text-gold text-[11px]">{</code>) and paste it into the box below. Then click <strong data-id="134" class="text-gold">Analyze Battery</strong>.</p>
+              <div data-id="135" class="code-block mb-2 flex-1">
+                <pre data-id="136" class="!text-[0.65rem] !leading-[1.5]"><code data-id="137"><span data-id="138" class="op">{</span>
+  <span data-id="139" class="str">"vin"</span>: <span data-id="140" class="str">"LAAA..."</span>,
+  <span data-id="141" class="str">"model"</span>: <span data-id="142" class="str">"MODEL_AIR"</span>,
+  <span data-id="143" class="str">"battery_state"</span>: <span data-id="144" class="op">{</span>
+    <span data-id="145" class="str">"charge_percent"</span>: <span data-id="146" class="num">87.5</span>,
+    <span data-id="147" class="cm">...</span>
+  <span data-id="148" class="op">}</span>
+<span data-id="149" class="op">}</span></code></pre>
+              </div>
+              <div data-id="150" class="flex items-center gap-2 mt-auto pt-2">
+                <i data-id="151" data-lucide="info" class="w-3.5 h-3.5 text-blue flex-shrink-0"></i>
+                <p data-id="152" class="text-[11px] text-txt-dim">Or click <strong data-id="153" class="text-txt-muted">Load Demo Data</strong> to try it out first.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- JSON Textarea -->
+        <div data-id="154" class="bg-bg-card border border-bg-border rounded-xl p-4 md:p-6 card-glow">
+          <label data-id="155" class="input-label block mb-2">Paste JSON Output</label>
+          <textarea data-id="156" id="json-input-w3x4" class="w-full min-h-[220px] rounded-lg p-4 text-sm font-mono resize-y" placeholder='Paste your JSON output here...'></textarea>
+          <div data-id="157" id="json-error-y5z6" class="text-danger text-xs mt-2 hidden"></div>
+          <div data-id="158" class="flex flex-col sm:flex-row gap-3 mt-4">
+            <button data-id="159" id="analyze-json-a7b8" class="bg-gold hover:bg-gold-light text-bg font-semibold px-6 py-2.5 rounded-lg cursor-pointer transition-colors flex items-center justify-center gap-2 min-h-[44px]">
+              <i data-id="160" data-lucide="scan-search" class="w-4 h-4"></i> Analyze Battery
+            </button>
+            <button data-id="161" id="load-demo-c9d0" class="bg-bg-hover border border-bg-border hover:border-gold text-txt-muted hover:text-gold px-6 py-2.5 rounded-lg cursor-pointer transition-colors flex items-center justify-center gap-2 min-h-[44px]">
+              <i data-id="162" data-lucide="flask-conical" class="w-4 h-4"></i> Load Demo Data
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Manual Input -->
+      <section data-id="163" id="panel-manual-e1f2" class="hidden">
+        <div data-id="164" class="bg-bg-card border border-bg-border rounded-xl p-4 md:p-6 card-glow">
+          <div data-id="165" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- VIN -->
+            <div data-id="166">
+              <label data-id="167" class="input-label block">VIN</label>
+              <input data-id="168" id="m-vin-g3h4" type="text" class="w-full" placeholder="e.g. LAAA1234567890123" maxlength="17" />
+            </div>
+            <!-- Model -->
+            <div data-id="169">
+              <label data-id="170" class="input-label block">Model</label>
+              <select data-id="171" id="m-model-i5j6" class="w-full">
+                <option data-id="172" value="MODEL_AIR">Air</option>
+                <option data-id="173" value="MODEL_GRAVITY">Gravity</option>
+              </select>
+            </div>
+            <!-- Variant -->
+            <div data-id="174">
+              <label data-id="175" class="input-label block">Variant</label>
+              <select data-id="176" id="m-variant-k7l8" class="w-full">
+                <option data-id="177" value="MODEL_VARIANT_DREAM_EDITION_PERFORMANCE">Dream Edition Performance</option>
+                <option data-id="178" value="MODEL_VARIANT_DREAM_EDITION_RANGE">Dream Edition Range</option>
+                <option data-id="179" value="MODEL_VARIANT_GRAND_TOURING">Grand Touring</option>
+                <option data-id="180" value="MODEL_VARIANT_TOURING">Touring</option>
+                <option data-id="181" value="MODEL_VARIANT_PURE">Pure</option>
+                <option data-id="182" value="MODEL_VARIANT_SAPPHIRE">Sapphire</option>
+              </select>
+            </div>
+            <!-- Pack Type -->
+            <div data-id="183">
+              <label data-id="184" class="input-label block">Battery Pack Type</label>
+              <select data-id="185" id="m-pack-m9n0" class="w-full">
+                <option data-id="186" value="BATTERY_PACK_TYPE_AIR_22">AIR 22 (118 kWh)</option>
+                <option data-id="187" value="BATTERY_PACK_TYPE_AIR_18">AIR 18 (112 kWh)</option>
+                <option data-id="188" value="BATTERY_PACK_TYPE_AIR_16">AIR 16 (88 kWh)</option>
+              </select>
+            </div>
+            <!-- Cell Type -->
+            <div data-id="189">
+              <label data-id="190" class="input-label block">Battery Cell Type</label>
+              <select data-id="191" id="m-cell-o1p2" class="w-full">
+                <option data-id="192" value="BATTERY_CELL_TYPE_LG_M50L">LG M50L</option>
+                <option data-id="193" value="BATTERY_CELL_TYPE_LG_M52V">LG M52V</option>
+                <option data-id="194" value="BATTERY_CELL_TYPE_LG_M48">LG M48</option>
+                <option data-id="195" value="BATTERY_CELL_TYPE_SDI_50G">Samsung SDI 50G</option>
+                <option data-id="196" value="BATTERY_CELL_TYPE_SDI_50GV2">Samsung SDI 50G V2</option>
+                <option data-id="197" value="BATTERY_CELL_TYPE_PANA_2170M">Panasonic 2170M</option>
+                <option data-id="198" value="BATTERY_CELL_TYPE_LG_H40B">LG H40B</option>
+              </select>
+            </div>
+            <!-- Charge % -->
+            <div data-id="199">
+              <label data-id="200" class="input-label block">Charge %</label>
+              <input data-id="201" id="m-soc-q3r4" type="number" class="w-full" min="0" max="100" step="0.1" placeholder="e.g. 92" />
+            </div>
+            <!-- Current kWh -->
+            <div data-id="202">
+              <label data-id="203" class="input-label block">Current kWh</label>
+              <input data-id="204" id="m-kwhr-s5t6" type="number" class="w-full" min="0" step="0.1" placeholder="e.g. 100.3" />
+            </div>
+            <!-- Capacity kWh -->
+            <div data-id="205">
+              <label data-id="206" class="input-label block">Capacity kWh</label>
+              <input data-id="207" id="m-cap-u7v8" type="number" class="w-full" min="0" step="0.1" placeholder="e.g. 109.1" />
+            </div>
+            <!-- Remaining Range -->
+            <div data-id="208">
+              <label data-id="209" class="input-label block">Remaining Range (km)</label>
+              <input data-id="210" id="m-range-w9x0" type="number" class="w-full" min="0" step="0.1" placeholder="e.g. 753" />
+            </div>
+            <!-- Battery Health Level -->
+            <div data-id="211">
+              <label data-id="212" class="input-label block">Battery Health Level (0–100 or 0.0–1.0)</label>
+              <input data-id="213" id="m-health-y1z2" type="number" class="w-full" min="0" max="100" step="0.001" placeholder="e.g. 97.2 or 0.972" />
+            </div>
+            <!-- Max Cell Temp -->
+            <div data-id="214">
+              <label data-id="215" class="input-label block">Max Cell Temp °C</label>
+              <input data-id="216" id="m-tmax-a3b4" type="number" class="w-full" step="0.1" placeholder="e.g. 28.4" />
+            </div>
+            <!-- Min Cell Temp -->
+            <div data-id="217">
+              <label data-id="218" class="input-label block">Min Cell Temp °C</label>
+              <input data-id="219" id="m-tmin-c5d6" type="number" class="w-full" step="0.1" placeholder="e.g. 26.1" />
+            </div>
+            <!-- Odometer -->
+            <div data-id="220">
+              <label data-id="221" class="input-label block">Odometer (km)</label>
+              <input data-id="222" id="m-odo-e7f8" type="number" class="w-full" min="0" step="1" placeholder="e.g. 18420" />
+            </div>
+            <!-- Charge Rate -->
+            <div data-id="223">
+              <label data-id="224" class="input-label block">Charge Rate kW (0 if not charging)</label>
+              <input data-id="225" id="m-chgrate-g9h0" type="number" class="w-full" min="0" step="0.1" placeholder="e.g. 0" />
+            </div>
+          </div>
+          <div data-id="226" id="manual-error-i1j2" class="text-danger text-xs mt-3 hidden"></div>
+          <div data-id="227" class="mt-5">
+            <button data-id="228" id="analyze-manual-k3l4" class="bg-gold hover:bg-gold-light text-bg font-semibold px-6 py-2.5 rounded-lg cursor-pointer transition-colors flex items-center justify-center gap-2 min-h-[44px]">
+              <i data-id="229" data-lucide="scan-search" class="w-4 h-4"></i> Analyze Battery
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section data-id="230" id="results-section-m5n6" class="hidden mt-8 space-y-6">
+
+        <!-- Row 1: Summary Bar -->
+        <div data-id="231" id="summary-bar-o7p8" class="bg-bg-card border border-bg-border rounded-xl p-4 md:p-5 card-glow fade-in">
+          <div data-id="232" class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <div data-id="233"><span data-id="234" class="text-txt-dim text-xs uppercase tracking-wider">VIN</span><br data-id="235"/><span data-id="236" id="res-vin-q9r0" class="font-semibold tabular-nums"></span></div>
+            <div data-id="237"><span data-id="238" class="text-txt-dim text-xs uppercase tracking-wider">Model</span><br data-id="239"/><span data-id="240" id="res-model-s1t2" class="font-semibold"></span></div>
+            <div data-id="241"><span data-id="242" class="text-txt-dim text-xs uppercase tracking-wider">Pack</span><br data-id="243"/><span data-id="244" id="res-pack-u3v4" class="font-semibold"></span></div>
+            <div data-id="245"><span data-id="246" class="text-txt-dim text-xs uppercase tracking-wider">Cell</span><br data-id="247"/><span data-id="248" id="res-cell-w5x6" class="font-semibold"></span></div>
+            <div data-id="249"><span data-id="250" class="text-txt-dim text-xs uppercase tracking-wider">Odometer</span><br data-id="251"/><span data-id="252" id="res-odo-y7z8" class="font-semibold tabular-nums"></span></div>
+          </div>
+        </div>
+
+        <!-- Row 2: Big Health Score Cards -->
+        <div data-id="253" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+          <!-- SOH Card -->
+          <div data-id="254" class="bg-bg-card border border-bg-border rounded-xl p-5 card-glow fade-in fade-in-d1 flex flex-col items-center text-center">
+            <h3 data-id="255" class="text-xs uppercase tracking-widest text-txt-muted mb-4 font-semibold">State of Health</h3>
+            <div data-id="256" class="relative w-36 h-36 mb-3">
+              <svg data-id="257" viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+                <circle data-id="258" cx="50" cy="50" r="40" fill="none" stroke="#1f2937" stroke-width="8" />
+                <circle data-id="259" id="soh-arc-a9b0" cx="50" cy="50" r="40" fill="none" stroke="#c9a227" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" class="gauge-animate" />
+              </svg>
+              <div data-id="260" class="absolute inset-0 flex flex-col items-center justify-center">
+                <span data-id="261" id="soh-value-c1d2" class="text-3xl font-bold tabular-nums"></span>
+                <span data-id="262" class="text-xs text-txt-muted">SOH</span>
+              </div>
+            </div>
+            <span data-id="263" id="soh-label-e3f4" class="text-sm font-semibold mb-1"></span>
+            <span data-id="264" id="soh-cap-g5h6" class="text-xs text-txt-muted tabular-nums"></span>
+          </div>
+
+          <!-- SOC Card -->
+          <div data-id="265" class="bg-bg-card border border-bg-border rounded-xl p-5 card-glow fade-in fade-in-d2">
+            <h3 data-id="266" class="text-xs uppercase tracking-widest text-txt-muted mb-4 font-semibold text-center">State of Charge</h3>
+            <div data-id="267" class="space-y-4">
+              <div data-id="268">
+                <div data-id="269" class="flex justify-between text-xs mb-1.5">
+                  <span data-id="270" class="text-txt-muted">Charge Level</span>
+                  <span data-id="271" id="soc-pct-i7j8" class="font-semibold tabular-nums"></span>
+                </div>
+                <div data-id="272" class="w-full h-4 bg-bg rounded-full overflow-hidden relative">
+                  <div data-id="273" id="soc-bar-k9l0" class="h-full bg-blue rounded-full transition-all duration-700"></div>
+                  <div data-id="274" id="soc-unavail-m1n2" class="absolute top-0 right-0 h-full bg-danger/40 rounded-r-full" style="width:0%"></div>
+                </div>
+              </div>
+              <div data-id="275" class="grid grid-cols-2 gap-3 text-center">
+                <div data-id="276" class="bg-bg rounded-lg p-2.5">
+                  <div data-id="277" id="soc-range-o3p4" class="text-lg font-bold tabular-nums"></div>
+                  <div data-id="278" class="text-xs text-txt-muted">Range Remaining</div>
+                </div>
+                <div data-id="279" class="bg-bg rounded-lg p-2.5">
+                  <div data-id="280" id="soc-kwh-q5r6" class="text-lg font-bold tabular-nums"></div>
+                  <div data-id="281" class="text-xs text-txt-muted">kWh Stored</div>
+                </div>
+              </div>
+              <div data-id="282" class="flex items-center justify-between bg-bg rounded-lg p-2.5 text-xs">
+                <span data-id="283" class="text-txt-muted">Charge Limit</span>
+                <span data-id="284" id="soc-limit-s7t8" class="font-semibold tabular-nums"></span>
+              </div>
+              <div data-id="285" id="soc-unavail-label-u9v0" class="hidden text-xs text-danger flex items-center gap-1.5">
+                <i data-id="286" data-lucide="alert-triangle" class="w-3 h-3"></i>
+                <span data-id="287" id="soc-unavail-text-w1x2"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Thermal Card -->
+          <div data-id="288" class="bg-bg-card border border-bg-border rounded-xl p-5 card-glow fade-in fade-in-d3">
+            <h3 data-id="289" class="text-xs uppercase tracking-widest text-txt-muted mb-4 font-semibold text-center">Thermal Profile</h3>
+            <div data-id="290" class="space-y-4">
+              <!-- Max Temp -->
+              <div data-id="291">
+                <div data-id="292" class="flex justify-between text-xs mb-1">
+                  <span data-id="293" class="text-txt-muted">Max Cell Temp</span>
+                  <span data-id="294" id="therm-max-y3z4" class="font-semibold tabular-nums"></span>
+                </div>
+                <div data-id="295" class="w-full h-3 bg-bg rounded-full overflow-hidden">
+                  <div data-id="296" id="therm-max-bar-a5b6" class="h-full bg-orange rounded-full transition-all duration-700"></div>
+                </div>
+              </div>
+              <!-- Min Temp -->
+              <div data-id="297">
+                <div data-id="298" class="flex justify-between text-xs mb-1">
+                  <span data-id="299" class="text-txt-muted">Min Cell Temp</span>
+                  <span data-id="300" id="therm-min-c7d8" class="font-semibold tabular-nums"></span>
+                </div>
+                <div data-id="301" class="w-full h-3 bg-bg rounded-full overflow-hidden">
+                  <div data-id="302" id="therm-min-bar-e9f0" class="h-full bg-blue rounded-full transition-all duration-700"></div>
+                </div>
+              </div>
+              <!-- Delta -->
+              <div data-id="303" class="bg-bg rounded-lg p-3 text-center">
+                <div data-id="304" class="text-xs text-txt-muted mb-1">Cell Temperature Delta</div>
+                <div data-id="305" id="therm-delta-g1h2" class="text-2xl font-bold tabular-nums"></div>
+                <div data-id="306" id="therm-delta-label-i3j4" class="text-xs font-semibold mt-1"></div>
+              </div>
+              <!-- Cell Chemistry -->
+              <div data-id="307" class="flex items-center justify-between bg-bg rounded-lg p-2.5 text-xs">
+                <span data-id="308" class="text-txt-muted">Cell Chemistry</span>
+                <span data-id="309" id="therm-cell-k5l6" class="font-semibold"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Metrics Grid -->
+        <div data-id="310" class="grid grid-cols-2 md:grid-cols-4 gap-4 fade-in fade-in-d4">
+          <div data-id="311" class="bg-bg-card border border-bg-border rounded-xl p-4 text-center card-glow">
+            <div data-id="312" id="met-effcap-m7n8" class="text-xl font-bold tabular-nums text-gold"></div>
+            <div data-id="313" class="text-xs text-txt-muted mt-1">Effective Capacity</div>
+          </div>
+          <div data-id="314" class="bg-bg-card border border-bg-border rounded-xl p-4 text-center card-glow">
+            <div data-id="315" id="met-degcap-o9p0" class="text-xl font-bold tabular-nums text-danger"></div>
+            <div data-id="316" class="text-xs text-txt-muted mt-1">Degraded Capacity</div>
+          </div>
+          <div data-id="317" class="bg-bg-card border border-bg-border rounded-xl p-4 text-center card-glow">
+            <div data-id="318" id="met-rangepct-q1r2" class="text-xl font-bold tabular-nums text-blue"></div>
+            <div data-id="319" class="text-xs text-txt-muted mt-1">Range per % SOC</div>
+          </div>
+          <div data-id="320" class="bg-bg-card border border-bg-border rounded-xl p-4 text-center card-glow">
+            <div data-id="321" id="met-odo-s3t4" class="text-xl font-bold tabular-nums"></div>
+            <div data-id="322" class="text-xs text-txt-muted mt-1">Odometer</div>
+          </div>
+        </div>
+
+        <!-- Row 4: Charging Analysis -->
+        <div data-id="323" class="bg-bg-card border border-bg-border rounded-xl p-5 card-glow fade-in fade-in-d5">
+          <h3 data-id="324" class="text-xs uppercase tracking-widest text-txt-muted mb-4 font-semibold flex items-center gap-2">
+            <i data-id="325" data-lucide="plug-zap" class="w-4 h-4 text-gold"></i> Charging Analysis
+          </h3>
+          <div data-id="326" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div data-id="327" class="bg-bg rounded-lg p-4">
+              <div data-id="328" class="text-xs text-txt-muted mb-1">Status</div>
+              <div data-id="329" id="chg-status-u5v6" class="text-sm font-semibold flex items-center gap-2"></div>
+            </div>
+            <div data-id="330" class="bg-bg rounded-lg p-4">
+              <div data-id="331" class="text-xs text-txt-muted mb-1">Charge Target</div>
+              <div data-id="332" id="chg-target-w7x8" class="text-sm font-semibold tabular-nums"></div>
+            </div>
+            <div data-id="333" class="bg-bg rounded-lg p-4">
+              <div data-id="334" class="text-xs text-txt-muted mb-1">Performance</div>
+              <div data-id="335" id="chg-perf-y9z0" class="text-sm font-semibold"></div>
+            </div>
+          </div>
+          <div data-id="336" id="chg-eta-row-a1b1" class="hidden mt-3 bg-bg rounded-lg p-4">
+            <div data-id="337" class="text-xs text-txt-muted mb-1">Estimated Time to Target</div>
+            <div data-id="338" id="chg-eta-c2d2" class="text-sm font-semibold tabular-nums"></div>
+          </div>
+        </div>
+
+        <!-- Row 5: Health Insights -->
+        <div data-id="339" class="bg-bg-card border border-bg-border rounded-xl p-5 card-glow fade-in fade-in-d6">
+          <h3 data-id="340" class="text-xs uppercase tracking-widest text-txt-muted mb-4 font-semibold flex items-center gap-2">
+            <i data-id="341" data-lucide="heart-pulse" class="w-4 h-4 text-gold"></i> Health Insights &amp; Recommendations
+          </h3>
+          <ul data-id="342" id="insights-list-e3f3" class="space-y-3"></ul>
+        </div>
+
+        <!-- Row 6: Raw Fields Debug -->
+        <div data-id="343" class="bg-bg-card border border-bg-border rounded-xl card-glow fade-in fade-in-d6">
+          <button data-id="344" id="debug-toggle-g4h4" class="w-full flex items-center justify-between p-4 cursor-pointer min-h-[44px]">
+            <span data-id="345" class="flex items-center gap-2 text-xs uppercase tracking-widest text-txt-muted font-semibold">
+              <i data-id="346" data-lucide="code-2" class="w-4 h-4"></i> Raw Fields
+            </span>
+            <i data-id="347" data-lucide="chevron-down" id="debug-chevron-i5j5" class="w-4 h-4 text-txt-muted transition-transform"></i>
+          </button>
+          <div data-id="348" id="debug-content-k6l6" class="collapsible-content">
+            <div data-id="349" class="px-4 pb-4 overflow-x-auto">
+              <table data-id="350" id="debug-table-m7n7" class="w-full text-xs">
+                <thead data-id="351">
+                  <tr data-id="352" class="border-b border-bg-border">
+                    <th data-id="353" class="text-left py-2 pr-4 text-txt-muted font-medium">Field</th>
+                    <th data-id="354" class="text-left py-2 text-txt-muted font-medium">Value</th>
+                  </tr>
+                </thead>
+                <tbody data-id="355" id="debug-tbody-o8p8" class="font-mono"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <footer data-id="356" id="footer-q9r9" class="text-center py-6 text-xs text-txt-dim border-t border-bg-border">
+      Made by Copilot
+    </footer>
+
+    <script>
+    // ============ ENUM LOOKUP TABLES ============
+    // Supports both integer keys (from raw API) and string keys (from .name output)
+    const MODEL_LOOKUP = {
+      0: 'Unknown', '0': 'Unknown',
+      1: 'Air', '1': 'Air', 'MODEL_AIR': 'Air',
+      2: 'Gravity', '2': 'Gravity', 'MODEL_GRAVITY': 'Gravity'
+    };
+
+    const VARIANT_LOOKUP = {
+      0: 'Unknown', '0': 'Unknown',
+      1: 'Dream Edition Performance', '1': 'Dream Edition Performance', 'MODEL_VARIANT_DREAM_EDITION_PERFORMANCE': 'Dream Edition Performance',
+      2: 'Dream Edition Range', '2': 'Dream Edition Range', 'MODEL_VARIANT_DREAM_EDITION_RANGE': 'Dream Edition Range',
+      3: 'Grand Touring', '3': 'Grand Touring', 'MODEL_VARIANT_GRAND_TOURING': 'Grand Touring',
+      4: 'Touring', '4': 'Touring', 'MODEL_VARIANT_TOURING': 'Touring',
+      5: 'Pure', '5': 'Pure', 'MODEL_VARIANT_PURE': 'Pure',
+      6: 'Sapphire', '6': 'Sapphire', 'MODEL_VARIANT_SAPPHIRE': 'Sapphire',
+      // Legacy string key
+      'MODEL_VARIANT_DREAM_EDITION': 'Dream Edition'
+    };
+
+    const PACK_TYPE_LOOKUP = {
+      0: { name: 'Unknown', nominal: null, usable: null },
+      '0': { name: 'Unknown', nominal: null, usable: null },
+      1: { name: 'AIR 22 (118 kWh)', nominal: 118, usable: 107 },
+      '1': { name: 'AIR 22 (118 kWh)', nominal: 118, usable: 107 },
+      'BATTERY_PACK_TYPE_AIR_22': { name: 'AIR 22 (118 kWh)', nominal: 118, usable: 107 },
+      2: { name: 'AIR 18 (112 kWh)', nominal: 112, usable: 102 },
+      '2': { name: 'AIR 18 (112 kWh)', nominal: 112, usable: 102 },
+      'BATTERY_PACK_TYPE_AIR_18': { name: 'AIR 18 (112 kWh)', nominal: 112, usable: 102 },
+      3: { name: 'AIR 16 (88 kWh)', nominal: 88, usable: 82 },
+      '3': { name: 'AIR 16 (88 kWh)', nominal: 88, usable: 82 },
+      'BATTERY_PACK_TYPE_AIR_16': { name: 'AIR 16 (88 kWh)', nominal: 88, usable: 82 }
+    };
+
+    const CELL_TYPE_LOOKUP = {
+      0: 'Unknown', '0': 'Unknown',
+      1: 'LG M50L', '1': 'LG M50L', 'BATTERY_CELL_TYPE_LG_M50L': 'LG M50L',
+      2: 'LG M52V', '2': 'LG M52V', 'BATTERY_CELL_TYPE_LG_M52V': 'LG M52V',
+      3: 'LG M48', '3': 'LG M48', 'BATTERY_CELL_TYPE_LG_M48': 'LG M48',
+      4: 'Samsung SDI 50G', '4': 'Samsung SDI 50G', 'BATTERY_CELL_TYPE_SDI_50G': 'Samsung SDI 50G',
+      5: 'Samsung SDI 50G V2', '5': 'Samsung SDI 50G V2', 'BATTERY_CELL_TYPE_SDI_50GV2': 'Samsung SDI 50G V2',
+      6: 'Panasonic 2170M', '6': 'Panasonic 2170M', 'BATTERY_CELL_TYPE_PANA_2170M': 'Panasonic 2170M',
+      7: 'LG H40B', '7': 'LG H40B', 'BATTERY_CELL_TYPE_LG_H40B': 'LG H40B'
+    };
+
+    // ============ CONSTANTS ============
+    const PACK_RANGE = {
+      'BATTERY_PACK_TYPE_AIR_22__MODEL_VARIANT_GRAND_TOURING': 516,
+      'BATTERY_PACK_TYPE_AIR_22__MODEL_VARIANT_DREAM_EDITION': 520,
+      'BATTERY_PACK_TYPE_AIR_18': 410,
+      'BATTERY_PACK_TYPE_AIR_16': 406
+    };
+
+    const DEMO_DATA = {
+      "vin": "LAAA1234567890123",
+      "model": "MODEL_AIR",
+      "variant": "MODEL_VARIANT_GRAND_TOURING",
+      "battery_state": {
+        "remaining_range": 753.5,
+        "charge_percent": 92.0,
+        "kwhr": 100.3,
+        "capacity_kwhr": 109.1,
+        "battery_health_level": 97.2,
+        "max_cell_temp": 28.4,
+        "min_cell_temp": 26.1,
+        "unavailable_range": 12.6,
+        "battery_pack_type": "BATTERY_PACK_TYPE_AIR_22",
+        "battery_cell_type": "BATTERY_CELL_TYPE_LG_M50L"
+      },
+      "charging_state": {
+        "charge_rate_kwh_precise": 0.0,
+        "charge_limit_percent": 100.0
+      },
+      "chassis_state": {
+        "odometer_km": 18420.0
+      }
+    };
+
+    const SCRIPT_TEXT = `import asyncio, json, getpass
+from lucidmotors import LucidAPI
+
+username = input("Lucid account email: ")
+password = getpass.getpass("Password: ")
+
+async def main():
+    async with LucidAPI() as lucid:
+        await lucid.login(username, password)
+        v = lucid.vehicles[0]
+        data = {
+            "vin": v.config.vin,
+            "model": v.config.model.name,
+            "variant": v.config.variant.name,
+            "battery_state": {
+                "remaining_range": v.state.battery.remaining_range,
+                "charge_percent": v.state.battery.charge_percent,
+                "kwhr": v.state.battery.kwhr,
+                "capacity_kwhr": v.state.battery.capacity_kwhr,
+                "battery_health_level": v.state.battery.battery_health_level,
+                "max_cell_temp": v.state.battery.max_cell_temp,
+                "min_cell_temp": v.state.battery.min_cell_temp,
+                "unavailable_range": v.state.battery.unavailable_range,
+                "battery_pack_type": v.state.battery.battery_pack_type.name,
+                "battery_cell_type": v.state.battery.battery_cell_type.name,
+            },
+            "charging_state": {
+                "charge_rate_kwh_precise": v.state.charging.charge_rate_kwh_precise,
+                "charge_limit_percent": v.state.charging.charge_limit_percent,
+            },
+            "chassis_state": {
+                "odometer_km": v.state.chassis.odometer_km,
+            }
+        }
+        print(json.dumps(data, indent=2))
+
+asyncio.run(main())`;
+
+    const PIP_TEXT = 'pip install lucidmotors';
+
+    // ============ HELPERS ============
+    function safe(val, fallback) { return (val !== undefined && val !== null && val !== '') ? val : fallback; }
+    function num(val, decimals) {
+      if (val === undefined || val === null || val === '' || isNaN(val)) return 'N/A';
+      return Number(val).toFixed(decimals);
+    }
+    function maskVin(vin) {
+      if (!vin || vin.length < 5) return vin || 'N/A';
+      return '***' + vin.slice(-4);
+    }
+
+    // Resolve enum values to display names using lookup tables
+    function resolveModel(val) {
+      if (val == null) return 'N/A';
+      return MODEL_LOOKUP[val] || String(val);
+    }
+    function resolveVariant(val) {
+      if (val == null) return '';
+      return VARIANT_LOOKUP[val] || String(val);
+    }
+    function resolvePackType(val) {
+      if (val == null) return null;
+      return PACK_TYPE_LOOKUP[val] || null;
+    }
+    function resolvePackName(val) {
+      const pack = resolvePackType(val);
+      return pack ? pack.name : (val != null ? String(val) : 'N/A');
+    }
+    function resolveCellType(val) {
+      if (val == null) return 'N/A';
+      return CELL_TYPE_LOOKUP[val] || String(val);
+    }
+
+    function getNominalKwh(packTypeRaw, capacityKwhr, healthPct) {
+      const pack = resolvePackType(packTypeRaw);
+      if (pack && pack.nominal) return pack.nominal;
+      // Fallback: derive from capacity and health percentage
+      if (capacityKwhr && healthPct && healthPct > 0) return capacityKwhr / (healthPct / 100);
+      return null;
+    }
+
+    // Normalize battery_health_level to a percentage (0–100)
+    function normalizeHealthLevel(raw) {
+      if (raw == null || raw === '' || isNaN(raw)) return null;
+      const v = Number(raw);
+      // If > 1, treat as already a percentage (e.g. 96.0 → 96.0%)
+      // If <= 1, treat as 0–1 scale and multiply by 100
+      if (v > 1) return v;
+      return v * 100;
+    }
+
+    function getSOH(data) {
+      const bs = data.battery_state || {};
+      const healthRaw = bs.battery_health_level;
+      const healthPct = normalizeHealthLevel(healthRaw);
+      if (healthPct != null && healthPct > 0) return healthPct;
+      // Fallback: derive from capacity vs nominal
+      const nominal = getNominalKwh(bs.battery_pack_type, bs.capacity_kwhr, healthPct);
+      if (nominal && bs.capacity_kwhr) return (bs.capacity_kwhr / nominal) * 100;
+      return null;
+    }
+
+    function sohColor(soh) {
+      if (soh >= 95) return '#10b981';
+      if (soh >= 85) return '#f59e0b';
+      if (soh >= 75) return '#f97316';
+      return '#ef4444';
+    }
+    function sohLabel(soh) {
+      if (soh >= 95) return { text: 'Excellent', cls: 'text-ok' };
+      if (soh >= 85) return { text: 'Good', cls: 'text-warn' };
+      if (soh >= 75) return { text: 'Fair', cls: 'text-orange' };
+      return { text: 'Degraded', cls: 'text-danger' };
+    }
+
+    // Convert km to miles
+    function kmToMi(km) { return km * 0.6214; }
+
+    // ============ COPY HELPER ============
+    async function copyToClipboard(text, btnEl) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const origHTML = btnEl.innerHTML;
+        btnEl.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-ok"></i>';
+        lucide.createIcons();
+        setTimeout(() => { btnEl.innerHTML = origHTML; lucide.createIcons(); }, 2000);
+      } catch(e) { /* ignore */ }
+    }
+
+    // ============ TABS ============
+    const tabJson = document.getElementById('tab-json-i9j0');
+    const tabManual = document.getElementById('tab-manual-k1l2');
+    const panelJson = document.getElementById('panel-json-m3n4');
+    const panelManual = document.getElementById('panel-manual-e1f2');
+
+    tabJson.addEventListener('click', () => {
+      tabJson.className = 'tab-active pb-3 px-1 text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 min-h-[44px]';
+      tabManual.className = 'tab-inactive pb-3 px-1 text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 min-h-[44px]';
+      panelJson.classList.remove('hidden');
+      panelManual.classList.add('hidden');
+    });
+    tabManual.addEventListener('click', () => {
+      tabManual.className = 'tab-active pb-3 px-1 text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 min-h-[44px]';
+      tabJson.className = 'tab-inactive pb-3 px-1 text-sm font-semibold cursor-pointer transition-colors flex items-center gap-2 min-h-[44px]';
+      panelManual.classList.remove('hidden');
+      panelJson.classList.add('hidden');
+    });
+
+    // ============ COLLAPSIBLES ============
+    const debugToggle = document.getElementById('debug-toggle-g4h4');
+    const debugContent = document.getElementById('debug-content-k6l6');
+    const debugChevron = document.getElementById('debug-chevron-i5j5');
+    debugToggle.addEventListener('click', () => {
+      debugContent.classList.toggle('open');
+      debugChevron.style.transform = debugContent.classList.contains('open') ? 'rotate(180deg)' : '';
+    });
+
+    // ============ COPY BUTTONS ============
+    document.getElementById('copy-pip-btn').addEventListener('click', function() {
+      copyToClipboard(PIP_TEXT, this);
+    });
+
+    document.getElementById('copy-script-u1v2').addEventListener('click', function() {
+      copyToClipboard(SCRIPT_TEXT, this);
+    });
+
+    // ============ LOAD DEMO ============
+    document.getElementById('load-demo-c9d0').addEventListener('click', () => {
+      document.getElementById('json-input-w3x4').value = JSON.stringify(DEMO_DATA, null, 2);
+      document.getElementById('json-error-y5z6').classList.add('hidden');
+    });
+
+    // ============ ANALYZE JSON ============
+    document.getElementById('analyze-json-a7b8').addEventListener('click', () => {
+      const errEl = document.getElementById('json-error-y5z6');
+      const raw = document.getElementById('json-input-w3x4').value.trim();
+      if (!raw) { errEl.textContent = 'Please paste JSON data first.'; errEl.classList.remove('hidden'); return; }
+      let data;
+      try { data = JSON.parse(raw); } catch(e) {
+        errEl.textContent = 'Invalid JSON: ' + e.message;
+        errEl.classList.remove('hidden');
+        return;
+      }
+      errEl.classList.add('hidden');
+      analyze(data);
+    });
+
+    // ============ ANALYZE MANUAL ============
+    document.getElementById('analyze-manual-k3l4').addEventListener('click', () => {
+      const errEl = document.getElementById('manual-error-i1j2');
+      const gv = (id) => document.getElementById(id).value;
+      const gn = (id) => { const v = gv(id); return v === '' ? null : parseFloat(v); };
+
+      const data = {
+        vin: gv('m-vin-g3h4') || null,
+        model: gv('m-model-i5j6'),
+        variant: gv('m-variant-k7l8'),
+        battery_state: {
+          charge_percent: gn('m-soc-q3r4'),
+          kwhr: gn('m-kwhr-s5t6'),
+          capacity_kwhr: gn('m-cap-u7v8'),
+          remaining_range: gn('m-range-w9x0'),
+          battery_health_level: gn('m-health-y1z2'),
+          max_cell_temp: gn('m-tmax-a3b4'),
+          min_cell_temp: gn('m-tmin-c5d6'),
+          battery_pack_type: gv('m-pack-m9n0'),
+          battery_cell_type: gv('m-cell-o1p2'),
+          unavailable_range: 0
+        },
+        charging_state: {
+          charge_rate_kwh_precise: gn('m-chgrate-g9h0') || 0,
+          charge_limit_percent: 100
+        },
+        chassis_state: {
+          odometer_km: gn('m-odo-e7f8')
+        }
+      };
+      errEl.classList.add('hidden');
+      analyze(data);
+    });
+
+    // ============ PERSISTENCE ============
+    function saveData(data) {
+      try {
+        const payload = { data, timestamp: new Date().toISOString() };
+        localStorage.setItem('lucid_battery_last', JSON.stringify(payload));
+      } catch(e) {}
+    }
+    function loadSaved() {
+      try {
+        const raw = localStorage.getItem('lucid_battery_last');
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch(e) { return null; }
+    }
+
+    // ============ MAIN ANALYSIS ============
+    function analyze(data) {
+      saveData(data);
+      showSavedBadge();
+
+      const bs = data.battery_state || {};
+      const cs = data.charging_state || {};
+      const ch = data.chassis_state || {};
+
+      const packTypeRaw = safe(bs.battery_pack_type, '');
+      const cellTypeRaw = safe(bs.battery_cell_type, '');
+      const variantRaw = safe(data.variant, '');
+      const modelRaw = safe(data.model, '');
+
+      // Resolve enums to display names
+      const modelName = resolveModel(modelRaw);
+      const variantName = resolveVariant(variantRaw);
+      const packName = resolvePackName(packTypeRaw);
+      const cellName = resolveCellType(cellTypeRaw);
+
+      // Normalize health level (handles both 0–1 and 0–100 scale)
+      const healthPct = normalizeHealthLevel(bs.battery_health_level);
+      const nominalKwh = getNominalKwh(packTypeRaw, bs.capacity_kwhr, healthPct);
+      const soh = getSOH(data);
+      const chargePct = safe(bs.charge_percent, null);
+      const rangeKm = safe(bs.remaining_range, null);
+      const capKwh = safe(bs.capacity_kwhr, null);
+      const curKwh = safe(bs.kwhr, null);
+      const maxTemp = safe(bs.max_cell_temp, null);
+      const minTemp = safe(bs.min_cell_temp, null);
+      const unavailRangeKm = safe(bs.unavailable_range, 0);
+      const odoKm = safe(ch.odometer_km, null);
+      const chargeRate = safe(cs.charge_rate_kwh_precise, 0);
+      const chargeLimit = safe(cs.charge_limit_percent, null);
+
+      // -- Summary Bar --
+      document.getElementById('res-vin-q9r0').textContent = maskVin(data.vin);
+      document.getElementById('res-model-s1t2').textContent = modelName + (variantName ? ' ' + variantName : '');
+      document.getElementById('res-pack-u3v4').textContent = packName;
+      document.getElementById('res-cell-w5x6').textContent = cellName;
+      if (odoKm != null) {
+        const odoMi = Math.round(kmToMi(odoKm));
+        document.getElementById('res-odo-y7z8').textContent = `${Number(odoKm).toLocaleString()} km / ${odoMi.toLocaleString()} mi`;
+      } else {
+        document.getElementById('res-odo-y7z8').textContent = 'N/A';
+      }
+
+      // -- SOH Gauge --
+      const sohArc = document.getElementById('soh-arc-a9b0');
+      const sohValEl = document.getElementById('soh-value-c1d2');
+      const sohLabelEl = document.getElementById('soh-label-e3f4');
+      const sohCapEl = document.getElementById('soh-cap-g5h6');
+      if (soh != null) {
+        const pct = Math.min(soh, 100);
+        const offset = 251.2 - (251.2 * pct / 100);
+        const color = sohColor(soh);
+        sohArc.style.stroke = color;
+        sohArc.style.strokeDashoffset = offset;
+        sohArc.classList.remove('gauge-animate');
+        void sohArc.offsetWidth;
+        sohArc.classList.add('gauge-animate');
+        sohArc.style.setProperty('--target-offset', offset);
+        setTimeout(() => { sohArc.style.strokeDashoffset = offset; }, 1300);
+        sohValEl.textContent = num(soh, 1) + '%';
+        sohValEl.style.color = color;
+        const label = sohLabel(soh);
+        sohLabelEl.textContent = label.text;
+        sohLabelEl.className = 'text-sm font-semibold mb-1 ' + label.cls;
+        if (capKwh != null && nominalKwh != null) {
+          sohCapEl.textContent = num(capKwh, 1) + ' / ' + num(nominalKwh, 1) + ' kWh';
+        } else if (capKwh != null) {
+          sohCapEl.textContent = num(capKwh, 1) + ' kWh effective';
+        } else {
+          sohCapEl.textContent = '';
+        }
+      } else {
+        sohValEl.textContent = 'N/A';
+        sohLabelEl.textContent = '';
+        sohCapEl.textContent = '';
+        sohArc.style.strokeDashoffset = 251.2;
+      }
+
+      // -- SOC --
+      document.getElementById('soc-pct-i7j8').textContent = chargePct != null ? num(chargePct, 1) + '%' : 'N/A';
+      document.getElementById('soc-bar-k9l0').style.width = chargePct != null ? Math.min(chargePct, 100) + '%' : '0%';
+      // Range: API returns km, show both km and miles
+      if (rangeKm != null) {
+        const rangeMi = Math.round(kmToMi(rangeKm));
+        document.getElementById('soc-range-o3p4').textContent = Math.round(rangeKm) + ' km / ' + rangeMi + ' mi';
+      } else {
+        document.getElementById('soc-range-o3p4').textContent = 'N/A';
+      }
+      document.getElementById('soc-kwh-q5r6').textContent = (curKwh != null ? num(curKwh, 1) : '?') + ' / ' + (capKwh != null ? num(capKwh, 1) : '?');
+      document.getElementById('soc-limit-s7t8').textContent = chargeLimit != null ? num(chargeLimit, 0) + '%' : 'N/A';
+
+      const unavailEl = document.getElementById('soc-unavail-label-u9v0');
+      const unavailTextEl = document.getElementById('soc-unavail-text-w1x2');
+      const unavailBarEl = document.getElementById('soc-unavail-m1n2');
+      if (unavailRangeKm > 0) {
+        const unavailMi = kmToMi(unavailRangeKm);
+        unavailEl.classList.remove('hidden');
+        unavailTextEl.textContent = num(unavailRangeKm, 1) + ' km (' + num(unavailMi, 1) + ' mi) unavailable range';
+        if (rangeKm != null && rangeKm > 0) {
+          const unavailPct = (unavailRangeKm / (rangeKm + unavailRangeKm)) * 100;
+          unavailBarEl.style.width = Math.min(unavailPct, 30) + '%';
+        }
+      } else {
+        unavailEl.classList.add('hidden');
+        unavailBarEl.style.width = '0%';
+      }
+
+      // -- Thermal --
+      document.getElementById('therm-max-y3z4').textContent = maxTemp != null ? num(maxTemp, 1) + ' °C' : 'N/A';
+      document.getElementById('therm-min-c7d8').textContent = minTemp != null ? num(minTemp, 1) + ' °C' : 'N/A';
+      document.getElementById('therm-max-bar-a5b6').style.width = maxTemp != null ? Math.min((maxTemp / 60) * 100, 100) + '%' : '0%';
+      document.getElementById('therm-min-bar-e9f0').style.width = minTemp != null ? Math.min((minTemp / 60) * 100, 100) + '%' : '0%';
+      const deltaEl = document.getElementById('therm-delta-g1h2');
+      const deltaLabelEl = document.getElementById('therm-delta-label-i3j4');
+      if (maxTemp != null && minTemp != null) {
+        const delta = Math.abs(maxTemp - minTemp);
+        deltaEl.textContent = num(delta, 1) + ' °C';
+        if (delta < 5) {
+          deltaEl.style.color = '#10b981';
+          deltaLabelEl.textContent = 'Balanced';
+          deltaLabelEl.style.color = '#10b981';
+        } else if (delta <= 10) {
+          deltaEl.style.color = '#f59e0b';
+          deltaLabelEl.textContent = 'Moderate Spread';
+          deltaLabelEl.style.color = '#f59e0b';
+        } else {
+          deltaEl.style.color = '#ef4444';
+          deltaLabelEl.textContent = 'Investigate';
+          deltaLabelEl.style.color = '#ef4444';
+        }
+      } else {
+        deltaEl.textContent = 'N/A';
+        deltaLabelEl.textContent = '';
+      }
+      document.getElementById('therm-cell-k5l6').textContent = cellName;
+
+      // -- Metrics --
+      document.getElementById('met-effcap-m7n8').textContent = capKwh != null ? num(capKwh, 1) + ' kWh' : 'N/A';
+      if (soh != null && nominalKwh != null) {
+        const lost = (1 - soh / 100) * nominalKwh;
+        document.getElementById('met-degcap-o9p0').textContent = num(lost, 1) + ' kWh';
+      } else {
+        document.getElementById('met-degcap-o9p0').textContent = 'N/A';
+      }
+      if (rangeKm != null && chargePct != null && chargePct > 0) {
+        const rangeMi = kmToMi(rangeKm);
+        document.getElementById('met-rangepct-q1r2').textContent = num(rangeMi / chargePct, 2) + ' mi/%';
+      } else {
+        document.getElementById('met-rangepct-q1r2').textContent = 'N/A';
+      }
+      if (odoKm != null) {
+        const odoMi = Math.round(kmToMi(odoKm));
+        document.getElementById('met-odo-s3t4').textContent = odoMi.toLocaleString() + ' mi';
+      } else {
+        document.getElementById('met-odo-s3t4').textContent = 'N/A';
+      }
+
+      // -- Charging --
+      const chgStatusEl = document.getElementById('chg-status-u5v6');
+      const chgPerfEl = document.getElementById('chg-perf-y9z0');
+      const chgEtaRow = document.getElementById('chg-eta-row-a1b1');
+      const chgEtaEl = document.getElementById('chg-eta-c2d2');
+      document.getElementById('chg-target-w7x8').textContent = chargeLimit != null ? num(chargeLimit, 0) + '%' : 'N/A';
+
+      if (chargeRate > 0) {
+        chgStatusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-ok pulse-dot inline-block"></span> Charging at ' + num(chargeRate, 1) + ' kW';
+        if (chargePct != null && chargeLimit != null && capKwh != null && chargeRate > 0) {
+          const pctRemaining = chargeLimit - chargePct;
+          if (pctRemaining > 0) {
+            const kwhNeeded = (pctRemaining / 100) * capKwh;
+            const hours = kwhNeeded / chargeRate;
+            const mins = Math.round(hours * 60);
+            if (mins < 60) {
+              chgEtaEl.textContent = mins + ' minutes';
+            } else {
+              chgEtaEl.textContent = Math.floor(hours) + 'h ' + (mins % 60) + 'm';
+            }
+            chgEtaRow.classList.remove('hidden');
+          } else {
+            chgEtaRow.classList.add('hidden');
+          }
+        } else {
+          chgEtaRow.classList.add('hidden');
+        }
+      } else {
+        chgStatusEl.innerHTML = '<span class="w-2 h-2 rounded-full bg-txt-dim inline-block"></span> Not Currently Charging';
+        chgEtaRow.classList.add('hidden');
+      }
+
+      if (chargeRate > 100) {
+        chgPerfEl.innerHTML = '<span class="text-ok">DC Fast Charging</span>';
+      } else if (chargeRate >= 7) {
+        chgPerfEl.innerHTML = '<span class="text-blue">AC / Level 2</span>';
+      } else if (chargeRate > 0) {
+        chgPerfEl.innerHTML = '<span class="text-warn">Trickle Charge</span>';
+      } else {
+        chgPerfEl.textContent = '—';
+      }
+
+      // -- Insights --
+      const insightsList = document.getElementById('insights-list-e3f3');
+      insightsList.innerHTML = '';
+      const insights = [];
+
+      if (soh != null) {
+        if (soh >= 95) {
+          insights.push({ color: 'bg-ok', text: 'Battery is in excellent health — well within expected range.' });
+        } else if (soh >= 85) {
+          insights.push({ color: 'bg-warn', text: 'Battery health is good but showing moderate degradation. Normal for age/mileage.' });
+        } else {
+          insights.push({ color: 'bg-danger', text: 'Battery has degraded beyond typical 2-year threshold. Consider monitoring closely.' });
+        }
+      }
+
+      if (maxTemp != null && minTemp != null) {
+        const delta = Math.abs(maxTemp - minTemp);
+        if (delta > 10) {
+          insights.push({ color: 'bg-danger', text: 'High cell temperature variance detected (' + num(delta,1) + '°C) — thermal management may need inspection.' });
+        } else if (delta > 5) {
+          insights.push({ color: 'bg-warn', text: 'Moderate cell temperature spread (' + num(delta,1) + '°C). Worth monitoring over time.' });
+        } else {
+          insights.push({ color: 'bg-ok', text: 'Cell temperatures are well balanced (Δ' + num(delta,1) + '°C). Thermal management working properly.' });
+        }
+        if (maxTemp > 40) {
+          insights.push({ color: 'bg-warn', text: 'Maximum cell temperature (' + num(maxTemp,1) + '°C) is elevated. Avoid charging immediately after spirited driving.' });
+        }
+        if (minTemp < 5) {
+          insights.push({ color: 'bg-warn', text: 'Minimum cell temperature (' + num(minTemp,1) + '°C) is low. Preconditioning before DC fast charging is recommended.' });
+        }
+      }
+
+      if (unavailRangeKm > 32) {
+        // ~20 mi
+        const unavailMi = kmToMi(unavailRangeKm);
+        insights.push({ color: 'bg-danger', text: 'Significant range listed as unavailable (' + num(unavailMi,1) + ' mi / ' + num(unavailRangeKm,1) + ' km) — potential cell imbalance.' });
+      } else if (unavailRangeKm > 8) {
+        // ~5 mi
+        const unavailMi = kmToMi(unavailRangeKm);
+        insights.push({ color: 'bg-warn', text: 'Some range (' + num(unavailMi,1) + ' mi / ' + num(unavailRangeKm,1) + ' km) is listed as unavailable. A full charge cycle may help recalibrate.' });
+      } else if (unavailRangeKm != null && unavailRangeKm <= 8) {
+        const unavailMi = kmToMi(unavailRangeKm);
+        insights.push({ color: 'bg-ok', text: 'Unavailable range is minimal (' + num(unavailMi,1) + ' mi / ' + num(unavailRangeKm,1) + ' km). Pack is well balanced.' });
+      }
+
+      if (chargeLimit != null && chargeLimit > 90 && chargeRate === 0) {
+        insights.push({ color: 'bg-ok', text: 'Charge limit is set to ' + num(chargeLimit,0) + '%. For daily use, 80-90% is recommended to preserve long-term health.' });
+      }
+
+      if (odoKm != null && soh != null) {
+        const degPerKm = (100 - soh) / odoKm;
+        const projectedAt100k = 100 - (degPerKm * 100000);
+        if (projectedAt100k > 0) {
+          insights.push({ color: 'bg-ok', text: 'At current degradation rate, projected SOH at 100,000 km: ~' + num(projectedAt100k, 1) + '%.' });
+        }
+      }
+
+      if (insights.length === 0) {
+        insights.push({ color: 'bg-ok', text: 'No issues detected. Battery appears healthy.' });
+      }
+
+      insights.forEach(i => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start gap-3 text-sm';
+        li.innerHTML = '<span class="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ' + i.color + '"></span><span class="text-txt-muted">' + i.text + '</span>';
+        insightsList.appendChild(li);
+      });
+
+      // -- Raw Debug Table --
+      const tbody = document.getElementById('debug-tbody-o8p8');
+      tbody.innerHTML = '';
+      const flatFields = flattenObj(data);
+      Object.entries(flatFields).forEach(([key, val]) => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-bg-border/50';
+        tr.innerHTML = '<td class="py-1.5 pr-4 text-txt-muted">' + escHtml(key) + '</td><td class="py-1.5 text-txt">' + escHtml(String(val ?? 'null')) + '</td>';
+        tbody.appendChild(tr);
+      });
+
+      // Show results
+      const resultsSection = document.getElementById('results-section-m5n6');
+      resultsSection.classList.remove('hidden');
+      resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Re-trigger animations
+      resultsSection.querySelectorAll('.fade-in').forEach(el => {
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = '';
+      });
+
+      lucide.createIcons();
+    }
+
+    function flattenObj(obj, prefix) {
+      const result = {};
+      for (const [k, v] of Object.entries(obj)) {
+        const key = prefix ? prefix + '.' + k : k;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          Object.assign(result, flattenObj(v, key));
+        } else {
+          result[key] = v;
+        }
+      }
+      return result;
+    }
+
+    function escHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function showSavedBadge() {
+      const saved = loadSaved();
+      if (saved && saved.timestamp) {
+        const badge = document.getElementById('saved-badge-c3d4');
+        const timeEl = document.getElementById('saved-time-e5f6');
+        const d = new Date(saved.timestamp);
+        timeEl.textContent = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        badge.classList.remove('hidden');
+      }
+    }
+
+    // ============ INIT ============
+    const saved = loadSaved();
+    if (saved && saved.data) {
+      showSavedBadge();
+      document.getElementById('json-input-w3x4').value = JSON.stringify(saved.data, null, 2);
+    }
+
+    lucide.createIcons();
+    </script>
+</body>
+</html>
