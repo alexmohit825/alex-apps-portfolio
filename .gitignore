@@ -1,9 +1,0 @@
-node_modules/
-.next/
-out/
-dist/
-coverage/
-.pnp
-.pnp.js
-.env
-.DS_Store
