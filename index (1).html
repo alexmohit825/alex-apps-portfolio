@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Alex's App Portfolio Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { 900: '#0a0e1a', 800: '#111630', 700: '#181e40' },
+                        electric: '#3b82f6',
+                        teal: '#06b6d4',
+                        purple: '#8b5cf6',
+                        emerald: '#10b981',
+                        amber: '#f59e0b',
+                        glass: 'rgba(17, 22, 48, 0.7)',
+                        'glass-border': 'rgba(255,255,255,0.08)',
+                    },
+                    fontFamily: { inter: ['Inter', 'sans-serif'] },
+                },
+            },
+        };
+    </script>
+    <style>
+        :root {
+            --navy-900: #0a0e1a;
+            --navy-800: #111630;
+            --navy-700: #181e40;
+            --electric: #3b82f6;
+            --teal: #06b6d4;
+            --purple: #8b5cf6;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--navy-900);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        #particles-canvas-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .glass-card {
+            background: rgba(17, 22, 48, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .glass-card:hover { transform: translateY(-6px); }
+        .glass-card[data-category="Medical"]:hover { box-shadow: 0 0 30px rgba(6,182,212,0.2); border-color: rgba(6,182,212,0.3); }
+        .glass-card[data-category="Finance"]:hover { box-shadow: 0 0 30px rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.3); }
+        .glass-card[data-category="Legal"]:hover { box-shadow: 0 0 30px rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.3); }
+        .glass-card[data-category="EV/Tech"]:hover { box-shadow: 0 0 30px rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.3); }
+        .accent-bar { width: 4px; border-radius: 4px; flex-shrink: 0; }
+        .accent-medical { background: linear-gradient(to bottom, #06b6d4, #0891b2); }
+        .accent-finance { background: linear-gradient(to bottom, #10b981, #059669); }
+        .accent-legal { background: linear-gradient(to bottom, #8b5cf6, #7c3aed); }
+        .accent-evtech { background: linear-gradient(to bottom, #f59e0b, #d97706); }
+        .badge-medical { background: rgba(6,182,212,0.15); color: #22d3ee; border: 1px solid rgba(6,182,212,0.25); }
+        .badge-finance { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+        .badge-legal { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
+        .badge-evtech { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+        .launch-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none; color: white; padding: 8px 20px; border-radius: 10px;
+            font-weight: 600; font-size: 0.85rem; cursor: pointer;
+            transition: box-shadow 0.3s ease, transform 0.15s ease;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .launch-btn:hover { box-shadow: 0 0 20px rgba(59,130,246,0.5); transform: scale(1.03); }
+        .filter-btn {
+            padding: 7px 18px; border-radius: 10px; font-size: 0.82rem; font-weight: 500;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8; cursor: pointer; transition: all 0.25s ease; white-space: nowrap;
+        }
+        .filter-btn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+        .filter-btn.active { background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.5); color: #60a5fa; }
+        .sort-btn {
+            padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 500;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            color: #64748b; cursor: pointer; transition: all 0.25s ease;
+        }
+        .sort-btn:hover { background: rgba(255,255,255,0.08); color: #94a3b8; }
+        .sort-btn.active { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.4); color: #a78bfa; }
+        .star-btn { cursor: pointer; transition: transform 0.2s ease, color 0.2s ease; color: #475569; }
+        .star-btn:hover { transform: scale(1.15); color: #fbbf24; }
+        .star-btn.favorited { color: #fbbf24; }
+        .stat-card {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px; padding: 16px 20px; text-align: center;
+            transition: background 0.3s ease;
+        }
+        .stat-card:hover { background: rgba(255,255,255,0.07); }
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+            z-index: 100; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content {
+            background: linear-gradient(145deg, #111630, #0d1127);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 32px; max-width: 500px; width: 90%;
+            transform: scale(0.9); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .artifact-id-block {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 14px 18px; font-family: 'Courier New', monospace;
+            font-size: 0.85rem; color: #60a5fa; word-break: break-all;
+        }
+        .copy-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white; border: none; padding: 10px 24px; border-radius: 10px;
+            font-weight: 600; cursor: pointer; transition: box-shadow 0.3s ease;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .copy-btn:hover { box-shadow: 0 0 20px rgba(16,185,129,0.4); }
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card-animate { opacity: 0; animation: fadeSlideIn 0.5s ease forwards; }
+        .navbar-glass {
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .search-input {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; padding: 9px 14px 9px 38px; color: #e2e8f0;
+            font-size: 0.88rem; outline: none; transition: border-color 0.3s ease;
+            width: 100%;
+        }
+        .search-input::placeholder { color: #475569; }
+        .search-input:focus { border-color: rgba(59,130,246,0.5); }
+        .hero-gradient {
+            background: linear-gradient(180deg, rgba(59,130,246,0.06) 0%, transparent 70%);
+        }
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    </style>
+</head>
+<body data-id="0" class="font-inter">
+    <app-icon data-id="1" hidden data-icon="layout-dashboard" data-palette="Dark"></app-icon>
+    <canvas data-id="2" id="particles-canvas-bg"></canvas>
+
+    <!-- NAVBAR -->
+    <nav data-id="3" id="navbar-main-a1b2" class="navbar-glass fixed top-0 left-0 right-0 z-50">
+        <div data-id="4" class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 flex items-center justify-between h-16">
+            <div data-id="5" class="flex items-center gap-2">
+                <span data-id="6" class="text-xl">⚡</span>
+                <span data-id="7" class="font-bold text-base md:text-lg text-white tracking-tight">Alex's Portfolio</span>
+            </div>
+            <div data-id="8" class="hidden md:flex items-center gap-3 flex-1 max-w-md mx-6">
+                <div data-id="9" class="relative w-full">
+                    <i data-id="10" data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input data-id="11" id="search-input-d4e5" type="text" placeholder="Search apps..." class="search-input" />
+                </div>
+            </div>
+            <div data-id="12" class="hidden md:flex items-center gap-2">
+                <button data-id="13" class="filter-btn active" data-filter="All">All</button>
+                <button data-id="14" class="filter-btn" data-filter="Medical">Medical</button>
+                <button data-id="15" class="filter-btn" data-filter="Finance">Finance</button>
+                <button data-id="16" class="filter-btn" data-filter="Legal">Legal</button>
+                <button data-id="17" class="filter-btn" data-filter="EV/Tech">EV/Tech</button>
+                <button data-id="18" class="filter-btn" data-filter="Favorites"><i data-id="19" data-lucide="star" class="w-3.5 h-3.5 inline -mt-0.5"></i> Favs</button>
+            </div>
+            <button data-id="20" id="mobile-menu-btn-f6g7" class="md:hidden p-2 text-slate-400">
+                <i data-id="21" data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MOBILE MENU -->
+    <div data-id="22" id="mobile-menu-h8i9" class="hidden fixed inset-0 z-[60] navbar-glass flex flex-col p-5 pt-4">
+        <div data-id="23" class="flex items-center justify-between mb-6">
+            <div data-id="24" class="flex items-center gap-2">
+                <span data-id="25" class="text-xl">⚡</span>
+                <span data-id="26" class="font-bold text-lg text-white">Alex's Portfolio</span>
+            </div>
+            <button data-id="27" id="mobile-menu-close-j0k1" class="p-2 text-slate-400">
+                <i data-id="28" data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div data-id="29" class="relative mb-5">
+            <i data-id="30" data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+            <input data-id="31" id="mobile-search-input-l2m3" type="text" placeholder="Search apps..." class="search-input" />
+        </div>
+        <div data-id="32" class="flex flex-wrap gap-2 mb-6">
+            <button data-id="33" class="filter-btn mobile-filter active" data-filter="All">All</button>
+            <button data-id="34" class="filter-btn mobile-filter" data-filter="Medical">Medical</button>
+            <button data-id="35" class="filter-btn mobile-filter" data-filter="Finance">Finance</button>
+            <button data-id="36" class="filter-btn mobile-filter" data-filter="Legal">Legal</button>
+            <button data-id="37" class="filter-btn mobile-filter" data-filter="EV/Tech">EV/Tech</button>
+            <button data-id="38" class="filter-btn mobile-filter" data-filter="Favorites"><i data-id="39" data-lucide="star" class="w-3.5 h-3.5 inline -mt-0.5"></i> Favs</button>
+        </div>
+        <div data-id="40" class="flex flex-wrap gap-2">
+            <button data-id="41" class="sort-btn mobile-sort active" data-sort="date">Latest</button>
+            <button data-id="42" class="sort-btn mobile-sort" data-sort="name">A–Z</button>
+            <button data-id="43" class="sort-btn mobile-sort" data-sort="category">Category</button>
+        </div>
+    </div>
+
+    <main data-id="44" class="relative z-10 pt-16">
+        <!-- HERO -->
+        <section data-id="45" id="hero-section-n4o5" class="hero-gradient py-12 md:py-20 px-4 md:px-6 lg:px-8">
+            <div data-id="46" class="max-w-7xl mx-auto text-center">
+                <div data-id="47" class="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-5">
+                    <i data-id="48" data-lucide="sparkles" class="w-4 h-4 text-blue-400"></i>
+                    <span data-id="49" class="text-xs font-medium text-blue-300 tracking-wide uppercase">Powered by Microsoft Copilot</span>
+                </div>
+                <h1 data-id="50" class="text-3xl md:text-5xl lg:text-6xl font-extrabold text-white mb-3 tracking-tight">
+                    Alex's AI App Portfolio
+                </h1>
+                <p data-id="51" class="text-base md:text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
+                    Physician &nbsp;·&nbsp; Innovator &nbsp;·&nbsp; AI Builder
+                </p>
+                <!-- Stats -->
+                <div data-id="52" class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 max-w-3xl mx-auto">
+                    <div data-id="53" class="stat-card col-span-2 md:col-span-1">
+                        <div data-id="54" class="text-2xl md:text-3xl font-extrabold text-white tabular-nums">16</div>
+                        <div data-id="55" class="text-xs text-slate-500 mt-1 font-medium">Total Apps</div>
+                    </div>
+                    <div data-id="56" class="stat-card">
+                        <div data-id="57" class="text-2xl md:text-3xl font-extrabold text-teal tabular-nums">10</div>
+                        <div data-id="58" class="text-xs text-slate-500 mt-1 font-medium">Medical</div>
+                    </div>
+                    <div data-id="59" class="stat-card">
+                        <div data-id="60" class="text-2xl md:text-3xl font-extrabold text-emerald tabular-nums">4</div>
+                        <div data-id="61" class="text-xs text-slate-500 mt-1 font-medium">Finance</div>
+                    </div>
+                    <div data-id="62" class="stat-card">
+                        <div data-id="63" class="text-2xl md:text-3xl font-extrabold text-purple tabular-nums">1</div>
+                        <div data-id="64" class="text-xs text-slate-500 mt-1 font-medium">Legal</div>
+                    </div>
+                    <div data-id="65" class="stat-card">
+                        <div data-id="66" class="text-2xl md:text-3xl font-extrabold text-amber tabular-nums">1</div>
+                        <div data-id="67" class="text-xs text-slate-500 mt-1 font-medium">EV/Tech</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TOOLBAR -->
+        <section data-id="68" id="toolbar-section-p6q7" class="px-4 md:px-6 lg:px-8 max-w-7xl mx-auto mt-4 mb-6">
+            <div data-id="69" class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <p data-id="70" id="showing-count-r8s9" class="text-sm text-slate-500 font-medium tabular-nums">Showing 16 of 16 apps</p>
+                <div data-id="71" class="flex items-center gap-2">
+                    <span data-id="72" class="text-xs text-slate-600 mr-1">Sort:</span>
+                    <button data-id="73" class="sort-btn desktop-sort active" data-sort="date">Latest</button>
+                    <button data-id="74" class="sort-btn desktop-sort" data-sort="name">A–Z</button>
+                    <button data-id="75" class="sort-btn desktop-sort" data-sort="category">Category</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- APP GRID -->
+        <section data-id="76" id="app-grid-section-t0u1" class="px-4 md:px-6 lg:px-8 max-w-7xl mx-auto pb-16">
+            <div data-id="77" id="app-grid-v2w3" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Cards injected by JS -->
+            </div>
+            <div data-id="78" id="no-results-x4y5" class="hidden text-center py-20">
+                <i data-id="79" data-lucide="search-x" class="w-12 h-12 text-slate-600 mx-auto mb-4"></i>
+                <p data-id="80" class="text-slate-500 text-lg font-medium">No apps match your search</p>
+                <p data-id="81" class="text-slate-600 text-sm mt-1">Try a different keyword or filter</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL -->
+    <div data-id="82" id="launch-modal-z6a7" class="modal-overlay">
+        <div data-id="83" class="modal-content">
+            <div data-id="84" class="flex items-start justify-between mb-5">
+                <div data-id="85" class="flex items-center gap-3">
+                    <span data-id="86" id="modal-icon-b8c9" class="text-3xl"></span>
+                    <div data-id="87">
+                        <h3 data-id="88" id="modal-name-d0e1" class="text-lg font-bold text-white"></h3>
+                        <span data-id="89" id="modal-badge-f2g3" class="text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-1"></span>
+                    </div>
+                </div>
+                <button data-id="90" id="modal-close-h4i5" class="p-2 text-slate-500 hover:text-white transition-colors">
+                    <i data-id="91" data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p data-id="92" id="modal-desc-j6k7" class="text-sm text-slate-400 mb-5 leading-relaxed"></p>
+            <p data-id="93" class="text-xs text-slate-500 mb-2 font-medium uppercase tracking-wider">Artifact ID</p>
+            <div data-id="94" id="modal-artifact-l8m9" class="artifact-id-block mb-5"></div>
+            <p data-id="95" class="text-xs text-slate-500 mb-5 leading-relaxed">To open this app, find it in your Copilot conversation by name.</p>
+            <div data-id="96" class="flex items-center gap-3">
+                <button data-id="97" id="copy-id-btn-n0o1" class="copy-btn">
+                    <i data-id="98" data-lucide="copy" class="w-4 h-4"></i>
+                    <span data-id="99">Copy Artifact ID</span>
+                </button>
+                <span data-id="100" id="copy-confirm-p2q3" class="text-xs text-emerald font-medium opacity-0 transition-opacity">Copied!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer data-id="101" id="footer-r4s5" class="relative z-10 border-t border-white/5 py-8 px-4 md:px-6 lg:px-8">
+        <div data-id="102" class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div data-id="103" class="flex items-center gap-2 text-slate-500 text-sm">
+                <i data-id="104" data-lucide="bot" class="w-4 h-4"></i>
+                <span data-id="105">Built with <span data-id="106" class="text-blue-400 font-semibold">Microsoft Copilot</span></span>
+            </div>
+            <p data-id="107" class="text-xs text-slate-600">Made by Copilot</p>
+        </div>
+    </footer>
+
+    <script>
+    // =========== DATA ===========
+    const apps = [
+        { name:"SurgicalCare — Unified Surgical Patient Platform", icon:"🏥", id:"88ruKDPr3d2pay4ssHdmt", updated:"2026-05-16", category:"Medical", desc:"A comprehensive surgical patient management platform covering preop, intraop, and postop workflows. Centralizes surgical care coordination and patient tracking." },
+        { name:"Preoperative Patient Education & Readiness App", icon:"📋", id:"VKgKg1fbYwj8WLbxcFFGn", updated:"2026-05-14", category:"Medical", desc:"Interactive preoperative education tool that prepares patients for surgery with personalized readiness checklists and consent workflows." },
+        { name:"NeuroSpine Wound Monitor", icon:"🧠", id:"bHkYzf3mHsRKjzYpdmijV", updated:"2026-05-14", category:"Medical", desc:"Real-time wound monitoring system for neuro-spine surgery patients. Tracks healing progress, flags complications, and assists postoperative wound care." },
+        { name:"Clinical Note CPT Coder & Optimizer", icon:"🩺", id:"r4psrXXoLP3RgVpd5uniM", updated:"2026-05-13", category:"Medical", desc:"AI-powered tool that analyzes clinical notes and generates optimized CPT codes for maximum accuracy and reimbursement. Reduces coding time and errors." },
+        { name:"OpCoder Assist", icon:"🔧", id:"AFa2VwctZW2xPw6ofxXyG", updated:"2026-05-11", category:"Medical", desc:"Operative note CPT coding assistant that parses surgical notes and assigns procedure codes with modifiers. Streamlines the operative coding workflow." },
+        { name:"OPNote CPT Coder", icon:"📝", id:"K7guEarMycXwZsyNuJBYf", updated:"2026-05-10", category:"Medical", desc:"Dedicated operative note coding tool for rapid CPT code assignment. Supports multi-procedure notes and complex surgical billing scenarios." },
+        { name:"SurgCode Pro — Operative Report Coding Assistant", icon:"💻", id:"oMa39kPCV9JSNt5dQzL2E", updated:"2026-05-04", category:"Medical", desc:"Professional-grade surgical coding assistant for operative reports. Provides CPT code recommendations with supporting documentation and audit trails." },
+        { name:"AI Spine Surgeon", icon:"🦴", id:"8QYh9oCEavNAXNjZg1sQb", updated:"2026-05-03", category:"Medical", desc:"AI clinical decision support tool for spine surgery. Assists with surgical planning, implant selection, and evidence-based treatment protocols." },
+        { name:"Protocol One — Medical Necessity Platform v2", icon:"⚕️", id:"wfYKs65SJJT3T38S7Z1mQ", updated:"2026-05-10", category:"Medical", desc:"Advanced medical necessity documentation platform that builds payer-compliant prior authorization requests. Reduces denials and speeds approvals." },
+        { name:"NecessityIQ", icon:"🎯", id:"k3DGk8QMXrMKcPeYD7PSa", updated:"2026-05-10", category:"Medical", desc:"Intelligent medical necessity evaluation tool that assesses clinical documentation against payer criteria and generates compliant justification letters." },
+        { name:"Investment Decision App", icon:"📈", id:"65KoKnNBKPG5dyuCowxQy", updated:"2026-05-16", category:"Finance", desc:"Comprehensive investment analysis platform with portfolio scoring, risk assessment, and AI-driven decision support for equity and asset allocation." },
+        { name:"Stock Growth Predictor", icon:"📊", id:"PZQue3LvAdnJ1QpwKxye6", updated:"2026-05-13", category:"Finance", desc:"Machine learning-inspired stock growth prediction tool that models historical trends and projects future performance across a watchlist of equities." },
+        { name:"S&P 500 Top 20 — Model vs Reality", icon:"🏦", id:"3simgwbAeYduTirUwEDcM", updated:"2026-05-10", category:"Finance", desc:"Interactive comparison dashboard showing AI model predictions versus actual S&P 500 top 20 stock performance. Visual analytics with historical overlays." },
+        { name:"TechStock Growth Predictor", icon:"💹", id:"f2t8zysX472RDzYA2XMVc", updated:"2026-05-10", category:"Finance", desc:"Specialized growth prediction model for the technology sector. Analyzes tech fundamentals, earnings trends, and sector momentum for buy/sell signals." },
+        { name:"CopyRight Ops — Software Copyright Registration Platform", icon:"⚖️", id:"hnoejVZwHoRvwZPJWsMiy", updated:"2026-05-15", category:"Legal", desc:"End-to-end software copyright registration management platform. Tracks IP assets, generates USCO-compliant applications, and manages copyright portfolio." },
+        { name:"Lucid EV Battery Health Estimator", icon:"⚡", id:"EqdQUdArEPU9eFqHXwp19", updated:"2026-05-16", category:"EV/Tech", desc:"Precision battery health estimation tool for Lucid electric vehicles. Analyzes charge cycles, thermal data, and degradation curves to project battery longevity." }
+    ];
+
+    // =========== STATE ===========
+    let currentFilter = 'All';
+    let currentSort = 'date';
+    let searchQuery = '';
+    let favorites = new Set();
+    try {
+        const stored = localStorage.getItem('alex-portfolio-favorites');
+        if (stored) favorites = new Set(JSON.parse(stored));
+    } catch(e) {}
+
+    function saveFavorites() {
+        try { localStorage.setItem('alex-portfolio-favorites', JSON.stringify([...favorites])); } catch(e) {}
+    }
+
+    // =========== HELPERS ===========
+    const catClass = c => ({ Medical:'accent-medical', Finance:'accent-finance', Legal:'accent-legal', 'EV/Tech':'accent-evtech' }[c] || '');
+    const badgeClass = c => ({ Medical:'badge-medical', Finance:'badge-finance', Legal:'badge-legal', 'EV/Tech':'badge-evtech' }[c] || '');
+    function formatDate(d) {
+        const dt = new Date(d + 'T00:00:00');
+        return dt.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    }
+
+    // =========== RENDER ===========
+    function getFilteredApps() {
+        let list = [...apps];
+        if (currentFilter === 'Favorites') {
+            list = list.filter(a => favorites.has(a.id));
+        } else if (currentFilter !== 'All') {
+            list = list.filter(a => a.category === currentFilter);
+        }
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            list = list.filter(a => a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q) || a.category.toLowerCase().includes(q));
+        }
+        if (currentSort === 'date') list.sort((a,b) => b.updated.localeCompare(a.updated));
+        else if (currentSort === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
+        else if (currentSort === 'category') list.sort((a,b) => a.category.localeCompare(b.category) || b.updated.localeCompare(a.updated));
+        return list;
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('app-grid-v2w3');
+        const noRes = document.getElementById('no-results-x4y5');
+        const filtered = getFilteredApps();
+        document.getElementById('showing-count-r8s9').textContent = `Showing ${filtered.length} of ${apps.length} apps`;
+        if (!filtered.length) {
+            grid.innerHTML = '';
+            noRes.classList.remove('hidden');
+            return;
+        }
+        noRes.classList.add('hidden');
+        grid.innerHTML = filtered.map((app, i) => `
+            <div class="glass-card card-animate flex overflow-hidden" data-category="${app.category}" style="animation-delay:${i * 60}ms">
+                <div class="accent-bar ${catClass(app.category)}"></div>
+                <div class="flex-1 p-5 flex flex-col">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl leading-none">${app.icon}</span>
+                            <div>
+                                <h3 class="text-sm font-bold text-white leading-snug">${app.name}</h3>
+                                <span class="inline-block mt-1 text-[0.68rem] font-semibold px-2 py-0.5 rounded-full ${badgeClass(app.category)}">${app.category}</span>
+                            </div>
+                        </div>
+                        <button class="star-btn ${favorites.has(app.id) ? 'favorited' : ''}" data-fav-id="${app.id}" aria-label="Toggle favorite">
+                            <i data-lucide="${favorites.has(app.id) ? 'star' : 'star'}" class="w-5 h-5" ${favorites.has(app.id) ? 'fill="currentColor"' : ''}></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed flex-1 mb-4">${app.desc}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[0.7rem] text-slate-600 flex items-center gap-1">
+                            <i data-lucide="calendar" class="w-3 h-3"></i> ${formatDate(app.updated)}
+                        </span>
+                        <button class="launch-btn" data-launch-id="${app.id}">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Launch
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        lucide.createIcons();
+        attachCardEvents();
+    }
+
+    function attachCardEvents() {
+        document.querySelectorAll('.star-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const fid = btn.dataset.favId;
+                if (favorites.has(fid)) favorites.delete(fid); else favorites.add(fid);
+                saveFavorites();
+                renderGrid();
+            });
+        });
+        document.querySelectorAll('.launch-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const app = apps.find(a => a.id === btn.dataset.launchId);
+                if (app) openModal(app);
+            });
+        });
+    }
+
+    // =========== MODAL ===========
+    const modal = document.getElementById('launch-modal-z6a7');
+    function openModal(app) {
+        document.getElementById('modal-icon-b8c9').textContent = app.icon;
+        document.getElementById('modal-name-d0e1').textContent = app.name;
+        const badge = document.getElementById('modal-badge-f2g3');
+        badge.textContent = app.category;
+        badge.className = 'text-xs font-medium px-2 py-0.5 rounded-full inline-block mt-1 ' + badgeClass(app.category);
+        document.getElementById('modal-desc-j6k7').textContent = app.desc;
+        document.getElementById('modal-artifact-l8m9').textContent = app.id;
+        document.getElementById('copy-confirm-p2q3').style.opacity = '0';
+        modal.classList.add('active');
+        try { localStorage.setItem('alex-portfolio-last-visited', app.id); } catch(e){}
+    }
+    function closeModal() { modal.classList.remove('active'); }
+
+    document.getElementById('modal-close-h4i5').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+    document.getElementById('copy-id-btn-n0o1').addEventListener('click', () => {
+        const idText = document.getElementById('modal-artifact-l8m9').textContent;
+        navigator.clipboard.writeText(idText).then(() => {
+            const conf = document.getElementById('copy-confirm-p2q3');
+            conf.style.opacity = '1';
+            setTimeout(() => conf.style.opacity = '0', 2000);
+        });
+    });
+
+    // =========== FILTERS ===========
+    function setFilter(f) {
+        currentFilter = f;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+        document.querySelectorAll('.mobile-filter').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+        renderGrid();
+    }
+    document.querySelectorAll('.filter-btn:not(.mobile-filter)').forEach(btn => {
+        btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+    });
+    document.querySelectorAll('.mobile-filter').forEach(btn => {
+        btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+    });
+
+    // =========== SORT ===========
+    function setSort(s) {
+        currentSort = s;
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === s));
+        renderGrid();
+    }
+    document.querySelectorAll('.desktop-sort').forEach(btn => {
+        btn.addEventListener('click', () => setSort(btn.dataset.sort));
+    });
+    document.querySelectorAll('.mobile-sort').forEach(btn => {
+        btn.addEventListener('click', () => setSort(btn.dataset.sort));
+    });
+
+    // =========== SEARCH ===========
+    function handleSearch(val) {
+        searchQuery = val.trim();
+        renderGrid();
+    }
+    document.getElementById('search-input-d4e5').addEventListener('input', (e) => {
+        handleSearch(e.target.value);
+        document.getElementById('mobile-search-input-l2m3').value = e.target.value;
+    });
+    document.getElementById('mobile-search-input-l2m3').addEventListener('input', (e) => {
+        handleSearch(e.target.value);
+        document.getElementById('search-input-d4e5').value = e.target.value;
+    });
+
+    // =========== MOBILE MENU ===========
+    const mobileMenu = document.getElementById('mobile-menu-h8i9');
+    document.getElementById('mobile-menu-btn-f6g7').addEventListener('click', () => {
+        mobileMenu.classList.remove('hidden');
+    });
+    document.getElementById('mobile-menu-close-j0k1').addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+    });
+
+    // =========== PARTICLES ===========
+    (function initParticles() {
+        const canvas = document.getElementById('particles-canvas-bg');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        function resize() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+        const colors = ['rgba(59,130,246,0.3)', 'rgba(6,182,212,0.25)', 'rgba(139,92,246,0.2)', 'rgba(16,185,129,0.2)'];
+        for (let i = 0; i < 50; i++) {
+            particles.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                r: Math.random() * 2 + 0.5,
+                dx: (Math.random() - 0.5) * 0.3,
+                dy: (Math.random() - 0.5) * 0.3,
+                color: colors[Math.floor(Math.random() * colors.length)]
+            });
+        }
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+            particles.forEach(p => {
+                p.x += p.dx; p.y += p.dy;
+                if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+                if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+
+    // =========== KEYBOARD ===========
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+            mobileMenu.classList.add('hidden');
+        }
+    });
+
+    // =========== INIT ===========
+    lucide.createIcons();
+    renderGrid();
+    </script>
+</body>
+</html>
