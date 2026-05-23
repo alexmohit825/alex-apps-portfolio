@@ -44,21 +44,48 @@
       color: #333;
     }
 
-    .launch-btn {
-      display: inline-block;
+    .btn-row {
       margin-top: 15px;
-      padding: 10px 18px;
-      background: #1a73e8;
-      color: white;
-      text-decoration: none;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .launch-btn, .share-btn {
+      padding: 10px 16px;
       border-radius: 6px;
       font-weight: bold;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+    }
+
+    .launch-btn {
+      background: #1a73e8;
+      color: white;
     }
 
     .launch-btn:hover {
       background: #155fc0;
     }
+
+    .share-btn {
+      background: #34a853;
+      color: white;
+    }
+
+    .share-btn:hover {
+      background: #2c8c46;
+    }
   </style>
+
+  <script>
+    function copyLink(url) {
+      navigator.clipboard.writeText(url).then(() => {
+        alert("Link copied to clipboard!");
+      });
+    }
+  </script>
 </head>
 
 <body>
@@ -67,52 +94,74 @@
 
 <div class="container">
 
-  <!-- Existing Apps (Kept) -->
+  <!-- Existing Apps -->
   <div class="card">
     <h3>NecessityIQ</h3>
     <p>AI-powered medical necessity engine.</p>
-    <a class="launch-btn" href="necessityiq.html" target="_blank">Launch</a>
+    <div class="btn-row">
+      <a class="launch-btn" href="necessityiq.html" target="_blank">Launch</a>
+      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/necessityiq/')">Share</button>
+    </div>
   </div>
 
   <div class="card">
     <h3>Opcoder Assist</h3>
     <p>Advanced CPT/ICD-10 coding assistant.</p>
-    <a class="launch-btn" href="opcoder-assist.html" target="_blank">Launch</a>
+    <div class="btn-row">
+      <a class="launch-btn" href="opcoder-assist.html" target="_blank">Launch</a>
+      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/opcoder-assist/')">Share</button>
+    </div>
   </div>
 
   <div class="card">
     <h3>SpineBullets</h3>
     <p>Structured spine knowledge platform.</p>
-    <a class="launch-btn" href="spinebullets.html" target="_blank">Launch</a>
+    <div class="btn-row">
+      <a class="launch-btn" href="spinebullets.html" target="_blank">Launch</a>
+      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/spinebullets/')">Share</button>
+    </div>
   </div>
 
   <div class="card">
     <h3>AMMC Dashboard</h3>
     <p>Clinical operations and workflow tools.</p>
-    <a class="launch-btn" href="ammc-dashboard.html" target="_blank">Launch</a>
+    <div class="btn-row">
+      <a class="launch-btn" href="ammc-dashboard.html" target="_blank">Launch</a>
+      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/ammc-dashboard/')">Share</button>
+    </div>
   </div>
 
   <!-- NEW GOOGLE AI STUDIO APPS -->
   <div class="card">
     <h3>Image Fetcher</h3>
     <p>AI-powered tool that retrieves and organizes images instantly.</p>
-    <a class="launch-btn" href="https://alexmohit825.github.io/image-fetcher/" target="_blank">Launch</a>
+    <div class="btn-row">
+      <a class="launch-btn" href="https://alexmohit825.github.io/image-fetcher/" target="_blank">Launch</a>
+      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/image-fetcher/')">Share</button>
+    </div>
   </div>
 
   <div class="card">
     <h3>Spine Image Hub</h3>
     <p>Centralized AI hub for spine imaging, uploads, previews, and analysis.</p>
-    <a class="launch-btn" href="https://alexmohit825.github.io/spine-image-hub/" target="_blank">Launch</a>
+    <div class="btn-row">
+      <a class="launch-btn" href="https://alexmohit825.github.io/spine-image-hub/" target="_blank">Launch</a>
+      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/spine-image-hub/')">Share</button>
+    </div>
   </div>
 
   <div class="card">
     <h3>DeckMaster AI</h3>
     <p>AI assistant that generates, edits, and optimizes presentation decks.</p>
-    <a class="launch-btn" href="https://alexmohit825.github.io/deckmaster-ai/" target="_blank">Launch</a>
+    <div class="btn-row">
+      <a class="launch-btn" href="https://alexmohit825.github.io/deckmaster-ai/" target="_blank">Launch</a>
+      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/deckmaster-ai/')">Share</button>
+    </div>
   </div>
 
 </div>
 
 </body>
 </html>
+
 
