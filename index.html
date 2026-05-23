@@ -8,7 +8,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      background: #f5f7fa;
       margin: 0;
       padding: 0;
     }
@@ -24,138 +24,193 @@
 
     .container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 20px;
       padding: 30px;
-      max-width: 1200px;
-      margin: auto;
     }
 
     .card {
       background: white;
+      border-radius: 12px;
       padding: 20px;
-      border-radius: 10px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-
-    .card h3 {
-      margin-top: 0;
-      color: #333;
-    }
-
-    .btn-row {
-      margin-top: 15px;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #1a1a1a;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      display: flex;
       gap: 10px;
     }
 
-    .launch-btn, .share-btn {
-      padding: 10px 16px;
-      border-radius: 6px;
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
       font-weight: bold;
-      text-decoration: none;
       cursor: pointer;
-      border: none;
+      text-decoration: none;
+      color: white;
     }
 
-    .launch-btn {
+    .launch {
       background: #1a73e8;
-      color: white;
     }
 
-    .launch-btn:hover {
-      background: #155fc0;
-    }
-
-    .share-btn {
+    .share {
       background: #34a853;
-      color: white;
-    }
-
-    .share-btn:hover {
-      background: #2c8c46;
     }
   </style>
 
   <script>
-    function copyLink(url) {
-      navigator.clipboard.writeText(url).then(() => {
-        alert("Link copied to clipboard!");
-      });
+    function shareApp(url) {
+      navigator.clipboard.writeText(url);
+      alert("Link copied to clipboard:\n" + url);
     }
   </script>
 </head>
 
 <body>
 
-<header>Alex's App Portfolio</header>
+<header>Alex's App Portfolio Dashboard</header>
 
 <div class="container">
 
-  <!-- Existing Apps -->
+  <!-- NecessityIQ -->
   <div class="card">
-    <h3>NecessityIQ</h3>
-    <p>AI-powered medical necessity engine.</p>
-    <div class="btn-row">
-      <a class="launch-btn" href="necessityiq.html" target="_blank">Launch</a>
-      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/necessityiq/')">Share</button>
+    <h2>NecessityIQ</h2>
+    <p>AI-driven medical necessity engine with insurer-specific criteria mapping.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/NecessityIQ/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/NecessityIQ/')">Share</div>
     </div>
   </div>
 
+  <!-- OPCoder Assist -->
   <div class="card">
-    <h3>Opcoder Assist</h3>
-    <p>Advanced CPT/ICD-10 coding assistant.</p>
-    <div class="btn-row">
-      <a class="launch-btn" href="opcoder-assist.html" target="_blank">Launch</a>
-      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/opcoder-assist/')">Share</button>
+    <h2>OPCoder Assist</h2>
+    <p>Operative note CPT coding assistant with RVU logic and payer integration.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/opcoder-assist/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/opcoder-assist/')">Share</div>
     </div>
   </div>
 
+  <!-- NeuroSpine Wound Monitor -->
   <div class="card">
-    <h3>SpineBullets</h3>
-    <p>Structured spine knowledge platform.</p>
-    <div class="btn-row">
-      <a class="launch-btn" href="spinebullets.html" target="_blank">Launch</a>
-      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/spinebullets/')">Share</button>
+    <h2>NeuroSpine Wound Monitor</h2>
+    <p>Post‑op wound monitoring with AI‑assisted risk scoring and alerts.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/neurospine-wound-monitor/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/neurospine-wound-monitor/')">Share</div>
     </div>
   </div>
 
+  <!-- Clinical Note CPT Coder -->
   <div class="card">
-    <h3>AMMC Dashboard</h3>
-    <p>Clinical operations and workflow tools.</p>
-    <div class="btn-row">
-      <a class="launch-btn" href="ammc-dashboard.html" target="_blank">Launch</a>
-      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/ammc-dashboard/')">Share</button>
+    <h2>Clinical Note CPT Coder</h2>
+    <p>Automated CPT extraction from clinic notes using structured NLP logic.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/clinical-note-cpt-coder/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/clinical-note-cpt-coder/')">Share</div>
     </div>
   </div>
 
-  <!-- NEW GOOGLE AI STUDIO APPS -->
+  <!-- Copyright Ops -->
   <div class="card">
-    <h3>Image Fetcher</h3>
-    <p>AI-powered tool that retrieves and organizes images instantly.</p>
-    <div class="btn-row">
-      <a class="launch-btn" href="https://alexmohit825.github.io/image-fetcher/" target="_blank">Launch</a>
-      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/image-fetcher/')">Share</button>
+    <h2>Copyright Ops</h2>
+    <p>Copyright compliance, originality checks, and IP risk analysis.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/copyright-ops/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/copyright-ops/')">Share</div>
     </div>
   </div>
 
+  <!-- DeckMaster AI -->
   <div class="card">
-    <h3>Spine Image Hub</h3>
-    <p>Centralized AI hub for spine imaging, uploads, previews, and analysis.</p>
-    <div class="btn-row">
-      <a class="launch-btn" href="https://alexmohit825.github.io/spine-image-hub/" target="_blank">Launch</a>
-      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/spine-image-hub/')">Share</button>
+    <h2>DeckMaster AI</h2>
+    <p>AI-powered slide deck generator and content structuring engine.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/deckmaster-ai/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/deckmaster-ai/')">Share</div>
     </div>
   </div>
 
+  <!-- Image Fetcher -->
   <div class="card">
-    <h3>DeckMaster AI</h3>
-    <p>AI assistant that generates, edits, and optimizes presentation decks.</p>
-    <div class="btn-row">
-      <a class="launch-btn" href="https://alexmohit825.github.io/deckmaster-ai/" target="_blank">Launch</a>
-      <button class="share-btn" onclick="copyLink('https://alexmohit825.github.io/deckmaster-ai/')">Share</button>
+    <h2>Image Fetcher</h2>
+    <p>Gemini-powered image search and retrieval interface.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/image-fetcher/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/image-fetcher/')">Share</div>
+    </div>
+  </div>
+
+  <!-- Spine Image Hub -->
+  <div class="card">
+    <h2>Spine Image Hub</h2>
+    <p>AI-assisted spine imaging viewer with structured annotation tools.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/spine-image-hub/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/spine-image-hub/')">Share</div>
+    </div>
+  </div>
+
+  <!-- InvestIQ -->
+  <div class="card">
+    <h2>InvestIQ</h2>
+    <p>AI-powered startup and IPO analysis engine with real-market data integration.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/investIQ/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/investIQ/')">Share</div>
+    </div>
+  </div>
+
+  <!-- AI Spine Surgeon -->
+  <div class="card">
+    <h2>AI Spine Surgeon</h2>
+    <p>Expert-level AI surgical decision support and spine pathology analysis.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/ai-spine-surgeon/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/ai-spine-surgeon/')">Share</div>
+    </div>
+  </div>
+
+  <!-- SurgicalCare Platform -->
+  <div class="card">
+    <h2>SurgicalCare Platform</h2>
+    <p>Unified surgical patient management platform with pre‑op, intra‑op, and post‑op modules.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/surgicalcare-platform/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/surgicalcare-platform/')">Share</div>
+    </div>
+  </div>
+
+  <!-- Lucid EV Battery Health -->
+  <div class="card">
+    <h2>Lucid EV Battery Health</h2>
+    <p>EV battery health estimator powered by your unofficial Lucid API integration.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/lucid-ev-battery-health/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/lucid-ev-battery-health/')">Share</div>
+    </div>
+  </div>
+
+  <!-- Stock Growth Predictor -->
+  <div class="card">
+    <h2>Stock Growth Predictor</h2>
+    <p>AI-driven stock growth modeling and scoring engine.</p>
+    <div class="buttons">
+      <a class="btn launch" href="https://alexmohit825.github.io/stock-growth-predictor/" target="_blank">Launch</a>
+      <div class="btn share" onclick="shareApp('https://alexmohit825.github.io/stock-growth-predictor/')">Share</div>
     </div>
   </div>
 
@@ -163,5 +218,8 @@
 
 </body>
 </html>
+
+
+
 
 
